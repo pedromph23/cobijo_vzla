@@ -1,4 +1,3 @@
-# Dockerfile
 FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y \
@@ -17,10 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Dar permisos al script
-RUN chmod +x start.sh
+# Corregir CRLF por si acaso + dar permisos
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 EXPOSE 8000
 
-# Ejecutar el script de arranque
 CMD ["./start.sh"]
