@@ -1,0 +1,16 @@
+# Normalizar finales de línea en el repo
+* text=auto eol=lf
+
+# Scripts de shell SIEMPRE LF
+*.sh text eol=lf
+
+# Windows batch LF→CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binarios: sin tocar
+*.png binary
+*.jpg binary
+*.ico binary
+*.geojson binary
+*.dump binary
