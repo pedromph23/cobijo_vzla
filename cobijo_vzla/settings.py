@@ -5,6 +5,7 @@ Django settings for cobijo_vzla project.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 
@@ -23,6 +24,8 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = os.getenv(
     'DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1'
 ).split(',')
+
+CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS if host != 'localhost']
 
 
 # ==========================================
@@ -48,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,18 +82,38 @@ WSGI_APPLICATION = 'cobijo_vzla.wsgi.application'
 
 
 # ==========================================
-# BASE DE DATOS (PostGIS)
+# BASE DE DATOS
 # ==========================================
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': os.getenv('DB_NAME', 'cobijo_vzla_db'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+    # --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+    # Forzamos el uso del backend de PostGIS, ya que la URL
+    # empieza con 'postgresql://' y dj_database_url no lo detecta.
+    DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+    
+    # search_path necesario para que PostGIS encuentre el esquema 'gis'
+    DATABASES['default']['OPTIONS'] = {
+        'options': '-c search_path=public,gis'
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.contrib.gis.db.backends.postgis',
+            'NAME': os.getenv('DB_NAME', 'cobijo_vzla_db'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
 
 
 # ==========================================
@@ -123,6 +147,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # ==========================================

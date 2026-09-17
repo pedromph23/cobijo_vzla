@@ -1,0 +1,10 @@
+# .dockerignore
+myvenv/
+node_modules/
+.env
+.git/
+*.geojson
+*.dump
+*.log
+media/
+staticfiles/

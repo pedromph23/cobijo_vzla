@@ -1,0 +1,22 @@
+# render.yaml
+services:
+  - type: web
+    name: cobijo-vzla
+    env: docker
+    plan: free
+    healthCheckPath: /admin/
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cobijo-vzla-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: False
+      - key: PYTHON_VERSION
+        value: 3.12.1
+
+databases:
+  - name: cobijo-vzla-db
+    plan: free
