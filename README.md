@@ -1,253 +1,710 @@
-# CobijoVzla
+# 🏠 Cobijo VZLA
 
-Aplicación web para localizar refugios temporales y centros de acopio en Venezuela durante emergencias.
+git add README.md
+git commit -m "docs: README completo con guía de mantenimiento"
+git push origin main
 
-## Requisitos
+> Sistema de gestión geoespacial de refugios y zonas afectadas para situaciones de emergencia en Venezuela.
 
-- Python 3.10+ (recomendado 3.12)
-- PostgreSQL con PostGIS
-- Dependencias listadas en requirements.txt
-
-## Instalación
-
-1. Clonar el repositorio.
-2. Crear entorno virtual: `python -m venv myvenv` y activarlo.
-3. Instalar dependencias: `pip install -r requirements.txt`
-4. Crear base de datos: `createdb cobijo_vzla_db` y habilitar PostGIS: `psql -d cobijo_vzla_db -c "CREATE EXTENSION postgis;"`
-5. Configurar variables de entorno (copiar .env.example a .env y ajustar).
-6. Ejecutar migraciones: `python manage.py makemigrations` y `python manage.py migrate`
-7. Crear superusuario: `python manage.py createsuperuser`
-8. Crear grupo "Gestores" en el admin y asignar usuarios.
-9. (Opcional) Cargar datos de prueba: `python manage.py cargar_datos_prueba`
-10. Iniciar servidor: `python manage.py runserver`
-
-pip install requests
-
-## Uso
-
-- Mapa público: http://localhost:8000/
-- Panel administrativo: http://localhost:8000/panel/
-- Admin Django: http://localhost:8000/admin/
-
-## Comandos de gestión
-
-- `python manage.py cargar_datos_prueba` – Carga datos ficticios.
-- `python manage.py importar_limites archivo.geojson` – Importa límites administrativos.
-
-python manage.py importar_limites parroquias.geojson
-
-## Configuracion para Windows
-
-# Entorno de Desarrollo para Cobijo Vzla (GeoDjango en Windows vía WSL)
-
-Este documento detalla la configuración exacta necesaria para ejecutar este proyecto en un entorno de desarrollo con Windows. 
-
-Dado que el proyecto utiliza **GeoDjango**, requiere bibliotecas espaciales en C++ (como GDAL y GEOS). La instalación nativa de estas librerías en Windows suele generar errores de dependencias (`.dll` faltantes). Para solucionar esto de manera definitiva y profesional, el backend se ejecuta en **Linux (Debian)** utilizando **WSL (Windows Subsystem for Linux)**, mientras que el código fuente y la base de datos PostgreSQL se mantienen en Windows.
+[![Django](https://img.shields.io/badge/Django-6.1-092E20?logo=django)](https://www.djangoproject.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql)](https://www.postgresql.org/)
+[![PostGIS](https://img.shields.io/badge/PostGIS-3.3-316192)](https://postgis.net/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ---
 
-## 🐧 Fase 1: Instalación y Preparación de Linux (WSL)
+## 📋 Tabla de contenidos
 
-### 1.1 Instalar Debian en WSL
-Abrir PowerShell como Administrador en Windows y ejecutar:
-```powershell
-wsl --install -d Debian
+- [Descripción](#-descripción)
+- [Stack tecnológico](#-stack-tecnológico)
+- [Arquitectura](#-arquitectura)
+- [Funcionalidades](#-funcionalidades)
+- [Estructura del proyecto](#-estructura-del-proyecto)
+- [Instalación local](#-instalación-local)
+- [Variables de entorno](#-variables-de-entorno)
+- [Comandos de Django](#-comandos-de-django)
+- [Base de datos](#-base-de-datos)
+- [Deployment](#-deployment)
+- [Mantenimiento](#-mantenimiento)
+- [Troubleshooting](#-troubleshooting)
+- [Reglas de oro](#-reglas-de-oro)
+- [Autor](#-autor)
 
-(Al finalizar, pedirá reiniciar el equipo. Luego, se abrirá la terminal de Debian para crear un usuario y contraseña).
+---
 
-(Al finalizar, pedirá reiniciar el equipo. Luego, se abrirá la terminal de Debian para crear un usuario y contraseña).
+## 📖 Descripción
 
-1.2 Navegar a la carpeta del proyecto
-WSL monta automáticamente el disco C:\ de Windows en la ruta /mnt/c/. Para acceder al proyecto desde la terminal de Linux:
+**Cobijo VZLA** es una aplicación web desarrollada en Django que permite:
 
-cd /mnt/c/Users/Pedro/Desktop/cobijo_vzla
+- Visualizar en un mapa interactivo los refugios existentes y las zonas afectadas por emergencias.
+- Gestionar puntos de demanda (necesidades humanitarias) georreferenciados.
+- Optimizar la ubicación de nuevos sitios candidatos según parámetros configurables.
+- Generar reportes y análisis geoespaciales.
+- Proveer un panel administrativo completo para la gestión de datos.
 
-Fase 2: Instalación de Dependencias del Sistema
-Dentro de la terminal de Debian, es necesario instalar el motor espacial (GDAL), las herramientas de desarrollo de Python y las cabeceras de PostgreSQL (libpq-dev) necesarias para compilar psycopg2.
+Está diseñado para apoyar a organizaciones humanitarias y equipos de respuesta ante emergencias en Venezuela.
 
-sudo apt update
-sudo apt install gdal-bin libgdal-dev python3-gdal python3-venv python3-dev libpq-dev
+---
 
-Fase 3: Configurar PostgreSQL en Windows para aceptar conexiones de WSL
-Por defecto, PostgreSQL en Windows solo acepta conexiones locales (localhost). Como WSL funciona como una máquina virtual con su propia subred, Windows bloquea la conexión arrojando un error de Connection timed out.
+## 🛠️ Stack tecnológico
 
-3.1 Editar postgresql.conf
-Buscar el archivo de configuración en Windows (generalmente en C:\Program Files\PostgreSQL\16\data\postgresql.conf).
-Abrir con el Bloc de notas, buscar la línea listen_addresses, quitar el símbolo # y cambiarla a:
+| Capa | Tecnología |
+|------|------------|
+| **Backend** | Python 3.12 · Django 6.1 |
+| **API** | Django REST Framework |
+| **Base de datos** | PostgreSQL 17 + PostGIS 3.3 |
+| **Frontend** | HTML · CSS · JavaScript · Leaflet |
+| **Optimización** | PuLP (programación lineal) |
+| **Reportes** | ReportLab · openpyxl |
+| **Análisis** | pandas · numpy · matplotlib |
+| **Geoespacial** | GeoDjango · geopy · geojson |
+| **Deploy** | Docker · Render |
+| **BD en producción** | Supabase |
+| **CI/CD** | GitHub + Render Auto-Deploy |
 
-listen_addresses = '*'
+---
 
-3.2 Editar pg_hba.conf
-En la misma carpeta, abrir pg_hba.conf y agregar la siguiente regla al final del documento para dar acceso a la subred de Linux:
+## 🏗️ Arquitectura
 
-host    all             all             0.0.0.0/0               scram-sha-256
+```
+┌──────────────┐      ┌─────────────────┐      ┌──────────────┐
+│   Usuario    │─────▶│  Render (app)   │─────▶│  Supabase    │
+│  (navegador) │      │  Docker +       │      │  Postgres +  │
+│              │◀─────│  Django +       │◀─────│  PostGIS     │
+└──────────────┘      │  gunicorn       │      └──────────────┘
+                      └─────────────────┘
+                              ▲
+                              │ git push
+                              │
+                      ┌─────────────────┐
+                      │  GitHub         │
+                      │  (código)       │
+                      └─────────────────┘
+```
 
-3.3 Abrir el puerto en el Firewall de Windows
-Abrir el Símbolo del sistema (CMD) como Administrador en Windows y ejecutar:
+### Servicios utilizados
 
-netsh advfirewall firewall add rule name="PostgreSQL WSL" dir=in action=allow protocol=TCP localport=5432
+| Servicio | Rol | Tier |
+|----------|-----|------|
+| **GitHub** | Repositorio del código | Free |
+| **Supabase** | Base de datos Postgres + PostGIS | Free (500 MB) |
+| **Render** | Hosting de la app Django | Free (con sleep) |
 
-3.4 Reiniciar el servicio de PostgreSQL
-En Windows, presionar Win + R, escribir services.msc, buscar el servicio postgresql-x64, hacer clic derecho y seleccionar Reiniciar.
+---
 
-🐍 Fase 4: Creación del Entorno Virtual (El "Truco" de WSL)
-Importante: No se debe crear el entorno virtual (.venv o myvenv) dentro de la carpeta del proyecto montada en /mnt/c/.... El sistema de archivos de Windows (NTFS) bloquea la creación de enlaces simbólicos y permisos de Unix, provocando errores como Operation not permitted al intentar instalar pip.
+## ✨ Funcionalidades
 
-Para solucionarlo, el entorno virtual se aloja en el sistema de archivos nativo de Linux (la carpeta home o ~), pero se ejecuta sobre el código fuente en Windows.
+### Apps internas
 
-4.1 Crear y activar el entorno en Linux
-En la terminal de Debian:
+| App | Descripción |
+|-----|-------------|
+| `core` | Modelos base: Estados, Parroquias, Zonas Afectadas, Refugios, Puntos de Demanda |
+| `emergencias` | Gestión de eventos y reportes ciudadanos |
+| `optimizacion` | Algoritmos de optimización de ubicación de refugios |
+| `mapa` | Vistas y APIs para el mapa interactivo |
+| `reportes` | Generación de PDFs y Excel |
+| `publico` | Vistas públicas del sistema |
 
-# 1. Crear el entorno en la carpeta personal de Linux
-python3 -m venv ~/myvenv_cobijo
+### Características destacadas
 
-# 2. Activar el entorno
-source ~/myvenv_cobijo/bin/activate
+- 🗺️ **Mapa interactivo** con Leaflet (marker clustering, heatmap, minimap)
+- 📊 **Análisis geoespacial** con PostGIS
+- 🎯 **Optimización de ubicaciones** con PuLP
+- 📄 **Reportes dinámicos** en PDF y Excel
+- 🔐 **Panel administrativo** completo
+- 🌐 **API REST** para integraciones
+- 📱 **Diseño responsive** con modo oscuro
 
-🚀 Fase 5: Ejecución del Proyecto
-5.1 Instalar requerimientos
-Con el entorno virtual activado ((myvenv_cobijo) visible en la terminal) y estando en la ruta del proyecto (/mnt/c/Users/Pedro/Desktop/cobijo_vzla), instalar las librerías:
+---
 
+## 📁 Estructura del proyecto
+
+```
+cobijo_vzla/
+├── .env                     # Variables REALES (NO subir a Git)
+├── .env.example             # Plantilla pública (SÍ subir)
+├── .gitignore               # Archivos que Git ignora
+├── .gitattributes           # Normalización de line endings
+├── .dockerignore            # Archivos que Docker ignora
+├── Dockerfile               # Receta de construcción Docker
+├── start.sh                 # Script de arranque en producción
+├── render.yaml              # Config del deploy en Render
+├── requirements.txt         # Dependencias Python
+├── manage.py                # Entry point de Django
+├── myvenv/                  # Entorno virtual (NO subir)
+├── cobijo_vzla/             # Configuración del proyecto
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── asgi.py
+├── apps/                    # Apps de Django
+│   ├── core/
+│   ├── emergencias/
+│   ├── optimizacion/
+│   ├── mapa/
+│   ├── reportes/
+│   └── publico/
+├── templates/               # HTMLs
+├── static/                  # CSS, JS, imágenes
+└── media/                   # Uploads de usuarios (NO subir)
+```
+
+---
+
+## 🚀 Instalación local
+
+### Requisitos previos
+
+- Python 3.12+
+- PostgreSQL 15+ con PostGIS
+- GDAL/GEOS (para GeoDjango)
+- Git
+
+### Windows: instalar GDAL/GEOS
+
+1. Descarga [OSGeo4W](https://trac.osgeo.org/osgeo4w/)
+2. Ejecuta el instalador → **Express Install**
+3. Añade las rutas al `.env`:
+
+```env
+GDAL_LIBRARY_PATH=C:\Users\<usuario>\AppData\Local\Programs\OSGeo4W\bin\gdal313.dll
+GEOS_LIBRARY_PATH=C:\Users\<usuario>\AppData\Local\Programs\OSGeo4W\bin\geos_c.dll
+```
+
+### Linux / macOS
+
+```bash
+sudo apt install gdal-bin libgdal-dev libgeos-dev libproj-dev  # Debian/Ubuntu
+brew install gdal geos proj                                     # macOS
+```
+
+### Pasos de instalación
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/pedromph23/cobijo_vzla.git
+cd cobijo_vzla
+
+# 2. Crear y activar entorno virtual
+python -m venv myvenv
+myvenv\Scripts\activate          # Windows
+source myvenv/bin/activate       # Linux/Mac
+
+# 3. Instalar dependencias
 pip install -r requirements.txt
 
-5.2 Configurar la Base de Datos en settings.py
-En caso de que la conexión a localhost no funcione por el enrutamiento de WSL, se debe averiguar la IP interna con la que WSL ve a Windows (ej. 172.31.128.1) y configurarla en settings.py:
+# 4. Copiar el archivo de ejemplo y editar variables
+cp .env.example .env
+# Editar .env con los valores reales
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'tu_base_de_datos',
-        'USER': 'tu_usuario',
-        'PASSWORD': 'tu_password',
-        'HOST': '172.31.128.1', # O 'localhost' si hay soporte nativo activo
-        'PORT': '5432',
-    }
-}
-
-ALLOWED_HOSTS = ['*'] # Necesario para evitar el error "DisallowedHost"
-
-5.3 Aplicar Migraciones y Arrancar el Servidor
-Bash
-
-python manage.py makemigrations
+# 5. Aplicar migraciones
 python manage.py migrate
-python manage.py runserver 0.0.0.0:8000
 
-(El comando 0.0.0.0:8000 le indica a Linux que exponga el servidor en todas sus interfaces de red).
-
-🌐 Fase 6: Acceso a la Aplicación
-Para ver la aplicación corriendo, abrir cualquier navegador web en Windows (Chrome, Firefox, Edge) e ingresar a:
-
-👉 http://localhost:8000
-
-Documentación generada para mantener el entorno de desarrollo estable, escalable y libre de conflictos de dependencias espaciales.
-
-Pasos para crear el superusuario
-
-Abre tu terminal y asegúrate de tener tu entorno virtual activo. 
-
-[1] Escribe el comando principal:
-
+# 6. Crear superusuario
 python manage.py createsuperuser
 
-Introduce la información solicitada por la consola:
+# 7. Ejecutar servidor de desarrollo
+python manage.py runserver
+```
 
-Username: Escribe el nombre de usuario (sin espacios ni mayúsculas preferiblemente).
+Abrir en el navegador: http://127.0.0.1:8000/
 
-Email address: Ingresa tu dirección de correo electrónico.
+---
 
-Password: Escribe tu contraseña. 
+## 🔐 Variables de entorno
 
-Al escribirla no se verá nada en pantalla por seguridad; es un comportamiento normal.
+El proyecto usa `python-dotenv` para leer variables del archivo `.env`.
 
-Password (again): Vuelve a escribir la contraseña para confirmar. 
+### `.env` (local, **NO se sube a Git**)
 
-Si la contraseña es muy corta o común, Django te pedirá confirmar si deseas aceptarla de todos modos escribiendo y (yes).
+```env
+# === Django ===
+DJANGO_SECRET_KEY="..."
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
 
-Apagar terminal Linux WSL
+# === PostgreSQL local (desarrollo) ===
+DB_NAME=cobijo_vzla_db
+DB_USER=postgres
+DB_PASSWORD=...
+DB_HOST=localhost
+DB_PORT=5432
 
-Abre PowerShell o Símbolo del sistema (CMD) en Windows (no importa si no es como administrador).
+# === Supabase (producción) ===
+DATABASE_URL=postgresql://postgres.<project-id>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
 
-Ejecuta este comando para apagar por completo todas las instancias de WSL:
+# === GeoDjango (Windows) ===
+GDAL_LIBRARY_PATH=...
+GEOS_LIBRARY_PATH=...
+```
 
-wsl --shutdown
+### `.env.example` (público, **SÍ se sube a Git**)
 
-Vuelve a abrir tu terminal de Debian.
+```env
+DJANGO_SECRET_KEY=
+DJANGO_DEBUG=False
+DJANGO_ALLOWED_HOSTS=
 
-2. Verificar que la red ya funcione
-Una vez dentro de tu terminal de Linux nuevamente, prueba si ya hay internet ejecutando:
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+DB_HOST=
+DB_PORT=
 
-ping -c 3 8.8.8.8
+DATABASE_URL=
 
-Si ves respuestas con los tiempos de "ms", significa que la red ya está conectada.
+GDAL_LIBRARY_PATH=
+GEOS_LIBRARY_PATH=
+```
 
-3. Volver a ejecutar el comando
-Con la red restablecida, activa tu entorno virtual y corre tu importación de OpenStreetMap otra vez:
+### Generar una `SECRET_KEY` nueva
 
-source ~/myvenv_cobijo/bin/activate
-cd /mnt/c/Users/Pedro/Desktop/cobijo_vzla
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
 
-Descargar los datos locales (Método manual o web) desde la pagina web https://overpass-turbo.eu/
-Entra a la página oficial Overpass Turbo desde el navegador web de tu PC con Windows (allí sí tienes internet directo).
+> ⚠️ **Nunca** subas el `.env` real al repositorio. Ya está en `.gitignore`.
 
-En el cuadro de código de la izquierda, pega esta consulta para Caracas o cualquier Estado/Parroquia:
+---
 
- ## Se remplaza Caracas por el Estado o Parroquia que se quiera buscar
+## ⚙️ Comandos de Django
 
-[out:json][timeout:25];
-// Corrección aplicada: se usan corchetes para buscar el área por nombre
-area["name"="Caracas"]->.searchArea;
-(
-  node["amenity"="hospital"](area.searchArea);
-  way["amenity"="hospital"](area.searchArea);
-  node["amenity"="school"](area.searchArea);
-  way["amenity"="school"](area.searchArea);
-  node["leisure"="park"](area.searchArea);
-  way["leisure"="park"](area.searchArea);
-);
-out body;
->;
-out skel qt;
+### Activar / desactivar entorno
 
+```bash
+myvenv\Scripts\activate      # Windows
+source myvenv/bin/activate   # Linux/Mac
+deactivate                   # Salir
+```
 
-Pasos rápidos para obtener tu archivo:
+### Comandos habituales
 
-Pega este código corregido en el panel izquierdo de Overpass Turbo.
+| Comando | Descripción |
+|---------|-------------|
+| `python manage.py check` | Verifica que no haya errores |
+| `python manage.py runserver` | Inicia servidor de desarrollo |
+| `python manage.py migrate` | Aplica migraciones a la BD |
+| `python manage.py makemigrations` | Genera migraciones desde modelos |
+| `python manage.py showmigrations` | Ver migraciones aplicadas |
+| `python manage.py createsuperuser` | Crear admin |
+| `python manage.py changepassword <user>` | Cambiar contraseña |
+| `python manage.py shell` | Consola interactiva |
+| `python manage.py collectstatic` | Recolectar archivos estáticos |
+| `python manage.py dbshell` | Abrir consola SQL de la BD |
 
-Dale al botón Ejecutar (Run) arriba a la izquierda.
+### Comandos personalizados del proyecto
 
-Cuando carguen los puntos, haz clic en Exportar -> GeoJSON para descargarlo.
+| Comando | Descripción |
+|---------|-------------|
+| `python manage.py cargar_datos_masivos` | Cargar datos desde archivos |
+| `python manage.py importar_limites` | Importar límites geográficos |
+| `python manage.py importar_osm` | Importar desde OpenStreetMap |
+| `python manage.py importar_zonas_local` | Importar zonas afectadas |
 
-Guárdalo en tu proyecto (por ejemplo, en data/caracas_osm.geojson) y procésalo con tu comando local.
+### Consola interactiva
 
-Para Importar los datos descargados lo hacemos por medio del comando y archivo que se descargo con el nombre que se le asigno:
+```bash
+python manage.py shell
+```
 
-python manage.py importar_osm caracas_osm.geojson
+Ejemplos:
 
-Consulta de Overpass QL para Zonas de Emergencia / Daños:
-Pega el siguiente código en Overpass Turbo:
+```python
+from django.contrib.auth import get_user_model
+from apps.core.models import Estado, Parroquia, RefugioExistente
 
-[out:json][timeout:25];
-area["name"="Caracas"]->.searchArea;
-(
-  // Buscar elementos relacionados con emergencias
-  node["emergency"](area.searchArea);
-  way["emergency"](area.searchArea);
-  
-  // Buscar edificaciones colapsadas o con daños reportados
-  node["building"="collapsed"](area.searchArea);
-  way["building"="collapsed"](area.searchArea);
-  node["damage"](area.searchArea);
-  way["damage"](area.searchArea);
-  
-  // Puntos de reunión o ensamblaje ante emergencias
-  node["emergency"="assembly_point"](area.searchArea);
-  way["emergency"="assembly_point"](area.searchArea);
-);
-out body;
->;
-out skel qt;
+# Contar registros
+Estado.objects.count()
+Parroquia.objects.count()
+RefugioExistente.objects.count()
 
-para sustraer los datos descargados:
+# Listar usuarios
+User = get_user_model()
+list(User.objects.values_list('username', 'is_superuser'))
 
- python manage.py importar_zonas_local zonas_afectadas_la_guaira_osm.geojson
+exit()
+```
+
+---
+
+## 🗄️ Base de datos
+
+### Exportar backup (desde Postgres local)
+
+```bash
+pg_dump -U postgres -h localhost -p 5432 -d cobijo_vzla_db \
+  -F c -b -f "backup_$(date +%Y-%m-%d).dump"
+```
+
+### Restaurar datos en Supabase
+
+```bash
+# Solo datos (requiere que las tablas ya existan)
+pg_restore -d "$DATABASE_URL" \
+  --no-owner --no-acl --data-only -v \
+  "backup.dump"
+```
+
+### Restaurar una sola tabla
+
+```bash
+pg_restore -d "$DATABASE_URL" \
+  --no-owner --no-acl --data-only \
+  -t core_zonaafectada -v \
+  "backup.dump"
+```
+
+### Filtrar errores reales del log
+
+```bash
+grep "error:" restore_log.txt | grep -v "RI_ConstraintTrigger"
+```
+
+### Consultas útiles en Supabase (SQL Editor)
+
+```sql
+-- Ver todas las tablas
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+ORDER BY table_name;
+
+-- Verificar PostGIS
+SELECT PostGIS_Version();
+
+-- Ver migraciones aplicadas
+SELECT app, name, applied 
+FROM django_migrations 
+ORDER BY applied DESC;
+
+-- Conteo de filas
+SELECT 'core_estado' AS tabla, COUNT(*) FROM core_estado
+UNION ALL
+SELECT 'core_parroquia', COUNT(*) FROM core_parroquia
+UNION ALL
+SELECT 'core_zonaafectada', COUNT(*) FROM core_zonaafectada
+UNION ALL
+SELECT 'core_refugioexistente', COUNT(*) FROM core_refugioexistente;
+```
+
+### Connection strings de Supabase
+
+| Modo | Puerto | Host | Uso |
+|------|--------|------|-----|
+| Direct | 5432 | `db.<project>.supabase.co` | A veces bloqueado |
+| Session Pooler | 5432 | `aws-0-<region>.pooler.supabase.com` | Migraciones |
+| **Transaction Pooler** | **6543** | `aws-0-<region>.pooler.supabase.com` | **Apps** ✅ |
+
+> 💡 **Usa siempre el Transaction Pooler (6543)** para Django en producción.
+
+---
+
+## 🚢 Deployment
+
+### Flujo automático
+
+```
+git push origin main
+        ↓
+GitHub notifica a Render (webhook)
+        ↓
+Render construye la imagen Docker
+        ↓
+Ejecuta start.sh (migrate + collectstatic + gunicorn)
+        ↓
+Health check a /admin/
+        ↓
+Live ✅ (o Failed ❌)
+```
+
+### Archivos clave del deploy
+
+**`Dockerfile`** — instala Python, GDAL, GEOS, PROJ, libpq y las dependencias Python.
+
+**`start.sh`** — corre en runtime: migrate + collectstatic + gunicorn.
+
+**`render.yaml`** — configuración del servicio en Render.
+
+### Variables de entorno en Render
+
+Configuradas en **Dashboard → Service → Environment**:
+
+| Variable | Valor |
+|----------|-------|
+| `DJANGO_SECRET_KEY` | Generada por Render (automático) |
+| `DJANGO_DEBUG` | `False` |
+| `DJANGO_ALLOWED_HOSTS` | `<app-name>.onrender.com,localhost,127.0.0.1` |
+| `DATABASE_URL` | URL de Supabase (Transaction Pooler, puerto 6543) |
+| `PYTHON_VERSION` | `3.12.1` |
+
+### Forzar redeploy
+
+1. Dashboard → servicio → **Manual Deploy**
+2. Elegir **Deploy latest commit**
+3. Marcar **Clear build cache & deploy** (si hay problemas)
+
+### Sleep del plan gratis
+
+Render Free duerme la app tras **15 minutos sin tráfico**. La primera petición tarda **30-50 segundos** en despertarla.
+
+**Opciones**:
+
+- Usar un servicio de ping externo (UptimeRobot, cron-job.org) cada 10 min.
+- Subir a plan pagado.
+
+---
+
+## 🔧 Mantenimiento
+
+### Hacer un cambio y desplegarlo
+
+```bash
+# 1. Activar venv
+myvenv\Scripts\activate
+
+# 2. Hacer los cambios en el código
+
+# 3. Probar en local
+python manage.py check
+python manage.py runserver
+
+# 4. Ver qué cambió
+git status
+git diff
+
+# 5. Commit
+git add .
+git commit -m "feat: descripción del cambio"
+
+# 6. Push → Render redespliega automáticamente
+git push origin main
+```
+
+### Agregar un nuevo modelo
+
+```bash
+# 1. Editar apps/mi_app/models.py
+
+# 2. Crear migración
+python manage.py makemigrations mi_app
+
+# 3. Aplicar en local
+python manage.py migrate
+
+# 4. Commit + push
+git add .
+git commit -m "feat: agregar modelo X"
+git push origin main
+```
+
+### Backup completo de la BD
+
+```bash
+pg_dump -U postgres -h localhost -p 5432 \
+  -d cobijo_vzla_db -F c -b \
+  -f "backup_$(date +%Y-%m-%d).dump"
+```
+
+Guardar el archivo en un lugar seguro (Drive, Dropbox, etc.).
+
+### Cambiar la contraseña de Supabase
+
+1. Supabase → **Project Settings** → **Database** → **Reset password**
+2. Copiar la nueva contraseña
+3. Actualizar `.env` local
+4. Render → **Environment** → editar `DATABASE_URL`
+5. Render redeploya automáticamente
+
+### Reset del schema (⚠️ emergencia)
+
+**Solo usar si la BD está corrupta**. Borra TODOS los datos:
+
+```sql
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO public;
+CREATE EXTENSION IF NOT EXISTS postgis SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+```
+
+Después: `python manage.py migrate` + `pg_restore --data-only`.
+
+---
+
+## 🆘 Troubleshooting
+
+### `exec format error` en Render
+
+**Causa**: `start.sh` tiene line endings CRLF (Windows).
+
+**Solución**:
+
+```bash
+# Convertir a LF
+sed -i 's/\r$//' start.sh
+git add start.sh
+git commit -m "fix: convertir start.sh a LF"
+git push origin main
+```
+
+En Windows PowerShell:
+
+```powershell
+$content = Get-Content start.sh -Raw
+$content = $content -replace "`r`n", "`n"
+[System.IO.File]::WriteAllText("$PWD\start.sh", $content, [System.Text.UTF8Encoding]::new($false))
+```
+
+### `password authentication failed`
+
+**Causa**: contraseña incorrecta en `.env` o en Render.
+
+**Solución**: verificar que ambos tengan la misma URL actualizada.
+
+### `relation "X" does not exist`
+
+**Causa**: migraciones no aplicadas.
+
+**Solución**:
+
+```bash
+python manage.py migrate
+```
+
+### `column "name" does not exist` en `django_content_type`
+
+**Causa**: tabla en estado inconsistente (típico tras `pg_restore` incompleto).
+
+**Solución**: reset del schema + migrar + recargar datos.
+
+### `Could not find GDAL library`
+
+**Causa**: falta `GDAL_LIBRARY_PATH` o librería no instalada.
+
+**Solución local (Windows)**:
+
+```env
+GDAL_LIBRARY_PATH=C:\...\OSGeo4W\bin\gdal313.dll
+GEOS_LIBRARY_PATH=C:\...\OSGeo4W\bin\geos_c.dll
+```
+
+**Solución producción**: revisar que el `Dockerfile` incluya `gdal-bin`.
+
+### Render dice "Live" pero la página da 500
+
+**Causa**: el health check `/admin/` puede pasar incluso si la BD falla.
+
+**Solución**:
+
+1. Ver logs de Render
+2. Buscar `Traceback`
+3. Corregir y redeployar
+
+### La app tarda 30-50 segundos en cargar
+
+**Causa**: Render Free duerme tras 15 min sin tráfico.
+
+**Solución**: usar uptime robot o subir a plan pagado.
+
+---
+
+## 📌 Reglas de oro
+
+1. **Nunca** subas `.env` a Git
+2. **Nunca** pegues contraseñas en chats, issues, ni logs
+3. **Siempre** verifica `git status` antes de commitear
+4. **Siempre** haz backup antes de tocar la BD de producción
+5. **Nunca** corras `migrate --fake` sin entender por qué
+6. **Nunca** uses `DROP SCHEMA CASCADE` en producción sin backup
+7. **Si dudas, prueba primero en local**
+8. **Los emojis y acentos rompen scripts de shell** — usa ASCII en `.sh`, `Dockerfile`, `.yaml`
+9. **Los archivos que se ejecutan en Linux deben tener LF** — usa `.gitattributes`
+10. **Rota credenciales** si accidentalmente las expones
+
+---
+
+## 🎓 Comandos de emergencia (cheat sheet)
+
+```bash
+# === ENTORNO ===
+myvenv\Scripts\activate                       # Activar venv
+deactivate                                     # Desactivar
+
+# === DIAGNÓSTICO ===
+python manage.py check                         # Verificar Django
+python manage.py showmigrations                # Ver migraciones
+grep DATABASE_URL .env                         # Ver URL
+
+# === GIT ===
+git status                                     # Ver cambios
+git add . && git commit -m "fix: X" && git push origin main
+
+# === BD ===
+python manage.py migrate                       # Aplicar migraciones
+python manage.py shell                         # Consola interactiva
+
+# === BACKUP ===
+pg_dump -U postgres -h localhost -d cobijo_vzla_db -F c -f backup.dump
+
+# === RESTORE ===
+pg_restore -d "$DATABASE_URL" --no-owner --no-acl --data-only -v "backup.dump"
+
+# === LINE ENDINGS ===
+file start.sh                                  # Debe decir "ASCII text" (no "CRLF")
+```
+
+---
+
+## 🤝 Contribuir
+
+1. Fork el repositorio
+2. Crea una rama: `git checkout -b feature/nueva-funcionalidad`
+3. Commit: `git commit -m "feat: agregar nueva funcionalidad"`
+4. Push: `git push origin feature/nueva-funcionalidad`
+5. Abre un Pull Request
+
+### Convenciones de commits
+
+| Prefijo | Uso |
+|---------|-----|
+| `feat:` | Nueva funcionalidad |
+| `fix:` | Corrección de bug |
+| `docs:` | Documentación |
+| `chore:` | Tareas varias |
+| `refactor:` | Reestructuración |
+| `style:` | Formato |
+
+---
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la **MIT License**. Ver el archivo [LICENSE](LICENSE) para más detalles.
+
+---
+
+## 👤 Autor
+
+**Pedro M.**
+
+- GitHub: [@pedromph23](https://github.com/pedromph23)
+- Repo: [cobijo_vzla](https://github.com/pedromph23/cobijo_vzla)
+
+---
+
+## 🔗 URLs del proyecto
+
+| Recurso | URL |
+|---------|-----|
+| Repositorio | https://github.com/pedromph23/cobijo_vzla |
+| App en producción | https://cobijo-vzla.onrender.com |
+| Admin de producción | https://cobijo-vzla.onrender.com/admin/ |
+| Dashboard Supabase | https://supabase.com/dashboard |
+| Dashboard Render | https://dashboard.render.com |
+
+---
+
+<p align="center">
+  Hecho con ❤️ para Venezuela 🇻🇪
+</p>
