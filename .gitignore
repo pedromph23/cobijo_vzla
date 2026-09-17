@@ -53,3 +53,9 @@ Thumbs.db
 .coverage
 htmlcov/
 .pytest_cache/
+# Backups de base de datos
+*.dump
+backup_*.dump
+
+# Backups de base de datos
+*.dump
