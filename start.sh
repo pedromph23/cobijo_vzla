@@ -2,10 +2,7 @@
 set -e
 
 echo 'Running migrations...'
-if ! python manage.py migrate --noinput --fake-initial; then
-    echo 'fake-initial failed, falling back to --fake...'
-    python manage.py migrate --noinput --fake
-fi
+python manage.py migrate --noinput
 
 echo 'Collecting static files...'
 python manage.py collectstatic --noinput
