@@ -1,0 +1,947 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2026-09-11T05:40:46Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/269631171",
+        "addr:city": "Maiquetía",
+        "amenity": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Hospital San José",
+        "phone": "+58 212 3034451"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -66.956768,
+              10.5956635
+            ],
+            [
+              -66.9567597,
+              10.5957725
+            ],
+            [
+              -66.9567652,
+              10.5958123
+            ],
+            [
+              -66.9567509,
+              10.5958888
+            ],
+            [
+              -66.9567514,
+              10.5960665
+            ],
+            [
+              -66.9571322,
+              10.5961004
+            ],
+            [
+              -66.9575363,
+              10.5961225
+            ],
+            [
+              -66.9575454,
+              10.5956926
+            ],
+            [
+              -66.956768,
+              10.5956635
+            ]
+          ]
+        ]
+      },
+      "id": "way/269631171"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/269634199",
+        "addr:city": "La Guaira",
+        "addr:street": "Av. Carlos Soublette",
+        "amenity": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "IVSS Hospital José María Vargas",
+        "operator": "Instituto Venezolano de los Seguros Sociales",
+        "operator:short": "IVSS",
+        "operator:type": "government",
+        "operator:wikidata": "Q9008775",
+        "phone": "+58 212 3316555"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -66.9223878,
+              10.6036169
+            ],
+            [
+              -66.9223739,
+              10.6025575
+            ],
+            [
+              -66.9222836,
+              10.6024413
+            ],
+            [
+              -66.9218491,
+              10.6022402
+            ],
+            [
+              -66.921709,
+              10.6021971
+            ],
+            [
+              -66.9211013,
+              10.6021139
+            ],
+            [
+              -66.921006,
+              10.6022568
+            ],
+            [
+              -66.9213197,
+              10.6036542
+            ],
+            [
+              -66.9223878,
+              10.6036169
+            ]
+          ]
+        ]
+      },
+      "id": "way/269634199"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/306847205",
+        "alt_name": "CANES",
+        "amenity": "hospital",
+        "building": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Hospital Naval Dr. Raúl Perdomo Hurtado"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -67.0300171,
+              10.6007817
+            ],
+            [
+              -67.0291693,
+              10.6008925
+            ],
+            [
+              -67.0291599,
+              10.6008227
+            ],
+            [
+              -67.0289375,
+              10.6008518
+            ],
+            [
+              -67.0289863,
+              10.6012128
+            ],
+            [
+              -67.0291506,
+              10.6011913
+            ],
+            [
+              -67.0291601,
+              10.6012619
+            ],
+            [
+              -67.0288486,
+              10.6013025
+            ],
+            [
+              -67.0288841,
+              10.6015656
+            ],
+            [
+              -67.0294045,
+              10.6014978
+            ],
+            [
+              -67.0294099,
+              10.6015378
+            ],
+            [
+              -67.0294835,
+              10.6015282
+            ],
+            [
+              -67.0294781,
+              10.6014882
+            ],
+            [
+              -67.0303993,
+              10.6013681
+            ],
+            [
+              -67.0304074,
+              10.6014278
+            ],
+            [
+              -67.0305233,
+              10.6014126
+            ],
+            [
+              -67.0305153,
+              10.601353
+            ],
+            [
+              -67.0306504,
+              10.6013354
+            ],
+            [
+              -67.0306283,
+              10.6011712
+            ],
+            [
+              -67.0301312,
+              10.601236
+            ],
+            [
+              -67.0301221,
+              10.6011686
+            ],
+            [
+              -67.0300056,
+              10.6011838
+            ],
+            [
+              -67.0299763,
+              10.6009671
+            ],
+            [
+              -67.0300411,
+              10.6009587
+            ],
+            [
+              -67.0300171,
+              10.6007817
+            ]
+          ]
+        ]
+      },
+      "id": "way/306847205"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/398286158",
+        "alt_name": "Sanidad de Vargas",
+        "amenity": "hospital",
+        "building": "hospital",
+        "emergency": "no",
+        "healthcare": "hospital",
+        "name": "Ambulatorio La Guaira \"La Sanidad\""
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -66.9309078,
+              10.6020764
+            ],
+            [
+              -66.9309551,
+              10.6018922
+            ],
+            [
+              -66.9304078,
+              10.6017559
+            ],
+            [
+              -66.9303655,
+              10.6019328
+            ],
+            [
+              -66.9309078,
+              10.6020764
+            ]
+          ]
+        ]
+      },
+      "id": "way/398286158"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/401890900",
+        "amenity": "hospital",
+        "emergency": "no",
+        "healthcare": "hospital",
+        "name": "Centro Integral de Salud",
+        "operator": "Alcaldia del Municipio Vargas",
+        "operator:type": "public"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -66.8858897,
+              10.609476
+            ],
+            [
+              -66.8858884,
+              10.6092985
+            ],
+            [
+              -66.8848589,
+              10.6093264
+            ],
+            [
+              -66.8848326,
+              10.6095177
+            ],
+            [
+              -66.8858897,
+              10.609476
+            ]
+          ]
+        ]
+      },
+      "id": "way/401890900"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/419130764",
+        "addr:city": "Macuto",
+        "addr:street": "Calle San Bartolomé",
+        "alt_name": "Maternidad de Macuto",
+        "amenity": "hospital",
+        "building": "hospital",
+        "building:levels": "2",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "healthcare:speciality": "mother_child",
+        "name": "Hospital Materno Infantil Ana Teresa de Jesús Ponce",
+        "operator": "Gobernación de Vargas",
+        "operator:type": "public"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -66.8915524,
+              10.6057214
+            ],
+            [
+              -66.8913071,
+              10.6058272
+            ],
+            [
+              -66.8914348,
+              10.6061132
+            ],
+            [
+              -66.890942,
+              10.6063259
+            ],
+            [
+              -66.8910012,
+              10.6064584
+            ],
+            [
+              -66.8911144,
+              10.6064095
+            ],
+            [
+              -66.8914529,
+              10.6062634
+            ],
+            [
+              -66.8916637,
+              10.6061725
+            ],
+            [
+              -66.8916274,
+              10.6060913
+            ],
+            [
+              -66.8915404,
+              10.6058964
+            ],
+            [
+              -66.891616,
+              10.6058638
+            ],
+            [
+              -66.8915524,
+              10.6057214
+            ]
+          ]
+        ]
+      },
+      "id": "way/419130764"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/432826467",
+        "amenity": "hospital",
+        "emergency": "no",
+        "healthcare": "hospital",
+        "name": "Hospital Dermatológico Martín Vegas",
+        "short_name": "Hospital Martín Vegas"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -67.0170575,
+              10.587282
+            ],
+            [
+              -67.0165538,
+              10.5874534
+            ],
+            [
+              -67.0165313,
+              10.5874056
+            ],
+            [
+              -67.0161053,
+              10.5875111
+            ],
+            [
+              -67.0157401,
+              10.5875867
+            ],
+            [
+              -67.0156466,
+              10.5876012
+            ],
+            [
+              -67.0156458,
+              10.588008
+            ],
+            [
+              -67.0156378,
+              10.5880719
+            ],
+            [
+              -67.015617,
+              10.5881235
+            ],
+            [
+              -67.0155801,
+              10.5881863
+            ],
+            [
+              -67.0155278,
+              10.5882671
+            ],
+            [
+              -67.015948,
+              10.588899
+            ],
+            [
+              -67.0165396,
+              10.588835
+            ],
+            [
+              -67.0172318,
+              10.5885452
+            ],
+            [
+              -67.0173295,
+              10.5883584
+            ],
+            [
+              -67.0174436,
+              10.5882532
+            ],
+            [
+              -67.0174135,
+              10.5882076
+            ],
+            [
+              -67.0173356,
+              10.588191
+            ],
+            [
+              -67.0171681,
+              10.5881862
+            ],
+            [
+              -67.0171646,
+              10.5881247
+            ],
+            [
+              -67.0171616,
+              10.5880725
+            ],
+            [
+              -67.0173086,
+              10.5880484
+            ],
+            [
+              -67.0173269,
+              10.5880173
+            ],
+            [
+              -67.0172576,
+              10.5877613
+            ],
+            [
+              -67.0170575,
+              10.587282
+            ]
+          ]
+        ]
+      },
+      "id": "way/432826467"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1053161579",
+        "building": "yes",
+        "emergency": "lifeguard",
+        "name": "Guardianes de la Playa",
+        "opening_hours": "Mo-Su 07:00-18:00",
+        "operator": "Ministerio de Interior y Justicia"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -66.8570975,
+              10.6186734
+            ],
+            [
+              -66.8570582,
+              10.6186196
+            ],
+            [
+              -66.85701,
+              10.6186536
+            ],
+            [
+              -66.8570269,
+              10.6186767
+            ],
+            [
+              -66.8570387,
+              10.6186684
+            ],
+            [
+              -66.8570611,
+              10.618699
+            ],
+            [
+              -66.8570975,
+              10.6186734
+            ]
+          ]
+        ]
+      },
+      "id": "way/1053161579"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1320096021",
+        "building": "yes",
+        "damage": "destroyed",
+        "damage:assessment": "2026-06-26",
+        "damage:event": "2026 Venezuelan earthquake",
+        "damage:type": "earthquake",
+        "damaged:building": "yes",
+        "historic": "hotel",
+        "source:damage": "Vantor"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -66.9007817,
+              10.6052087
+            ],
+            [
+              -66.9006641,
+              10.6049588
+            ],
+            [
+              -66.9005432,
+              10.6050138
+            ],
+            [
+              -66.9006608,
+              10.6052637
+            ],
+            [
+              -66.9007817,
+              10.6052087
+            ]
+          ]
+        ]
+      },
+      "id": "way/1320096021"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1533041952",
+        "building": "yes",
+        "damage": "damaged"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -66.9756477,
+              10.5968463
+            ],
+            [
+              -66.9756619,
+              10.5968069
+            ],
+            [
+              -66.975582,
+              10.5967791
+            ],
+            [
+              -66.9755679,
+              10.5968185
+            ],
+            [
+              -66.9756477,
+              10.5968463
+            ]
+          ]
+        ]
+      },
+      "id": "way/1533041952"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1545300678",
+        "addr:city": "Ciudad Caribia",
+        "addr:street": "Redoma de Los Indios",
+        "amenity": "hospital",
+        "contact:instagram": "hciudadcaribia",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Hospital Ciudad Caribia",
+        "operator": "Ministerio del Poder Popular para la Salud",
+        "operator:type": "government"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -67.021012,
+              10.5417199
+            ],
+            [
+              -67.021944,
+              10.5424395
+            ],
+            [
+              -67.0225519,
+              10.5417841
+            ],
+            [
+              -67.0224446,
+              10.5413396
+            ],
+            [
+              -67.0215646,
+              10.5408491
+            ],
+            [
+              -67.021012,
+              10.5417199
+            ]
+          ]
+        ]
+      },
+      "id": "way/1545300678"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/232820118",
+        "access": "yes",
+        "emergency": "designated",
+        "escape:type": "arrester_bed",
+        "highway": "escape",
+        "incline": "10°",
+        "lanes": "1",
+        "lit": "yes",
+        "maxspeed": "90",
+        "motor_vehicle": "yes",
+        "name": "Rampa de Frenado",
+        "oneway": "yes",
+        "sidewalk": "no"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -66.9901873,
+            10.5917438
+          ],
+          [
+            -66.9896102,
+            10.5919469
+          ],
+          [
+            -66.9877215,
+            10.5926015
+          ]
+        ]
+      },
+      "id": "way/232820118"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2747265957",
+        "addr:city": "Catia La Mar",
+        "addr:postcode": "1162",
+        "addr:street": "Avenida El Ejército",
+        "amenity": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Hospital Dr. Alfredo Machado"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -67.0387244,
+          10.6001961
+        ]
+      },
+      "id": "node/2747265957"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2780719879",
+        "addr:city": "La Guaira",
+        "addr:postcode": "1161",
+        "addr:street": "Calle Real de Maiquetía",
+        "amenity": "clinic",
+        "emergency": "yes",
+        "healthcare": "clinic",
+        "name": "Alfa"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -66.9491381,
+          10.5961803
+        ]
+      },
+      "id": "node/2780719879"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3121547137",
+        "amenity": "hospital",
+        "emergency": "yes",
+        "healthcare": "hospital",
+        "name": "Módulo de Guaracarumbo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -67.0137374,
+          10.5968026
+        ]
+      },
+      "id": "node/3121547137"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3751800028",
+        "amenity": "clinic",
+        "emergency": "yes",
+        "healthcare": "clinic",
+        "name": "Clínica Glamar"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -66.9022186,
+          10.6029605
+        ]
+      },
+      "id": "node/3751800028"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4083284931",
+        "addr:city": "Vista al Mar",
+        "addr:street": "Av. Principal de Vista al Mar",
+        "amenity": "hospital",
+        "emergency": "no",
+        "healthcare": "hospital",
+        "name": "Ambulatorio Pedro Cova"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -67.0714278,
+          10.5842019
+        ]
+      },
+      "id": "node/4083284931"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12582576274",
+        "emergency": "emergency_ward_entrance",
+        "entrance": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -66.3835093,
+          10.6198165
+        ]
+      },
+      "id": "node/12582576274"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13460606103",
+        "emergency": "lifeguard"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -67.0112359,
+          10.6128139
+        ]
+      },
+      "id": "node/13460606103"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13460611401",
+        "emergency": "lifeguard"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -67.0117031,
+          10.6127238
+        ]
+      },
+      "id": "node/13460611401"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13518006856",
+        "emergency": "first_aid_kit"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -66.7457668,
+          10.616979
+        ]
+      },
+      "id": "node/13518006856"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13969096061",
+        "emergency": "fire_service_inlet"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -66.9408676,
+          10.5969924
+        ]
+      },
+      "id": "node/13969096061"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13969195423",
+        "emergency": "fire_service_inlet"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -66.9401215,
+          10.5958024
+        ]
+      },
+      "id": "node/13969195423"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/14001367973",
+        "content": "water",
+        "emergency": "water_tank",
+        "man_made": "storage_tank"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -67.1036717,
+          10.5397826
+        ]
+      },
+      "id": "node/14001367973"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/14001934455",
+        "emergency": "fire_service_inlet"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -67.1254126,
+          10.5214465
+        ]
+      },
+      "id": "node/14001934455"
+    }
+  ]
+}

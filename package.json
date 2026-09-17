@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "leaflet-minimap": "^3.6.1",
+    "leaflet.heat": "^0.2.0",
+    "leaflet.markercluster": "^1.5.3"
+  }
+}

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Reportes - CobijoVzla{% endblock %}
+{% block content %}
+<div class="reportes-container">
+    <div class="reportes-header">
+        <h2><i class="fas fa-file-alt"></i> Generar Reportes</h2>
+        <p>Genera reportes estadísticos detallados en tu dispositivo</p>
+    </div>
+    
+    <div class="reportes-grid">
+        <div class="reporte-card">
+            <div class="reporte-icon" style="background:#dc3545;"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3>Zonas Afectadas</h3>
+            <p>Reporte de zonas afectadas, heridos y damnificados.</p>
+            <div class="btn-group">
+                <button class="btn-excel" onclick="generarReporte('excel', 'zonas')"><i class="fas fa-file-excel"></i> Excel</button>
+                <button class="btn-pdf" onclick="generarReporte('pdf', 'zonas')"><i class="fas fa-file-pdf"></i> PDF</button>
+            </div>
+        </div>
+        
+        <div class="reporte-card">
+            <div class="reporte-icon" style="background:#0066cc;"><i class="fas fa-chart-bar"></i></div>
+            <h3>Estadísticas Generales</h3>
+            <p>Reporte completo por estado, refugios y eventos.</p>
+            <div class="btn-group">
+                <button class="btn-excel" onclick="generarReporte('excel', 'general')"><i class="fas fa-file-excel"></i> Excel</button>
+                <button class="btn-pdf" onclick="generarReporte('pdf', 'general')"><i class="fas fa-file-pdf"></i> PDF</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="mensaje-resultado" class="mensaje-resultado" style="display:none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function generarReporte(tipo, contenido) {
+    const msg = document.getElementById('mensaje-resultado');
+    msg.style.display = 'block';
+    msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+    
+    fetch(`/api/reportes/generar/?tipo=${tipo}&contenido=${contenido}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                msg.innerHTML = `<i class="fas fa-check-circle"></i> ${data.mensaje}`;
+                window.location.href = `/api/reportes/descargar/${data.archivo}/`;
+            } else {
+                msg.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error}`;
+            }
+        });
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reportes-container { max-width: 1000px; margin: 0 auto; padding: 1.5rem; min-height: calc(100vh - 60px); background: var(--bg-body);}
+    .reportes-header { text-align: center; margin-bottom: 2rem; color: var(--text-primary); }
+    .reportes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    
+    .reporte-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; text-align: center; color: var(--text-primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .reporte-icon { width: 60px; height: 60px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem; }
+    
+    .btn-group { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1.5rem; }
+    .btn-excel, .btn-pdf { flex: 1; padding: 0.75rem; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; font-size: 1rem; }
+    .btn-excel { background: #28a745; } .btn-pdf { background: #dc3545; }
+    
+    .mensaje-resultado { margin-top: 2rem; padding: 1rem; border-radius: 8px; text-align: center; background: var(--bg-hover); color: var(--text-primary); font-weight: bold; }
+
+    @media (max-width: 480px) {
+        .reportes-container { padding: 1rem; }
+        .reporte-card { padding: 1.5rem 1rem; }
+        .btn-group { flex-direction: column; }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,28 @@
+# === Core ===
+Django==6.1
+djangorestframework==3.18.0
+python-dotenv==1.2.3
+
+# === Base de datos (PostgreSQL + PostGIS) ===
+psycopg2-binary==2.9.12
+dj-database-url==2.2.0
+
+# === Servidor de producción ===
+gunicorn==23.0.0
+whitenoise==6.7.0
+
+# === Geoespacial / Mapas ===
+django-leaflet==0.34.0
+geopy==2.5.0
+geojson==3.3.0
+
+# === Reportes / Datos ===
+reportlab==5.0.1
+openpyxl==3.1.5
+pandas==3.0.5
+numpy==2.5.3
+matplotlib==3.11.1
+Pillow==12.3.0
+
+# === Optimización ===
+PuLP==3.3.2

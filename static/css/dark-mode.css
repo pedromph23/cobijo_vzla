@@ -1,0 +1,394 @@
+/* ============================================
+   MODO OSCURO - ESTILOS ADICIONALES
+   ============================================ */
+
+/* ==================== VARIABLES GLOBALES ==================== */
+:root {
+    --bg-body-dark: #1a1a2e;
+    --bg-card-dark: #16213e;
+    --bg-card-hover-dark: #1a2744;
+    --text-primary-dark: #e0e0e0;
+    --text-secondary-dark: #a0a0a0;
+    --border-color-dark: #2a2a4a;
+    --shadow-dark: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* ==================== TRANSICIONES ==================== */
+body,
+.map-layout,
+.sidebar,
+.tab-content,
+.panel-content,
+.leaflet-popup-content-wrapper,
+.resumen-card,
+.data-card-item,
+.stat-card,
+.centro-item,
+.login-card,
+.report-card,
+.data-card,
+.map-toolbar,
+.mapa-toolbar,
+.minimap-container,
+.info-card,
+.sugerencias-lista,
+.btn-secondary,
+.btn-toolbar,
+.btn-tool,
+.form-control,
+input,
+select,
+textarea {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ==================== BODY & MAP LAYOUT ==================== */
+[data-theme="dark"] body {
+    background-color: var(--bg-body-dark);
+    color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .map-layout {
+    background-color: var(--bg-card-dark);
+    border-color: var(--border-color-dark);
+    box-shadow: var(--shadow-dark);
+}
+
+/* ==================== MAPA LEAFLET EN MODO OSCURO ==================== */
+[data-theme="dark"] .leaflet-container {
+    background-color: #1a1a2e;
+}
+
+/* Filtro CSS para oscurecer los tiles de OpenStreetMap */
+[data-theme="dark"] .leaflet-tile {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* Quitar filtro en modo claro */
+.leaflet-tile {
+    filter: none;
+    transition: filter 0.3s ease;
+}
+
+/* Asegurar que los controles del mapa se vean bien en modo oscuro */
+[data-theme="dark"] .leaflet-control-zoom a {
+    background-color: #16213e;
+    color: #e0e0e0;
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .leaflet-control-zoom a:hover {
+    background-color: #1a2744;
+}
+
+[data-theme="dark"] .leaflet-control-attribution {
+    background-color: rgba(22, 33, 62, 0.8);
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .leaflet-control-attribution a {
+    color: #4d94ff;
+}
+
+/* ==================== POPUPS LEAFLET ==================== */
+[data-theme="dark"] .leaflet-popup-content-wrapper {
+    background-color: var(--bg-card-dark);
+    color: var(--text-primary-dark);
+    border: 1px solid var(--border-color-dark);
+    box-shadow: var(--shadow-dark);
+}
+
+[data-theme="dark"] .leaflet-popup-tip {
+    background-color: var(--bg-card-dark);
+    border: 1px solid var(--border-color-dark);
+}
+
+[data-theme="dark"] .leaflet-popup-content {
+    color: var(--text-primary-dark);
+}
+
+/* ==================== SIDEBAR ==================== */
+[data-theme="dark"] .sidebar {
+    background-color: var(--bg-card-dark);
+    color: var(--text-primary-dark);
+    border-right: 1px solid var(--border-color-dark);
+}
+
+[data-theme="dark"] .sidebar-header {
+    border-bottom: 1px solid var(--border-color-dark);
+    background-color: var(--bg-card-dark);
+}
+
+[data-theme="dark"] .sidebar-header h2 {
+    color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .sidebar-section h3 {
+    color: var(--text-secondary-dark);
+}
+
+[data-theme="dark"] .sidebar-content {
+    color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .layer-toggle {
+    color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .layer-toggle:hover {
+    background-color: var(--bg-card-hover-dark);
+}
+
+/* ==================== INPUTS Y FORMULARIOS ==================== */
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background-color: var(--bg-card-hover-dark);
+    color: var(--text-primary-dark);
+    border-color: var(--border-color-dark);
+}
+
+[data-theme="dark"] input[type="text"]::placeholder,
+[data-theme="dark"] input[type="password"]::placeholder,
+[data-theme="dark"] input[type="search"]::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: #6c757d;
+}
+
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="password"]:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+    border-color: #4d94ff;
+    box-shadow: 0 0 0 3px rgba(77, 148, 255, 0.2);
+    outline: none;
+}
+
+/* ==================== SUGERENCIAS ==================== */
+[data-theme="dark"] .sugerencias,
+[data-theme="dark"] .sugerencias-lista {
+    background-color: var(--bg-card-dark);
+    border-color: var(--border-color-dark);
+}
+
+[data-theme="dark"] .sugerencia-item {
+    color: var(--text-primary-dark);
+    border-bottom-color: var(--border-color-dark);
+}
+
+[data-theme="dark"] .sugerencia-item:hover {
+    background-color: var(--bg-card-hover-dark);
+}
+
+/* ==================== TOOLBAR ==================== */
+[data-theme="dark"] .map-toolbar,
+[data-theme="dark"] .mapa-toolbar {
+    background-color: var(--bg-card-dark);
+    border-bottom: 1px solid var(--border-color-dark);
+}
+
+[data-theme="dark"] .btn-toolbar,
+[data-theme="dark"] .btn-tool {
+    background-color: var(--bg-card-dark);
+    color: var(--text-primary-dark);
+    border-color: var(--border-color-dark);
+}
+
+[data-theme="dark"] .btn-toolbar:hover,
+[data-theme="dark"] .btn-tool:hover {
+    background-color: var(--bg-card-hover-dark);
+}
+
+/* ==================== TARJETAS ==================== */
+[data-theme="dark"] .resumen-card,
+[data-theme="dark"] .data-card-item,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .centro-item,
+[data-theme="dark"] .panel-content,
+[data-theme="dark"] .acciones-card,
+[data-theme="dark"] .optimizacion-form,
+[data-theme="dark"] .optimizacion-resultado,
+[data-theme="dark"] .reportes-tabla,
+[data-theme="dark"] .reportes-acciones {
+    background-color: var(--bg-card-dark);
+    border-color: var(--border-color-dark);
+    color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .resumen-card:hover,
+[data-theme="dark"] .data-card-item:hover {
+    background-color: var(--bg-card-hover-dark);
+}
+
+[data-theme="dark"] .stat-item {
+    background-color: var(--bg-card-hover-dark);
+}
+
+/* ==================== TABLAS ==================== */
+[data-theme="dark"] .tabla-resultados th,
+[data-theme="dark"] .tabla-asignaciones th {
+    background-color: #1a2744;
+    color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .tabla-resultados td,
+[data-theme="dark"] .tabla-asignaciones td {
+    border-bottom-color: var(--border-color-dark);
+    color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .tabla-resultados tr:hover,
+[data-theme="dark"] .tabla-asignaciones tr:hover {
+    background-color: var(--bg-card-hover-dark);
+}
+
+/* ==================== PESTAÑAS ==================== */
+[data-theme="dark"] .tab {
+    background-color: var(--bg-card-dark);
+    color: var(--text-secondary-dark);
+    border-color: var(--border-color-dark);
+}
+
+[data-theme="dark"] .tab:hover {
+    background-color: var(--bg-card-hover-dark);
+}
+
+[data-theme="dark"] .tab.active {
+    background: linear-gradient(135deg, #4d94ff, #0066cc);
+    color: white;
+    border-color: #4d94ff;
+}
+
+/* ==================== MINIMAPA ==================== */
+[data-theme="dark"] .minimap-container {
+    background-color: var(--bg-card-dark);
+    border: 2px solid var(--border-color-dark);
+}
+
+[data-theme="dark"] .minimap-header {
+    background-color: var(--bg-card-hover-dark);
+    color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .btn-minimap {
+    color: var(--text-secondary-dark);
+}
+
+/* ==================== TARJETA DE INFORMACIÓN ==================== */
+[data-theme="dark"] .info-card {
+    background-color: var(--bg-card-dark);
+    color: var(--text-primary-dark);
+    border: 1px solid var(--border-color-dark);
+}
+
+[data-theme="dark"] .info-card-body {
+    color: var(--text-primary-dark);
+}
+
+/* ==================== BOTONES ==================== */
+[data-theme="dark"] .btn-secondary {
+    background-color: var(--bg-card-hover-dark);
+    color: var(--text-primary-dark);
+    border-color: var(--border-color-dark);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background-color: var(--bg-card-dark);
+}
+
+[data-theme="dark"] .btn-export {
+    background-color: var(--bg-card-dark);
+    color: var(--text-primary-dark);
+    border-color: var(--border-color-dark);
+}
+
+[data-theme="dark"] .btn-export:hover {
+    background-color: var(--bg-card-hover-dark);
+}
+
+/* ==================== BOTONES FLOTANTES ==================== */
+[data-theme="dark"] .floating-btn {
+    background-color: var(--bg-card-dark);
+    color: var(--text-primary-dark);
+    border-color: var(--border-color-dark);
+}
+
+[data-theme="dark"] .floating-btn:hover {
+    background-color: var(--bg-card-hover-dark);
+}
+
+/* ==================== LOGIN Y FORMULARIOS ==================== */
+[data-theme="dark"] .login-card,
+[data-theme="dark"] .report-card,
+[data-theme="dark"] .data-card {
+    background-color: var(--bg-card-dark);
+    color: var(--text-primary-dark);
+}
+
+[data-theme="dark"] .login-footer,
+[data-theme="dark"] .report-footer {
+    background-color: var(--bg-card-hover-dark);
+    border-top-color: var(--border-color-dark);
+}
+
+/* ==================== MENSAJES Y ALERTAS ==================== */
+[data-theme="dark"] .alert-success {
+    background-color: #1a3a2a;
+    color: #8fdf8f;
+    border-color: #2a5a3a;
+}
+
+[data-theme="dark"] .alert-error {
+    background-color: #3a1a1a;
+    color: #df8f8f;
+    border-color: #5a2a2a;
+}
+
+[data-theme="dark"] .alert-info {
+    background-color: #1a2a3a;
+    color: #8fbfdf;
+    border-color: #2a3a5a;
+}
+
+[data-theme="dark"] .alert-warning {
+    background-color: #3a3a1a;
+    color: #dfdf8f;
+    border-color: #5a5a2a;
+}
+
+/* ==================== HINT TEXT ==================== */
+[data-theme="dark"] .hint-text {
+    color: var(--text-secondary-dark);
+}
+
+/* ==================== FORM GROUP LABELS ==================== */
+[data-theme="dark"] .form-group label {
+    color: var(--text-secondary-dark);
+}
+
+/* ==================== OVERLAY ==================== */
+[data-theme="dark"] .sidebar-overlay {
+    background: rgba(0,0,0,0.7);
+}
+
+/* ==================== SCROLLBAR ==================== */
+[data-theme="dark"] ::-webkit-scrollbar {
+    width: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--bg-card-dark);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--border-color-dark);
+    border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #3a3a5a;
+}

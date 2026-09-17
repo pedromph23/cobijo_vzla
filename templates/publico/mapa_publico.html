@@ -1,0 +1,671 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mapa de Emergencias - CobijoVzla{% endblock %}
+
+{% block content %}
+<div class="map-layout">
+    
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <i class="fas fa-sliders-h"></i>
+                <h2>Panel de Control</h2>
+            </div>
+            <button id="btn-close-sidebar" class="btn-close-sidebar" aria-label="Cerrar panel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Búsqueda -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-search"></i> Búsqueda</h3>
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="buscar" placeholder="Estado, parroquia, refugio..." class="form-control" autocomplete="off">
+                        <button id="btn-limpiar-busqueda" class="btn-clear-search" style="display:none;" aria-label="Limpiar búsqueda">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="sugerencias" class="sugerencias-lista"></div>
+                </div>
+            </div>
+            
+            <!-- Geolocalización -->
+            <div class="sidebar-section">
+                <button id="btn-geolocalizar" class="btn-location btn-block" type="button">
+                    <i class="fas fa-location-arrow"></i> Usar mi ubicación actual
+                </button>
+            </div>
+            
+            <!-- Capas -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-layer-group"></i> Capas del Mapa</h3>
+                <label class="layer-toggle">
+                    <input type="checkbox" id="chk-refugios" checked>
+                    <span class="layer-icon" style="background:#0066cc;"><i class="fas fa-home"></i></span>
+                    <span class="layer-text">Refugios</span>
+                    <span class="layer-badge" id="count-refugios">0</span>
+                </label>
+                <label class="layer-toggle">
+                    <input type="checkbox" id="chk-zonas" checked>
+                    <span class="layer-icon" style="background:#dc3545;"><i class="fas fa-exclamation-triangle"></i></span>
+                    <span class="layer-text">Zonas Afectadas</span>
+                    <span class="layer-badge" id="count-zonas">0</span>
+                </label>
+                <label class="layer-toggle">
+                    <input type="checkbox" id="chk-calor">
+                    <span class="layer-icon" style="background:#ff6600;"><i class="fas fa-fire"></i></span>
+                    <span class="layer-text">Mapa de Calor</span>
+                </label>
+            </div>
+            
+            <!-- Acciones -->
+            <div class="sidebar-section">
+                <a href="{% url 'reporte_ciudadano' %}" class="btn-reporte btn-block">
+                    <i class="fas fa-exclamation-triangle"></i> Reportar Emergencia
+                </a>
+            </div>
+        </div>
+    </aside>
+    
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    
+    <!-- ==================== CONTENEDOR DEL MAPA ==================== -->
+    <div class="map-main-container">
+        <!-- Mapa Principal -->
+        <div id="mapa" class="main-map"></div>
+        
+        <!-- Controles flotantes en el mapa -->
+        <div class="map-floating-controls">
+            <button id="btn-expandir-mapa" class="map-action-btn desktop-only" title="Pantalla completa" aria-label="Pantalla completa">
+                <i class="fas fa-expand"></i>
+            </button>
+            <button id="btn-vista-general" class="map-action-btn" title="Centrar mapa" aria-label="Centrar mapa">
+                <i class="fas fa-globe-americas"></i>
+            </button>
+        </div>
+
+        <!-- Tarjeta de información flotante -->
+        <div id="info-card" class="info-card" style="display:none;">
+            <div class="info-card-header">
+                <span id="info-card-title">Título</span>
+                <button id="info-card-close" class="info-card-close" aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="info-card-body" id="info-card-body"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let mapaPrincipal = null;
+    let clusterRefugios = null;
+    let capaZonas = null;
+    let capaCalor = null;
+    let marcadorUbicacion = null;
+    let infoCard = null;
+    let debounceTimer = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        inicializarMapa();
+        configurarEventosMapa();
+        cargarDatos();
+        
+        // Retraso para que el mapa adquiera sus dimensiones correctas
+        setTimeout(() => { if (mapaPrincipal) mapaPrincipal.invalidateSize(); }, 500);
+    });
+
+    function inicializarMapa() {
+        mapaPrincipal = L.map('mapa', {
+            center: [8.5, -66.0], zoom: 6, zoomControl: false, minZoom: 5, maxZoom: 18
+        });
+        
+        L.control.zoom({ position: 'bottomright' }).addTo(mapaPrincipal);
+
+        // Capa base con attribution y referrerPolicy (obligatorio por política de OSM)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            referrerPolicy: 'strict-origin-when-cross-origin',
+            maxZoom: 19
+        }).addTo(mapaPrincipal);
+        
+        clusterRefugios = L.markerClusterGroup({
+            showCoverageOnHover: false, maxClusterRadius: 50,
+            iconCreateFunction: function(cluster) {
+                const count = cluster.getChildCount();
+                const color = count < 10 ? '#28a745' : count < 50 ? '#ffc107' : '#dc3545';
+                return L.divIcon({
+                    html: `<div style="background:${color};border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.3);">${count}</div>`,
+                    className: 'cluster-personalizado', iconSize: L.point(40, 40), iconAnchor: L.point(20, 20)
+                });
+            }
+        });
+        mapaPrincipal.addLayer(clusterRefugios);
+        capaZonas = L.layerGroup().addTo(mapaPrincipal);
+        
+        aplicarFiltroTema(document.documentElement.getAttribute('data-theme'));
+        window.addEventListener('themeChanged', (e) => aplicarFiltroTema(e.detail.theme));
+    }
+
+    function aplicarFiltroTema(tema) {
+        const contenedor = document.querySelector('.leaflet-container');
+        if (contenedor) {
+            tema === 'dark'
+                ? contenedor.classList.add('mapa-tema-oscuro')
+                : contenedor.classList.remove('mapa-tema-oscuro');
+        }
+    }
+
+    function configurarEventosMapa() {
+        // ---- Expandir (Desktop) ----
+        document.getElementById('btn-expandir-mapa')?.addEventListener('click', function() {
+            const layout = document.querySelector('.map-layout');
+            const icon = this.querySelector('i');
+            layout.classList.toggle('map-fullscreen');
+            
+            if (layout.classList.contains('map-fullscreen')) {
+                icon.className = 'fas fa-compress';
+                document.body.style.overflow = 'hidden';
+            } else {
+                icon.className = 'fas fa-expand';
+                document.body.style.overflow = '';
+            }
+            setTimeout(() => { mapaPrincipal.invalidateSize(); }, 350);
+        });
+
+        // ---- Vista general ----
+        document.getElementById('btn-vista-general')?.addEventListener('click', () => {
+            mapaPrincipal.flyTo([8.5, -66.0], 6);
+        });
+
+        // ---- Info card close ----
+        infoCard = document.getElementById('info-card');
+        document.getElementById('info-card-close')?.addEventListener('click', () => {
+            if (infoCard) infoCard.style.display = 'none';
+        });
+
+        // ---- Capas ----
+        document.getElementById('chk-refugios')?.addEventListener('change', function() {
+            this.checked ? mapaPrincipal.addLayer(clusterRefugios) : mapaPrincipal.removeLayer(clusterRefugios);
+        });
+        document.getElementById('chk-zonas')?.addEventListener('change', function() {
+            this.checked ? mapaPrincipal.addLayer(capaZonas) : mapaPrincipal.removeLayer(capaZonas);
+        });
+        document.getElementById('chk-calor')?.addEventListener('change', function() {
+            if (this.checked) {
+                fetch('/api/publico/mapa-calor/').then(r => r.json()).then(data => {
+                    if (data.length > 0) {
+                        capaCalor = L.heatLayer(
+                            data.map(d => [d.lat, d.lng, d.intensidad || 0.5]),
+                            { radius: 30, blur: 20, maxZoom: 10 }
+                        );
+                        capaCalor.addTo(mapaPrincipal);
+                    }
+                });
+            } else if (capaCalor) {
+                mapaPrincipal.removeLayer(capaCalor);
+                capaCalor = null;
+            }
+        });
+
+        // ============================================
+        // BÚSQUEDA AVANZADA
+        // ============================================
+        const inputBuscar = document.getElementById('buscar');
+        const sugerencias = document.getElementById('sugerencias');
+        const btnLimpiar = document.getElementById('btn-limpiar-busqueda');
+        
+        inputBuscar?.addEventListener('input', function() {
+            if (btnLimpiar) btnLimpiar.style.display = this.value ? 'block' : 'none';
+            clearTimeout(debounceTimer);
+            
+            const query = this.value.trim();
+            if (query.length < 2) { 
+                sugerencias.style.display = 'none'; 
+                return; 
+            }
+            
+            debounceTimer = setTimeout(() => {
+                fetch(`/api/publico/buscar-lugar/?q=${encodeURIComponent(query)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        sugerencias.innerHTML = '';
+                        if (data.length > 0) {
+                            data.forEach(item => {
+                                const div = document.createElement('div');
+                                div.className = 'sugerencia-item';
+                                
+                                let iconoTipo = 'fa-map-marker-alt';
+                                if (item.tipo === 'estado') iconoTipo = 'fa-flag';
+                                if (item.tipo === 'parroquia') iconoTipo = 'fa-city';
+                                if (item.tipo === 'refugio') iconoTipo = 'fa-home';
+
+                                div.innerHTML = `<i class="fas ${iconoTipo}"></i> <strong>${item.nombre}</strong> <small>(${item.estado})</small>`;
+                                
+                                div.addEventListener('click', () => {
+                                    inputBuscar.value = item.nombre;
+                                    sugerencias.style.display = 'none';
+                                    if (btnLimpiar) btnLimpiar.style.display = 'block';
+                                    
+                                    const zoomNivel = item.tipo === 'estado' ? 8 : 13;
+                                    mapaPrincipal.flyTo([item.lat, item.lng], zoomNivel, { duration: 1.5 });
+                                });
+                                
+                                sugerencias.appendChild(div);
+                            });
+                            sugerencias.style.display = 'block';
+                        } else {
+                            sugerencias.innerHTML = '<div class="sugerencia-item" style="padding:10px; color:#666;">No se encontraron lugares</div>';
+                            sugerencias.style.display = 'block';
+                        }
+                    })
+                    .catch(err => console.error('Error en búsqueda:', err));
+            }, 300);
+        });
+
+        btnLimpiar?.addEventListener('click', () => {
+            if (inputBuscar) inputBuscar.value = '';
+            btnLimpiar.style.display = 'none';
+            if (sugerencias) sugerencias.style.display = 'none';
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== inputBuscar && !sugerencias?.contains(e.target)) {
+                if (sugerencias) sugerencias.style.display = 'none';
+            }
+        });
+
+        // ============================================
+        // GEOLOCALIZACIÓN — VERSIÓN ROBUSTA
+        // ============================================
+        const btnGeo = document.getElementById('btn-geolocalizar');
+
+        btnGeo?.addEventListener('click', function() {
+            const btn = this;
+            const textoOriginal = btn.innerHTML;
+
+            // 1) ¿El navegador soporta geolocalización?
+            if (!('geolocation' in navigator)) {
+                alert('Tu navegador no soporta geolocalización.');
+                return;
+            }
+
+            // 2) ¿Estamos en un contexto seguro? (HTTPS o localhost)
+            if (!window.isSecureContext) {
+                alert(
+                    'La geolocalización requiere un contexto seguro (HTTPS).\n\n' +
+                    'Estás accediendo desde: ' + window.location.origin + '\n\n' +
+                    'Prueba con http://localhost:8000 o configura HTTPS.'
+                );
+                return;
+            }
+
+            // 3) Prevenir doble clic
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obteniendo...';
+
+            const opciones = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                // ---------- ÉXITO ----------
+                (pos) => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    console.log('[Geo] Ubicación obtenida:', latitude, longitude, '±', accuracy, 'm');
+
+                    if (marcadorUbicacion) mapaPrincipal.removeLayer(marcadorUbicacion);
+
+                    marcadorUbicacion = L.marker([latitude, longitude], {
+                        icon: L.divIcon({
+                            html: '<div style="background:#00ffff;border-radius:50%;width:18px;height:18px;border:3px solid white;box-shadow:0 0 15px #00ffff, 0 0 5px rgba(0,0,0,0.5);"></div>',
+                            className: 'marcador-ubicacion',
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        })
+                    }).addTo(mapaPrincipal)
+                      .bindPopup(`📍 Estás aquí<br><small>Precisión: ±${Math.round(accuracy)} m</small>`)
+                      .openPopup();
+
+                    mapaPrincipal.flyTo([latitude, longitude], 15, { duration: 1.2 });
+
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                    btn.style.opacity = '';
+                },
+                // ---------- ERROR ----------
+                (err) => {
+                    console.error('[Geo] Error:', err);
+                    let mensaje = 'No se pudo obtener tu ubicación.';
+
+                    switch (err.code) {
+                        case err.PERMISSION_DENIED:
+                            mensaje = 'Permiso denegado.\n\nHabilita la ubicación en la configuración del navegador para este sitio y recarga la página.';
+                            break;
+                        case err.POSITION_UNAVAILABLE:
+                            mensaje = 'Posición no disponible.\n\nVerifica que el GPS o la ubicación del sistema estén activos.';
+                            break;
+                        case err.TIMEOUT:
+                            mensaje = 'Se agotó el tiempo de espera.\n\nIntenta en un lugar con mejor señal o cerca de una ventana.';
+                            break;
+                        default:
+                            mensaje = 'Error desconocido: ' + (err.message || 'sin detalles');
+                    }
+
+                    alert(mensaje);
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                    btn.style.opacity = '';
+                },
+                opciones
+            );
+        });
+    }
+
+    function mostrarInfoCard(titulo, contenido) {
+        if (!infoCard) return;
+        document.getElementById('info-card-title').innerHTML = titulo;
+        document.getElementById('info-card-body').innerHTML = contenido;
+        infoCard.style.display = 'block';
+    }
+
+    function cargarDatos() {
+        // ---- Refugios ----
+        fetch('/api/publico/refugios/').then(r => r.json()).then(data => {
+            const count = document.getElementById('count-refugios');
+            if (count) count.textContent = data.length;
+            data.forEach(ref => {
+                if (ref.lat && ref.lng) {
+                    const icon = L.divIcon({
+                        html: `<div style="background:${ref.operativo?'#0066cc':'#6c757d'};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-home" style="color:white;font-size:12px;"></i></div>`,
+                        className: 'marcador-refugio', iconSize: [30, 30], iconAnchor: [15, 15]
+                    });
+                    const marker = L.marker([ref.lat, ref.lng], { icon });
+                    marker.on('click', () => {
+                        const srv = Array.isArray(ref.servicios) ? ref.servicios.join(', ') : 'No info';
+                        mostrarInfoCard(`<i class="fas fa-home"></i> ${ref.nombre}`, `
+                            <p><strong>Dirección:</strong> ${ref.direccion || 'N/A'}</p>
+                            <p><strong>Capacidad:</strong> ${ref.capacidad_disponible}/${ref.capacidad_total}</p>
+                            <p><strong>Servicios:</strong> ${srv}</p>
+                            <p><strong>Estado:</strong> <span style="color:${ref.operativo?'#28a745':'#dc3545'};">${ref.operativo?'Operativo':'No operativo'}</span></p>
+                        `);
+                    });
+                    clusterRefugios.addLayer(marker);
+                }
+            });
+        });
+        
+        // ---- Zonas ----
+        fetch('/api/publico/zonas-afectadas/').then(r => r.json()).then(data => {
+            const count = document.getElementById('count-zonas');
+            if (count) count.textContent = data.length;
+            data.forEach(zona => {
+                if (zona.lat && zona.lng) {
+                    const color = zona.nivel_alerta === 'alto' ? '#dc3545' : zona.nivel_alerta === 'medio' ? '#ffc107' : '#28a745';
+                    const circle = L.circle([zona.lat, zona.lng], { radius: 1000, color: color, fillColor: color, fillOpacity: 0.35, weight: 2 });
+                    circle.on('click', () => {
+                        mostrarInfoCard(`<i class="fas fa-exclamation-triangle"></i> ${zona.nombre}`, `
+                            <p><strong>Alerta:</strong> <span style="color:${color};font-weight:bold;">${zona.nivel_alerta.toUpperCase()}</span></p>
+                            <p><strong>Damnificados:</strong> ${zona.damnificados || 0}</p>
+                            <p><strong>Heridos:</strong> ${zona.heridos || 0}</p>
+                            <p>${zona.descripcion || 'Sin descripción detallada.'}</p>
+                        `);
+                    });
+                    circle.addTo(capaZonas);
+                }
+            });
+        });
+    }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ==================== ESTRUCTURA MOBILE FIRST ==================== */
+    .map-layout {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        /* Fallback para navegadores antiguos */
+        height: calc(100vh - var(--header-height, 60px));
+        /* Altura dinámica: mejor en móviles con barra de URL cambiante */
+        height: calc(100dvh - var(--header-height, 60px));
+        position: relative;
+        background: var(--bg-card, #ffffff);
+        overflow: hidden;
+    }
+
+    @media (min-width: 769px) {
+        .map-layout {
+            height: calc(100vh - var(--header-height, 72px) - 40px);
+            margin: 20px auto;
+            max-width: 1400px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color, #dee2e6);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+    }
+
+    .map-layout.map-fullscreen {
+        position: fixed; top: 0; left: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        margin: 0; max-width: none; border-radius: 0; border: none;
+        z-index: 9999;
+    }
+
+    /* ==================== MAPA ==================== */
+    .map-main-container {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+        height: 100%;
+        background: #e5e5e5;
+    }
+    
+    .main-map { width: 100%; height: 100%; z-index: 1; }
+    
+    .map-floating-controls {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .map-action-btn {
+        background: #ffffff;
+        color: #333333;
+        border: 2px solid rgba(0,0,0,0.2);
+        border-radius: 8px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+        transition: background 0.2s ease, transform 0.15s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .map-action-btn:hover { background: #f4f4f4; }
+    .map-action-btn:active { transform: scale(0.94); }
+    
+    @media (max-width: 768px) {
+        .desktop-only { display: none; }
+    }
+
+    .mapa-tema-oscuro .leaflet-tile {
+        filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3);
+    }
+    .leaflet-tile { transition: filter 0.3s ease; }
+
+    /* ==================== SIDEBAR ==================== */
+    .sidebar {
+        width: 320px;
+        flex-shrink: 0;
+        background: var(--bg-card, #ffffff);
+        color: var(--text-primary, #333333);
+        box-shadow: 2px 0 12px rgba(0,0,0,0.1);
+        z-index: 1050;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        border-right: 1px solid var(--border-color, #dee2e6);
+        transition: transform 0.3s ease, width 0.3s ease;
+        overflow-y: auto;
+    }
+    
+    .sidebar.collapsed { width: 0; overflow: hidden; border: none; }
+    
+    .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border-color, #dee2e6); }
+    .sidebar-title { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; }
+    .sidebar-title h2 { font-size: 1rem; margin: 0; }
+    .btn-close-sidebar { 
+        background: none; border: none; font-size: 1.2rem; cursor: pointer; 
+        color: var(--text-secondary, #6c757d);
+        width: 40px; height: 40px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 8px;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .btn-close-sidebar:hover { background: var(--bg-hover, rgba(0,0,0,0.05)); }
+    
+    .sidebar-content { padding: 1rem; }
+    .sidebar-section { margin-bottom: 1.5rem; }
+    .sidebar-section h3 { font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary, #6c757d); margin-bottom: 0.75rem; display: flex; gap: 0.5rem; }
+    
+    .search-input-wrapper { position: relative; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #6c757d; pointer-events: none; }
+    .btn-clear-search { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6c757d; padding: 4px; }
+    .form-control { 
+        width: 100%; 
+        padding: 10px 35px 10px 35px; 
+        border: 1px solid var(--border-color, #dee2e6); 
+        border-radius: 8px; 
+        background: transparent; 
+        color: inherit;
+        font-size: max(16px, 0.9rem); /* evita zoom iOS */
+    }
+    
+    .sugerencias-lista { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card, #ffffff); border: 1px solid var(--border-color, #dee2e6); border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; display: none; z-index: 1000; }
+    .sugerencia-item { padding: 10px; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid var(--border-color, #dee2e6); }
+    
+    .btn-primary, .btn-location, .btn-reporte { 
+        display: block; width: 100%; padding: 12px; border: none; border-radius: 8px; 
+        cursor: pointer; font-size: 0.9rem; text-align: center; text-decoration: none; 
+        font-weight: 600;
+        min-height: 44px;
+        -webkit-tap-highlight-color: transparent;
+        transition: opacity 0.2s ease, transform 0.15s ease;
+    }
+    .btn-primary { background: #0066cc; color: white; margin-top: 5px; }
+    .btn-location { background: #28a745; color: white; margin-top: 5px; }
+    .btn-location:active { transform: scale(0.98); }
+    .btn-location:disabled { cursor: not-allowed; }
+    .btn-reporte { background: #ff6600; color: white; }
+    
+    .layer-toggle { 
+        display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.5rem; 
+        cursor: pointer; border-radius: 8px;
+        min-height: 44px;
+    }
+    .layer-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; flex-shrink: 0; }
+    .layer-text { flex: 1; font-size: 0.9rem; }
+
+    .layer-badge { 
+        background-color: #e9ecef !important; 
+        color: #333333 !important; 
+        padding: 2px 8px; 
+        border-radius: 10px; 
+        font-size: 0.85rem; 
+        font-weight: bold;
+        min-width: 24px;
+        text-align: center;
+    }
+    
+    [data-theme="dark"] .layer-badge { 
+        background-color: #2a2a4a !important; 
+        color: #ffffff !important; 
+    }
+
+    /* ==================== INFO CARD FLOTANTE ==================== */
+    .info-card { 
+        position: absolute; 
+        bottom: 20px; 
+        left: 15px; 
+        width: 300px; 
+        max-width: calc(100% - 30px);
+        background: var(--bg-card, #ffffff); 
+        border-radius: 12px; 
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3); 
+        z-index: 1000; 
+        overflow: hidden; 
+        animation: slideUp 0.3s ease; 
+        border: 1px solid var(--border-color, #dee2e6); 
+        color: var(--text-primary, #333); 
+    }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .info-card-header { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #0066cc; color: white; font-weight: 600; }
+    .info-card-close { background: none; border: none; color: white; cursor: pointer; font-size: 1.1rem; padding: 4px; }
+    .info-card-body { padding: 1rem; font-size: 0.85rem; line-height: 1.4; max-height: 200px; overflow-y: auto; }
+
+    .sidebar-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.5); z-index: 1040; }
+    .sidebar-overlay.active { display: block; }
+
+    /* ==================== MODO OSCURO AUTOMÁTICO ==================== */
+    [data-theme="dark"] .map-layout, [data-theme="dark"] .sidebar, [data-theme="dark"] .info-card { background: #16213e; border-color: #2a2a4a; color: #e0e0e0; }
+    [data-theme="dark"] .sidebar-header { background: #16213e; border-color: #2a2a4a; color: #e0e0e0; }
+    [data-theme="dark"] .form-control, [data-theme="dark"] .sugerencias-lista { background: #1a2744; border-color: #2a2a4a; color: #e0e0e0; }
+    [data-theme="dark"] .layer-toggle:hover, [data-theme="dark"] .sugerencia-item:hover { background: #2a2a4a; }
+    [data-theme="dark"] .info-card-body, [data-theme="dark"] .map-title { color: #e0e0e0; }
+    
+    /* ==================== RESPONSIVE ==================== */
+    @media (max-width: 768px) {
+        .sidebar { 
+            position: absolute; 
+            left: 0; top: 0; bottom: 0; 
+            transform: translateX(-100%); 
+            z-index: 1050; 
+            width: 280px; 
+            max-width: 85vw;
+        }
+        .sidebar.open { transform: translateX(0); }
+        .info-card { 
+            left: 10px; 
+            right: 10px; 
+            width: auto; 
+            bottom: 20px; 
+            max-width: none;
+        }
+        .map-layout { 
+            height: calc(100vh - var(--header-height, 60px)); 
+            height: calc(100dvh - var(--header-height, 60px));
+            margin: 0; 
+            border-radius: 0; 
+            border: none; 
+        }
+    }
+
+    /* Landscape bajo (móvil tumbado): evita que el sidebar sea inusable */
+    @media (max-height: 500px) and (orientation: landscape) {
+        .sidebar { width: 260px; }
+        .sidebar-content { padding: 0.5rem; }
+        .sidebar-section { margin-bottom: 0.75rem; }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Reporte Ciudadano - CobijoVzla{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    <div class="report-card">
+        
+        <div class="report-header">
+            <div class="report-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h2>Reporte Ciudadano</h2>
+            <p>Ayude a su comunidad informando sobre emergencias</p>
+        </div>
+        
+        <div class="report-body">
+            <div id="mensaje-resultado" class="mensaje-resultado" style="display: none;"></div>
+            
+            <form id="form-reporte" method="post" enctype="multipart/form-data" class="report-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_autor"><i class="fas fa-user"></i> Su Nombre <span class="opcional">(opcional)</span></label>
+                    <div class="input-group">
+                        <span class="input-icon"><i class="fas fa-user"></i></span>
+                        <input type="text" name="autor" id="id_autor" class="form-control" placeholder="Ej: María Pérez" autocomplete="name">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_texto"><i class="fas fa-comment-dots"></i> Describa la Situación <span class="requerido">*</span></label>
+                    <div class="input-group">
+                        <span class="input-icon textarea-icon"><i class="fas fa-comment-dots"></i></span>
+                        <textarea name="texto" id="id_texto" class="form-control textarea" rows="4" placeholder="Describa la emergencia..." required></textarea>
+                    </div>
+                    <small class="char-counter"><span id="contador-caracteres">0</span>/500 caracteres</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_ubicacion"><i class="fas fa-map-marker-alt"></i> Ubicación <span class="opcional">(opcional)</span></label>
+                    <div class="input-group">
+                        <span class="input-icon"><i class="fas fa-map-marker-alt"></i></span>
+                        <input type="text" name="ubicacion" id="id_ubicacion" class="form-control" placeholder="Punto de referencia">
+                    </div>
+                    <button type="button" class="btn-action btn-location" id="btn-get-location">
+                        <i class="fas fa-location-arrow"></i> Usar mi ubicación actual
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_tipo_emergencia"><i class="fas fa-tag"></i> Tipo de Emergencia <span class="opcional">(opcional)</span></label>
+                    <div class="input-group">
+                        <span class="input-icon"><i class="fas fa-tag"></i></span>
+                        <select name="tipo_emergencia" id="id_tipo_emergencia" class="form-control">
+                            <option value="">Seleccione un tipo...</option>
+                            <option value="inundacion">Inundación</option>
+                            <option value="terremoto">Terremoto</option>
+                            <option value="deslizamiento">Deslizamiento</option>
+                            <option value="incendio">Incendio</option>
+                            <option value="falta_agua">Falta de Agua</option>
+                            <option value="falta_alimentos">Falta de Alimentos</option>
+                            <option value="falta_medicinas">Falta de Medicinas</option>
+                            <option value="danos_estructurales">Daños Estructurales</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_imagen"><i class="fas fa-camera"></i> Adjuntar Imagen <span class="opcional">(opcional)</span></label>
+                    <div class="file-upload">
+                        <input type="file" name="imagen" id="id_imagen" class="file-input" accept="image/*">
+                        <label for="id_imagen" class="file-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Tocar para subir imagen</span>
+                            <small>Max 5MB</small>
+                        </label>
+                        <div id="file-preview" class="file-preview" style="display: none;">
+                            <img id="preview-img" src="" alt="Vista previa">
+                            <button type="button" id="btn-remove-file" class="btn-remove-file"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-submit" id="btn-submit">
+                    <i class="fas fa-paper-plane"></i> Enviar Reporte
+                </button>
+            </form>
+        </div>
+        
+        <div class="report-footer">
+            <p><i class="fas fa-shield-alt"></i> Información confidencial</p>
+            <a href="{% url 'mapa_publico' %}" class="btn-volver"><i class="fas fa-arrow-left"></i> Volver al mapa</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const textarea = document.getElementById('id_texto');
+        const contador = document.getElementById('contador-caracteres');
+        
+        textarea.addEventListener('input', function() {
+            const len = this.value.length;
+            contador.textContent = len;
+            if (len > 500) {
+                this.value = this.value.substring(0, 500);
+                contador.style.color = '#dc3545';
+            } else {
+                contador.style.color = len > 400 ? '#ffc107' : 'inherit';
+            }
+        });
+
+        const fileInput = document.getElementById('id_imagen');
+        const filePreview = document.getElementById('file-preview');
+        const previewImg = document.getElementById('preview-img');
+        
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) return alert('Máximo 5MB permitidos');
+                const reader = new FileReader();
+                reader.onload = e => { previewImg.src = e.target.result; filePreview.style.display = 'block'; };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('btn-remove-file').addEventListener('click', () => {
+            fileInput.value = ''; filePreview.style.display = 'none'; previewImg.src = '';
+        });
+
+        document.getElementById('btn-get-location').addEventListener('click', function() {
+            if (!navigator.geolocation) return alert('Geolocalización no soportada');
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obteniendo...';
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    document.getElementById('id_ubicacion').value = `Lat: ${pos.coords.latitude.toFixed(5)}, Lng: ${pos.coords.longitude.toFixed(5)}`;
+                    this.innerHTML = '<i class="fas fa-location-arrow"></i> Usar mi ubicación';
+                },
+                err => {
+                    this.innerHTML = '<i class="fas fa-location-arrow"></i> Usar mi ubicación';
+                    alert('Error obteniendo ubicación');
+                }
+            );
+        });
+
+        const form = document.getElementById('form-reporte');
+        const btnSubmit = document.getElementById('btn-submit');
+        const msg = document.getElementById('mensaje-resultado');
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            btnSubmit.disabled = true; btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            
+            fetch('/api/publico/reporte-ciudadano/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: new FormData(form)
+            }).then(r => r.json()).then(data => {
+                msg.style.display = 'block';
+                if(data.mensaje) {
+                    msg.className = 'mensaje-resultado alert-success';
+                    msg.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.mensaje;
+                    form.reset(); filePreview.style.display = 'none';
+                } else {
+                    msg.className = 'mensaje-resultado alert-error';
+                    msg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error al enviar';
+                }
+                setTimeout(() => msg.style.display='none', 5000);
+            }).finally(() => {
+                btnSubmit.disabled = false; btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Reporte';
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-container { display: flex; align-items: center; justify-content: center; padding: 1rem; min-height: calc(100vh - 60px); background: var(--bg-body); }
+    .report-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 600px; overflow: hidden; color: var(--text-primary); }
+    .report-header { background: linear-gradient(135deg, #ff6600, #cc5200); color: white; text-align: center; padding: 2rem 1.5rem; }
+    .report-icon { width: 60px; height: 60px; margin: 0 auto 1rem; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+    .report-body { padding: 1.5rem; }
+    
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary); }
+    .input-group { position: relative; display: flex; align-items: center; }
+    .input-icon { position: absolute; left: 12px; color: var(--text-secondary); }
+    .textarea-icon { top: 12px; }
+    
+    .form-control { width: 100%; padding: 0.75rem 0.75rem 0.75rem 2.5rem; border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: inherit; font-size: 0.9rem; }
+    .textarea { resize: vertical; min-height: 100px; }
+    
+    .btn-action { display: block; width: 100%; padding: 0.75rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 0.5rem; }
+    .btn-location { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); }
+    .btn-submit { background: linear-gradient(135deg, #ff6600, #cc5200); color: white; font-size: 1rem; }
+    
+    .file-upload { position: relative; }
+    .file-input { display: none; }
+    .file-label { display: flex; flex-direction: column; align-items: center; padding: 1.5rem; border: 2px dashed var(--border-color); border-radius: 8px; cursor: pointer; text-align: center; }
+    .file-label i { font-size: 2rem; color: #ff6600; margin-bottom: 0.5rem; }
+    .file-preview { margin-top: 0.5rem; position: relative; }
+    .file-preview img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; }
+    .btn-remove-file { position: absolute; top: 10px; right: 10px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; }
+    
+    .report-footer { padding: 1rem; text-align: center; background: var(--bg-hover); border-top: 1px solid var(--border-color); }
+    .btn-volver { color: #ff6600; text-decoration: none; font-weight: bold; }
+    
+    .mensaje-resultado { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: bold; }
+    .alert-success { background: #d4edda; color: #155724; }
+    .alert-error { background: #f8d7da; color: #721c24; }
+    [data-theme="dark"] .alert-success { background: #1a3a2a; color: #8fdf8f; }
+    [data-theme="dark"] .alert-error { background: #3a1a1a; color: #df8f8f; }
+
+    @media (max-width: 480px) {
+        .report-header { padding: 1.5rem 1rem; }
+        .report-body { padding: 1rem; }
+        .report-icon { width: 50px; height: 50px; font-size: 1.4rem; }
+    }
+</style>
+{% endblock %}

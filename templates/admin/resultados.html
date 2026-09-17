@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Resultados - CobijoVzla{% endblock %}
+{% block content %}
+<div class="resultados-container">
+    
+    <div class="resultados-header">
+        <div class="header-left">
+            <div class="header-icon"><i class="fas fa-chart-bar"></i></div>
+            <div>
+                <h2>Resultados de Optimización</h2>
+                <p>Visualización y análisis</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-action btn-primary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+            <button class="btn-action btn-primary" onclick="exportarGeoJSON()"><i class="fas fa-map"></i> GeoJSON</button>
+        </div>
+    </div>
+    
+    <div class="selector-section">
+        <label for="selector-resultado"><i class="fas fa-list"></i> Seleccionar:</label>
+        <select id="selector-resultado" class="form-control" onchange="cargarResultado(this.value)">
+            <option value="">Cargando...</option>
+        </select>
+        <button class="btn-refresh" onclick="cargarListaResultados()"><i class="fas fa-sync"></i></button>
+    </div>
+    
+    <div class="resumen-grid">
+        <div class="resumen-card"><div class="card-icon blue"><i class="fas fa-map-marker-alt"></i></div><div class="card-info"><span class="card-value" id="resumen-centros">0</span><span class="card-label">Centros</span></div></div>
+        <div class="resumen-card"><div class="card-icon green"><i class="fas fa-users"></i></div><div class="card-info"><span class="card-value" id="resumen-poblacion">0</span><span class="card-label">Población</span></div></div>
+        <div class="resumen-card"><div class="card-icon orange"><i class="fas fa-percentage"></i></div><div class="card-info"><span class="card-value" id="resumen-cobertura">0%</span><span class="card-label">Cobertura</span></div></div>
+        <div class="resumen-card"><div class="card-icon purple"><i class="fas fa-road"></i></div><div class="card-info"><span class="card-value" id="resumen-distancia">0</span><span class="card-label">km Total</span></div></div>
+    </div>
+    
+    <div class="resultados-layout">
+        <div class="mapa-resultados">
+            <div class="section-header">
+                <h3><i class="fas fa-map-marked-alt"></i> Mapa</h3>
+            </div>
+            <div id="mapa-resultados" class="mapa-resultados-container"></div>
+        </div>
+        
+        <div class="centros-lista">
+            <div class="section-header">
+                <h3><i class="fas fa-list"></i> Centros <span class="badge" id="total-centros">0</span></h3>
+            </div>
+            <div id="lista-centros" class="lista-centros">
+                <div class="placeholder"><i class="fas fa-building"></i><p>Seleccione un resultado</p></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="detalle-section">
+        <div class="section-header">
+            <h3><i class="fas fa-table"></i> Asignaciones Detalladas</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="tabla-asignaciones">
+                <thead>
+                    <tr><th>#</th><th>Demanda</th><th>Centro Asignado</th><th>Estado</th></tr>
+                </thead>
+                <tbody id="tbody-asignaciones">
+                    <tr><td colspan="4" style="text-align:center;">Sin datos</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let mapaRes = null;
+    let capaRes = null;
+    
+    document.addEventListener('DOMContentLoaded', () => { 
+        mapaRes = L.map('mapa-resultados', {center: [10.0, -66.0], zoom: 6});
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapaRes);
+        capaRes = L.layerGroup().addTo(mapaRes);
+        cargarListaResultados(); 
+        
+        setTimeout(() => mapaRes.invalidateSize(), 500);
+    });
+
+    function cargarListaResultados() {
+        fetch('/api/listar-resultados/').then(r => r.json()).then(data => {
+            const sel = document.getElementById('selector-resultado');
+            sel.innerHTML = '';
+            if(data.length === 0) return sel.innerHTML = '<option value="">Vacío</option>';
+            data.forEach(r => sel.innerHTML += `<option value="${r.id}">#${r.id} - ${r.escenario}</option>`);
+            cargarResultado(data[0].id);
+        });
+    }
+
+    function cargarResultado(id) {
+        if(!id) return;
+        fetch(`/api/resultados/${id}/`).then(r => r.json()).then(data => {
+            document.getElementById('resumen-centros').textContent = data.centros?.length || 0;
+            document.getElementById('resumen-poblacion').textContent = data.poblacion_atendida || 0;
+            document.getElementById('resumen-cobertura').textContent = (data.porcentaje_cubierto || 0) + '%';
+            document.getElementById('resumen-distancia').textContent = data.distancia_total_km || 0;
+            
+            capaRes.clearLayers();
+            const lista = document.getElementById('lista-centros');
+            lista.innerHTML = '';
+            
+            if(data.centros?.length > 0) {
+                document.getElementById('total-centros').textContent = data.centros.length;
+                data.centros.forEach(c => {
+                    L.marker([c.lat, c.lng]).bindPopup(c.nombre).addTo(capaRes);
+                    const div = document.createElement('div');
+                    div.className = 'centro-item';
+                    div.innerHTML = `<strong>${c.nombre}</strong><br><small>ID: ${c.id}</small>`;
+                    div.onclick = () => mapaRes.flyTo([c.lat, c.lng], 13);
+                    lista.appendChild(div);
+                });
+                mapaRes.fitBounds(capaRes.getBounds().pad(0.2));
+            }
+
+            const tbody = document.getElementById('tbody-asignaciones');
+            tbody.innerHTML = '';
+            if(data.asignaciones && Object.keys(data.asignaciones).length > 0) {
+                Object.entries(data.asignaciones).forEach(([dId, cId], i) => {
+                    tbody.innerHTML += `<tr><td>${i+1}</td><td>Punto ${dId}</td><td>Centro ${cId}</td><td style="color:#28a745;">✓</td></tr>`;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4">Vacio</td></tr>';
+            }
+        });
+    }
+    
+    window.exportarCSV = () => window.location.href = '/api/exportar-csv/';
+    window.exportarGeoJSON = () => window.location.href = '/api/exportar-geojson/';
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .resultados-container { padding: 1rem; background: var(--bg-body); min-height: 100vh; color: var(--text-primary); }
+    .resultados-header, .selector-section, .resumen-card, .mapa-resultados, .centros-lista, .detalle-section {
+        background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;
+    }
+    .resultados-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+    .header-icon { width: 50px; height: 50px; background: #28a745; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    
+    .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .btn-action { padding: 0.5rem 1rem; border-radius: 6px; border: none; cursor: pointer; background: var(--bg-hover); color: var(--text-primary); font-weight: bold; }
+    .btn-action.btn-primary { background: #0066cc; color: white; }
+    
+    .selector-section { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .form-control { flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 6px; background: transparent; color: inherit; min-width: 200px; }
+    .btn-refresh { padding: 0.5rem; background: transparent; border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); }
+    
+    .resumen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;}
+    .resumen-card { display: flex; align-items: center; gap: 1rem; margin-bottom: 0; }
+    .card-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; }
+    .card-icon.blue { background: #0066cc; } .card-icon.green { background: #28a745; } .card-icon.orange { background: #ff6600; } .card-icon.purple { background: #6f42c1; }
+    .card-value { font-size: 1.3rem; font-weight: bold; display: block; }
+    .card-label { font-size: 0.8rem; color: var(--text-secondary); }
+    
+    .resultados-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+    .mapa-resultados-container { height: 400px; border-radius: 8px; z-index: 1; }
+    .lista-centros { max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+    .centro-item { padding: 0.75rem; background: var(--bg-hover); border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); }
+    
+    .table-responsive { overflow-x: auto; width: 100%; }
+    .tabla-asignaciones { width: 100%; border-collapse: collapse; min-width: 400px; }
+    .tabla-asignaciones th { background: #0066cc; color: white; padding: 0.75rem; text-align: left; }
+    .tabla-asignaciones td { padding: 0.75rem; border-bottom: 1px solid var(--border-color); }
+    
+    .badge { background: #0066cc; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.8rem; }
+
+    /* MODO OSCURO TILES */
+    [data-theme="dark"] .leaflet-tile { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3); }
+
+    @media (max-width: 768px) {
+        .resultados-layout { grid-template-columns: 1fr; }
+        .mapa-resultados-container { height: 300px; }
+        .lista-centros { max-height: 250px; }
+        .header-actions { width: 100%; }
+        .btn-action { flex: 1; justify-content: center; }
+    }
+</style>
+{% endblock %}

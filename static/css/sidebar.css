@@ -1,0 +1,102 @@
+/* ==================== SIDEBAR ==================== */
+.sidebar {
+    width: 320px;
+    flex-shrink: 0; /* CRÍTICO: Evita que el mapa la aplaste */
+    background: var(--bg-card, #ffffff);
+    color: var(--text-primary, #333333);
+    box-shadow: 2px 0 12px rgba(0,0,0,0.1);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.sidebar.collapsed { width: 0; padding: 0; overflow: hidden; opacity: 0; border: none; }
+
+.sidebar-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem; border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-title { display: flex; align-items: center; gap: 0.5rem; }
+.sidebar-title h2 { font-size: 1rem; margin: 0; }
+.btn-close-sidebar { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-secondary); }
+
+.sidebar-content { padding: 1rem; }
+.sidebar-section { margin-bottom: 1.5rem; }
+.sidebar-section h3 {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-secondary); margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem;
+}
+
+/* Búsqueda y Sugerencias */
+.search-input-wrapper { position: relative; }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+.btn-clear-search { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-secondary); }
+
+.form-control {
+    width: 100%; padding: 10px 10px 10px 35px;
+    border: 1px solid var(--border-color); border-radius: 8px;
+    background: var(--bg-card); color: var(--text-primary);
+}
+
+.sugerencias-lista {
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto;
+    display: none; z-index: 1000;
+}
+.sugerencia-item { padding: 10px; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid var(--border-color); }
+.sugerencia-item:hover { background: var(--bg-hover, #f0f0f0); }
+
+/* Capas y Botones */
+.layer-toggle {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem;
+    cursor: pointer; border-radius: 8px; transition: background 0.2s;
+}
+.layer-toggle:hover { background: var(--bg-hover, #f0f0f0); }
+.layer-icon {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;
+}
+.layer-text { flex: 1; }
+.layer-badge { background: var(--bg-hover, #f0f0f0); padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
+
+.btn-location, .btn-reporte {
+    display: block; width: 100%; padding: 10px; border: none; border-radius: 8px;
+    cursor: pointer; font-size: 0.9rem; text-align: center; text-decoration: none; transition: all 0.2s;
+}
+.btn-location { background: #28a745; color: white; }
+.btn-location:hover { background: #1e7e34; }
+.btn-reporte { background: #ff6600; color: white; }
+.btn-reporte:hover { background: #cc5200; }
+
+/* Info Card */
+.info-card {
+    position: absolute; bottom: 30px; left: 20px; width: 320px;
+    background: var(--bg-card); border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 500; overflow: hidden;
+    animation: slideUp 0.3s ease; border: 1px solid var(--border-color);
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.info-card-header {
+    display: flex; justify-content: space-between; padding: 0.75rem 1rem;
+    background: #0066cc; color: white; font-weight: 600;
+}
+.info-card-close { background: none; border: none; color: white; cursor: pointer; }
+.info-card-body { padding: 1rem; font-size: 0.85rem; max-height: 250px; overflow-y: auto; color: var(--text-primary); }
+
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; }
+.sidebar-overlay.active { display: block; }
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed; left: 0; top: 50px; bottom: 0;
+        transform: translateX(-100%); z-index: 200; width: 280px;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .info-card { left: 10px; right: 10px; width: auto; }
+}

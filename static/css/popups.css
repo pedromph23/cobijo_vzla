@@ -1,0 +1,118 @@
+/* Popups personalizados */
+.leaflet-popup-content-wrapper {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 0;
+    overflow: hidden;
+}
+
+.leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+    width: 280px !important;
+    max-width: 280px;
+}
+
+.popup-card {
+    padding: 1rem;
+}
+
+.popup-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.popup-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.popup-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.popup-icon.refugio {
+    background: var(--primary);
+}
+
+.popup-icon.zona {
+    background: var(--danger);
+}
+
+.popup-icon.demanda {
+    background: var(--warning);
+    color: var(--dark);
+}
+
+.popup-body {
+    font-size: 0.85rem;
+}
+
+.popup-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+}
+
+.popup-row i {
+    width: 20px;
+    text-align: center;
+    color: var(--gray-600);
+}
+
+.popup-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.popup-btn {
+    flex: 1;
+    padding: 0.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: background var(--transition-fast);
+}
+
+.popup-btn.como-llegar {
+    background: var(--primary);
+    color: white;
+}
+
+.popup-btn.como-llegar:hover {
+    background: var(--primary-dark);
+}
+
+.popup-btn.mas-info {
+    background: var(--gray-200);
+    color: var(--dark);
+}
+
+.popup-btn.mas-info:hover {
+    background: var(--gray-300);
+}
+
+@media (max-width: 480px) {
+    .leaflet-popup-content {
+        width: 240px !important;
+        max-width: 240px;
+    }
+}
