@@ -104,6 +104,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'vendor/leaflet-routing-machine/leaflet-routing-machine.js' %}"></script>
 <script>
     let mapaPrincipal = null;
     let clusterRefugios = null;
@@ -372,10 +373,23 @@
         });
     }
 
-    function mostrarInfoCard(titulo, contenido) {
+    function mostrarInfoCard(titulo, contenido, opcionesRuta = null) {
         if (!infoCard) return;
         document.getElementById('info-card-title').innerHTML = titulo;
-        document.getElementById('info-card-body').innerHTML = contenido;
+        const body = document.getElementById('info-card-body');
+        body.innerHTML = contenido;
+        
+        // Si se pasa info de ruta, añadir el botón "Cómo llegar"
+        if (opcionesRuta && opcionesRuta.lat && opcionesRuta.lng) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-como-llegar';
+            btn.innerHTML = '<i class="fas fa-route"></i> Cómo llegar';
+            btn.addEventListener('click', () => {
+                calcularRuta(opcionesRuta.lat, opcionesRuta.lng, opcionesRuta.nombre);
+            });
+            body.appendChild(btn);
+        }
+        
         infoCard.style.display = 'block';
     }
 
@@ -393,12 +407,16 @@
                     const marker = L.marker([ref.lat, ref.lng], { icon });
                     marker.on('click', () => {
                         const srv = Array.isArray(ref.servicios) ? ref.servicios.join(', ') : 'No info';
-                        mostrarInfoCard(`<i class="fas fa-home"></i> ${ref.nombre}`, `
-                            <p><strong>Dirección:</strong> ${ref.direccion || 'N/A'}</p>
-                            <p><strong>Capacidad:</strong> ${ref.capacidad_disponible}/${ref.capacidad_total}</p>
-                            <p><strong>Servicios:</strong> ${srv}</p>
-                            <p><strong>Estado:</strong> <span style="color:${ref.operativo?'#28a745':'#dc3545'};">${ref.operativo?'Operativo':'No operativo'}</span></p>
-                        `);
+                        mostrarInfoCard(
+                            `<i class="fas fa-home"></i> ${ref.nombre}`,
+                            `
+                                <p><strong>Dirección:</strong> ${ref.direccion || 'N/A'}</p>
+                                <p><strong>Capacidad:</strong> ${ref.capacidad_disponible}/${ref.capacidad_total}</p>
+                                <p><strong>Servicios:</strong> ${srv}</p>
+                                <p><strong>Estado:</strong> <span style="color:${ref.operativo?'#28a745':'#dc3545'};">${ref.operativo?'Operativo':'No operativo'}</span></p>
+                            `,
+                            { lat: ref.lat, lng: ref.lng, nombre: ref.nombre }
+                        );
                     });
                     clusterRefugios.addLayer(marker);
                 }
@@ -414,22 +432,135 @@
                     const color = zona.nivel_alerta === 'alto' ? '#dc3545' : zona.nivel_alerta === 'medio' ? '#ffc107' : '#28a745';
                     const circle = L.circle([zona.lat, zona.lng], { radius: 1000, color: color, fillColor: color, fillOpacity: 0.35, weight: 2 });
                     circle.on('click', () => {
-                        mostrarInfoCard(`<i class="fas fa-exclamation-triangle"></i> ${zona.nombre}`, `
-                            <p><strong>Alerta:</strong> <span style="color:${color};font-weight:bold;">${zona.nivel_alerta.toUpperCase()}</span></p>
-                            <p><strong>Damnificados:</strong> ${zona.damnificados || 0}</p>
-                            <p><strong>Heridos:</strong> ${zona.heridos || 0}</p>
-                            <p>${zona.descripcion || 'Sin descripción detallada.'}</p>
-                        `);
+                        mostrarInfoCard(
+                            `<i class="fas fa-exclamation-triangle"></i> ${zona.nombre}`,
+                            `
+                                <p><strong>Alerta:</strong> <span style="color:${color};font-weight:bold;">${zona.nivel_alerta.toUpperCase()}</span></p>
+                                <p><strong>Damnificados:</strong> ${zona.damnificados || 0}</p>
+                                <p><strong>Heridos:</strong> ${zona.heridos || 0}</p>
+                                <p>${zona.descripcion || 'Sin descripción detallada.'}</p>
+                            `,
+                            { lat: zona.lat, lng: zona.lng, nombre: zona.nombre }
+                        );
                     });
                     circle.addTo(capaZonas);
                 }
             });
         });
     }
+
+    /* ============================================
+       RUTAS CON LEAFLET ROUTING MACHINE + OSRM
+       ============================================ */
+    let rutaControl = null;
+
+    function calcularRuta(destLat, destLng, destNombre) {
+        // 1. Limpiar ruta anterior
+        if (rutaControl) {
+            mapaPrincipal.removeControl(rutaControl);
+            rutaControl = null;
+        }
+        document.querySelector('.ruta-resumen')?.remove();
+
+        // 2. Verificar contexto seguro
+        if (!window.isSecureContext) {
+            alert('La geolocalización requiere HTTPS o localhost.\n\nEstás en: ' + window.location.origin);
+            return;
+        }
+
+        // 3. Pedir ubicación y calcular ruta
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const origenLat = pos.coords.latitude;
+                const origenLng = pos.coords.longitude;
+                console.log(`[Ruta] Desde (${origenLat}, ${origenLng}) hasta ${destNombre}`);
+
+                rutaControl = L.Routing.control({
+                    waypoints: [
+                        L.latLng(origenLat, origenLng),
+                        L.latLng(destLat, destLng)
+                    ],
+                    routeWhileDragging: false,
+                    addWaypoints: false,
+                    show: true,
+                    language: 'es',
+                    router: L.Routing.osrmv1({
+                        serviceUrl: 'https://router.project-osrm.org/route/v1',
+                        profile: 'driving'
+                    }),
+                    lineOptions: {
+                        styles: [
+                            { color: '#0066cc', opacity: 0.9, weight: 6 },
+                            { color: '#ffffff', opacity: 0.4, weight: 2 }
+                        ]
+                    },
+                    createMarker: function(i, waypoint, n) {
+                        if (i === 0) {
+                            return L.marker(waypoint.latLng, {
+                                icon: L.divIcon({
+                                    html: '<div style="background:#28a745;border-radius:50%;width:16px;height:16px;border:3px solid white;box-shadow:0 0 8px rgba(0,0,0,0.5);"></div>',
+                                    className: 'ruta-origen-icon',
+                                    iconSize: [22, 22],
+                                    iconAnchor: [11, 11]
+                                })
+                            });
+                        }
+                        if (i === n - 1) {
+                            return L.marker(waypoint.latLng, {
+                                icon: L.divIcon({
+                                    html: '<div style="background:#dc3545;border-radius:50%;width:22px;height:22px;border:3px solid white;box-shadow:0 0 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;"><i class="fas fa-flag" style="color:white;font-size:10px;"></i></div>',
+                                    className: 'ruta-destino-icon',
+                                    iconSize: [28, 28],
+                                    iconAnchor: [14, 14]
+                                })
+                            });
+                        }
+                        return null;
+                    }
+                }).addTo(mapaPrincipal);
+
+                // Cuando se calcula la ruta
+                rutaControl.on('routesfound', (e) => {
+                    const ruta = e.routes[0];
+                    const distKm = (ruta.summary.totalDistance / 1000).toFixed(2);
+                    const tiempoMin = Math.round(ruta.summary.totalTime / 60);
+                    
+                    console.log(`[Ruta] Distancia: ${distKm} km · Duración: ${tiempoMin} min`);
+                    
+                    const resumen = document.createElement('div');
+                    resumen.className = 'ruta-resumen';
+                    resumen.innerHTML = `
+                        <div style="margin-top:10px;padding:10px;background:rgba(0,102,204,0.1);border-radius:8px;border-left:3px solid #0066cc;">
+                            <p style="margin:0;font-size:0.85rem;">
+                                <i class="fas fa-road"></i> <strong>${distKm} km</strong> · 
+                                <i class="fas fa-clock"></i> <strong>~${tiempoMin} min</strong>
+                            </p>
+                        </div>
+                    `;
+                    document.querySelector('.ruta-resumen')?.remove();
+                    document.getElementById('info-card-body').appendChild(resumen);
+                });
+
+                rutaControl.on('routingerror', () => {
+                    alert('No se pudo calcular la ruta. Verifica tu conexión a internet.');
+                });
+            },
+            (err) => {
+                let msg = 'No se pudo obtener tu ubicación.\n\n';
+                if (err.code === err.PERMISSION_DENIED) msg += 'Permiso denegado. Habilita la ubicación en el navegador.';
+                else if (err.code === err.POSITION_UNAVAILABLE) msg += 'Posición no disponible. Verifica tu GPS.';
+                else if (err.code === err.TIMEOUT) msg += 'Tiempo de espera agotado.';
+                else msg += 'Error: ' + (err.message || 'desconocido');
+                alert(msg);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    }
 </script>
 {% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'vendor/leaflet-routing-machine/leaflet-routing-machine.css' %}">
 <style>
     /* ==================== ESTRUCTURA MOBILE FIRST ==================== */
     .map-layout {
@@ -666,6 +797,65 @@
         .sidebar { width: 260px; }
         .sidebar-content { padding: 0.5rem; }
         .sidebar-section { margin-bottom: 0.75rem; }
+    }
+
+    /* ==================== BOTÓN "CÓMO LLEGAR" ==================== */
+    .btn-como-llegar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px;
+        margin-top: 12px;
+        background: #0066cc;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.15s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .btn-como-llegar:hover { background: #0052a3; }
+    .btn-como-llegar:active { transform: scale(0.98); }
+
+    /* ==================== PANEL DE RUTA (Leaflet Routing Machine) ==================== */
+    .leaflet-routing-container {
+        background: var(--bg-card, #ffffff) !important;
+        color: var(--text-primary, #333) !important;
+        max-width: 320px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+        font-size: 0.85rem !important;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .leaflet-routing-container h2,
+    .leaflet-routing-container h3 {
+        font-size: 0.9rem;
+        color: var(--text-primary, #333);
+    }
+
+    [data-theme="dark"] .leaflet-routing-container,
+    [data-theme="dark"] .leaflet-routing-alt {
+        background: #1a2744 !important;
+        color: #e0e0e0 !important;
+    }
+
+    [data-theme="dark"] .leaflet-routing-container h2,
+    [data-theme="dark"] .leaflet-routing-container h3 {
+        color: #e0e0e0;
+    }
+
+    @media (max-width: 768px) {
+        .leaflet-routing-container {
+            max-width: calc(100vw - 30px) !important;
+            max-height: 40vh;
+            font-size: 0.8rem !important;
+        }
     }
 </style>
 {% endblock %}
