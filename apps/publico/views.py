@@ -1,28 +1,24 @@
 """
-Vistas para la aplicación pública de CobijoVzla.
-Este módulo contiene las vistas y APIs necesarias para:
-- Mapa público interactivo
-- Búsqueda de refugios y lugares
-- Reportes ciudadanos
-- Mapa de calor público
-- Zonas afectadas
+Vistas del portal público de CobijoVzla.
+
+Controladores delgados: la lógica de negocio vive en `services.py`
+y el cálculo del heatmap en `apps.optimizacion.heatmap`.
 """
+import logging
+
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.db.models import Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 
-from apps.core.models import (
-    RefugioExistente,
-    ZonaAfectada,
-    Estado,
-    Parroquia
-)
-from apps.emergencias.models import Reporte, Evento
-from apps.optimizacion.heatmap import generar_mapa_calor
+from apps.optimizacion.heatmap import generar_mapa_calor, Pesos
+from . import services
 from .forms import ReporteCiudadanoForm
+
+
+logger = logging.getLogger(__name__)
+
 
 # ============================================================
 # VISTAS DE PLANTILLAS
@@ -30,19 +26,17 @@ from .forms import ReporteCiudadanoForm
 
 def mapa_publico(request):
     """Vista principal del mapa público."""
-    context = {
-        'eventos_activos': Evento.objects.filter(activo=True).count(),
-        'total_refugios': RefugioExistente.objects.filter(operativo=True).count(),
-    }
-    return render(request, 'publico/mapa_publico.html', context)
+    return render(request, 'publico/mapa_publico.html', {
+        'estadisticas': services.obtener_estadisticas_home(),
+    })
+
 
 def reporte_ciudadano_view(request):
     """Vista para el formulario de reporte ciudadano."""
-    form = ReporteCiudadanoForm()
-    context = {
-        'form': form,
-    }
-    return render(request, 'publico/reporte_ciudadano.html', context)
+    return render(request, 'publico/reporte_ciudadano.html', {
+        'form': ReporteCiudadanoForm(),
+    })
+
 
 # ============================================================
 # APIs PÚBLICAS
@@ -51,144 +45,66 @@ def reporte_ciudadano_view(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def api_refugios_publicos(request):
-    """API que devuelve la lista de refugios operativos."""
+    """Lista de refugios operativos (cacheado 5 min)."""
     try:
-        refugios = RefugioExistente.objects.filter(operativo=True)
-        data = []
-        for r in refugios:
-            data.append({
-                'id': r.id,
-                'nombre': r.nombre,
-                'direccion': r.direccion,
-                'lat': r.ubicacion.y if r.ubicacion else None,
-                'lng': r.ubicacion.x if r.ubicacion else None,
-                'capacidad_total': r.capacidad_total,
-                'capacidad_disponible': r.capacidad_disponible,
-                'servicios': r.servicios if isinstance(r.servicios, list) else [],
-                'operativo': r.operativo,
-                'telefono': r.telefono,
-                'horario': r.horario,
-            })
-        return JsonResponse(data, safe=False)
+        return JsonResponse(services.obtener_refugios_publicos(), safe=False)
     except Exception as e:
+        logger.error(f"Error en api_refugios_publicos: {e}", exc_info=True)
         return JsonResponse(
-            {'error': f'Error al obtener refugios: {str(e)}'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {'error': 'Error al obtener refugios'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def api_zonas_afectadas(request):
-    """API que devuelve las zonas afectadas activas."""
+    """Zonas afectadas activas (cacheado 3 min)."""
     try:
-        zonas = ZonaAfectada.objects.filter(
-            fecha_fin__isnull=True
-        ).select_related('evento')
-        
-        data = []
-        for z in zonas:
-            centroide = z.geom.centroid if z.geom else None
-            data.append({
-                'id': z.id,
-                'nombre': z.nombre,
-                'descripcion': z.descripcion,
-                'nivel_alerta': z.nivel_alerta,
-                'heridos': z.heridos,
-                'fallecidos': z.fallecidos,
-                'damnificados': z.damnificados,
-                'lat': centroide.y if centroide else None,
-                'lng': centroide.x if centroide else None,
-                'evento': z.evento.nombre if z.evento else None,
-                'tipo_evento': z.evento.tipo if z.evento else None,
-            })
-        return JsonResponse(data, safe=False)
+        return JsonResponse(services.obtener_zonas_activas(), safe=False)
     except Exception as e:
+        logger.error(f"Error en api_zonas_afectadas: {e}", exc_info=True)
         return JsonResponse(
-            {'error': f'Error al obtener zonas afectadas: {str(e)}'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {'error': 'Error al obtener zonas afectadas'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def api_mapa_calor_publico(request):
-    """API que genera el mapa de calor público."""
+    """Mapa de calor con pesos personalizables (query params)."""
     try:
-        puntos = generar_mapa_calor()
+        pesos = Pesos.from_request(request.query_params)
+        puntos = generar_mapa_calor(pesos=pesos)
         return JsonResponse(puntos, safe=False)
     except Exception as e:
+        logger.error(f"Error en api_mapa_calor_publico: {e}", exc_info=True)
         return JsonResponse(
-            {'error': f'Error al generar mapa de calor: {str(e)}'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {'error': 'Error al generar mapa de calor'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def api_buscar_lugar(request):
-    """API para buscar estados, parroquias y refugios (Calcula Centroides)."""
+    """Búsqueda de estados, parroquias y refugios por nombre."""
     try:
-        query = request.GET.get('q', '').strip()
-        
-        if not query or len(query) < 2:
-            return JsonResponse([], safe=False)
-            
-        resultados = []
-        
-        # 1. Buscar en Parroquias
-        parroquias = Parroquia.objects.filter(
-            nombre__icontains=query
-        ).select_related('estado')[:5]
-        
-        for p in parroquias:
-            if p.geom:
-                centroide = p.geom.centroid
-                resultados.append({
-                    'tipo': 'parroquia',
-                    'nombre': p.nombre,
-                    'estado': f"Parroquia del Estado {p.estado.nombre}" if p.estado else 'Parroquia',
-                    'lat': centroide.y,
-                    'lng': centroide.x,
-                })
-                
-        # 2. Buscar en Estados
-        estados = Estado.objects.filter(nombre__icontains=query)[:3]
-        for e in estados:
-            if e.geom:
-                centroide = e.geom.centroid
-                resultados.append({
-                    'tipo': 'estado',
-                    'nombre': e.nombre,
-                    'estado': 'Estado',
-                    'lat': centroide.y,
-                    'lng': centroide.x,
-                })
-                
-        # 3. Buscar en Refugios
-        refugios = RefugioExistente.objects.filter(
-            Q(nombre__icontains=query) | Q(direccion__icontains=query),
-            operativo=True
-        )[:5]
-        
-        for r in refugios:
-            if r.ubicacion:
-                resultados.append({
-                    'tipo': 'refugio',
-                    'nombre': r.nombre,
-                    'estado': r.direccion or 'Refugio',
-                    'lat': r.ubicacion.y,
-                    'lng': r.ubicacion.x,
-                })
-                
-        return JsonResponse(resultados, safe=False)
+        query = request.GET.get('q', '')
+        return JsonResponse(services.buscar_lugares(query), safe=False)
     except Exception as e:
+        logger.error(f"Error en api_buscar_lugar: {e}", exc_info=True)
         return JsonResponse(
-            {'error': f'Error en búsqueda: {str(e)}'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {'error': 'Error en búsqueda'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def api_reporte_ciudadano(request):
-    """API para recibir reportes ciudadanos."""
+    """Recibe y valida reportes ciudadanos."""
     try:
         form = ReporteCiudadanoForm(request.data, request.FILES)
         if form.is_valid():
@@ -197,25 +113,27 @@ def api_reporte_ciudadano(request):
                 'id': reporte.id,
                 'mensaje': 'Reporte enviado correctamente. ¡Gracias por ayudar!',
             }, status=status.HTTP_201_CREATED)
-        else:
-            return JsonResponse({
-                'error': 'Datos inválidos',
-                'detalles': form.errors,
-            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return JsonResponse({
+            'error': 'Datos inválidos',
+            'detalles': form.errors,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
     except Exception as e:
+        logger.error(f"Error en api_reporte_ciudadano: {e}", exc_info=True)
         return JsonResponse(
-            {'error': f'Error al enviar reporte: {str(e)}'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {'error': 'Error al procesar el reporte'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def api_info_emergencia(request):
-    """API que devuelve información de contacto de emergencia."""
-    data = {
+    """Información de contacto de emergencia (estática)."""
+    return JsonResponse({
         'telefono_emergencia': '171',
         'bomberos': '911',
         'proteccion_civil': '0800-123-456',
         'horario_atencion': '24 horas',
-    }
-    return JsonResponse(data)
+    })

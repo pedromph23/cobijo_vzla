@@ -1,160 +1,65 @@
 """
 Vistas para la aplicación de mapa administrativo.
+
+Los controladores son delgados: delegan la lógica de negocio a
+`services.py` y la autorización a `decorators.py`.
 """
-
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse, HttpResponse
-from django.db.models import Count, Sum, Avg
-from django.utils import timezone
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-
 import csv
 import json
+import logging
+import sys
+from io import StringIO
 
-from apps.core.models import (
-    PuntoDemanda,
-    SitioCandidato,
-    RefugioExistente,
-    ZonaAfectada,
-    ParametrosModelo,
-    ResultadoOptimizacion,
-    Estado,
-    Parroquia
-)
-from apps.emergencias.models import Evento, Reporte
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse, HttpResponse
+from django.core.management import call_command
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+from apps.core.models import ParametrosModelo, ResultadoOptimizacion
 from apps.optimizacion.optimizer import ejecutar_optimizacion
 from apps.optimizacion.heatmap import generar_mapa_calor
 
-
-# ============================================================
-# FUNCIONES AUXILIARES
-# ============================================================
-
-def es_gestor(user):
-    """Verifica si el usuario pertenece al grupo 'Gestores'."""
-    if not user or not user.is_authenticated:
-        return False
-    return user.groups.filter(name='Gestores').exists() or user.is_superuser
+from . import services
+from .decorators import es_gestor, gestor_requerido
 
 
-def get_datos_estadisticos():
-    """Obtiene estadísticas generales del sistema."""
-    try:
-        return {
-            'estados': Estado.objects.count(),
-            'parroquias': Parroquia.objects.count(),
-            'puntos_demanda': PuntoDemanda.objects.count(),
-            'sitios_candidatos': SitioCandidato.objects.count(),
-            'refugios': RefugioExistente.objects.count(),
-            'zonas_afectadas': ZonaAfectada.objects.filter(fecha_fin__isnull=True).count(),
-            'eventos_activos': Evento.objects.filter(activo=True).count(),
-            'reportes_recientes': Reporte.objects.filter(fecha__date=timezone.now().date()).count(),
-        }
-    except Exception as e:
-        print(f"Error en get_datos_estadisticos: {e}")
-        return {
-            'estados': 0, 'parroquias': 0, 'puntos_demanda': 0,
-            'sitios_candidatos': 0, 'refugios': 0, 'zonas_afectadas': 0,
-            'eventos_activos': 0, 'reportes_recientes': 0,
-        }
-
-
-def get_datos_mapa_context():
-    """Obtiene el contexto completo para el mapa administrativo."""
-    try:
-        puntos_demanda = []
-        for p in PuntoDemanda.objects.select_related('parroquia__estado').all()[:500]:
-            puntos_demanda.append({
-                'id': p.id,
-                'nombre': p.nombre,
-                'lat': p.ubicacion.y if p.ubicacion else None,
-                'lng': p.ubicacion.x if p.ubicacion else None,
-                'poblacion': p.poblacion,
-                'vulnerabilidad': p.vulnerabilidad,
-            })
-
-        sitios_candidatos = []
-        for s in SitioCandidato.objects.filter(disponible=True)[:200]:
-            sitios_candidatos.append({
-                'id': s.id,
-                'nombre': s.nombre,
-                'lat': s.ubicacion.y if s.ubicacion else None,
-                'lng': s.ubicacion.x if s.ubicacion else None,
-                'capacidad_maxima': s.capacidad_maxima,
-            })
-
-        refugios = []
-        for r in RefugioExistente.objects.all()[:200]:
-            refugios.append({
-                'id': r.id,
-                'nombre': r.nombre,
-                'lat': r.ubicacion.y if r.ubicacion else None,
-                'lng': r.ubicacion.x if r.ubicacion else None,
-                'capacidad_disponible': r.capacidad_disponible,
-                'operativo': r.operativo,
-            })
-
-        zonas_afectadas = []
-        for z in ZonaAfectada.objects.filter(fecha_fin__isnull=True).select_related('evento')[:100]:
-            zonas_afectadas.append({
-                'id': z.id,
-                'nombre': z.nombre,
-                'descripcion': z.descripcion,
-                'nivel_alerta': z.nivel_alerta,
-                'heridos': z.heridos,
-                'fallecidos': z.fallecidos,
-                'damnificados': z.damnificados,
-                'geojson': z.geom.geojson if z.geom else None,
-            })
-
-        return {
-            'puntos_demanda': puntos_demanda,
-            'sitios_candidatos': sitios_candidatos,
-            'refugios': refugios,
-            'zonas_afectadas': zonas_afectadas,
-        }
-    except Exception as e:
-        print(f"Error en get_datos_mapa_context: {e}")
-        return {
-            'puntos_demanda': [], 'sitios_candidatos': [],
-            'refugios': [], 'zonas_afectadas': [],
-        }
+logger = logging.getLogger(__name__)
 
 
 # ============================================================
 # VISTAS DE PLANTILLAS
 # ============================================================
 
-@login_required
-@user_passes_test(es_gestor)
+@gestor_requerido
 def panel_control(request):
     """Vista principal del panel de control."""
-    parametros = ParametrosModelo.objects.all().order_by('-fecha_creacion')
-    context = {
+    parametros = ParametrosModelo.objects.order_by('-fecha_creacion')
+    return render(request, 'admin/panel_control.html', {
         'parametros': parametros,
-        'estadisticas': get_datos_estadisticos(),
-    }
-    return render(request, 'admin/panel_control.html', context)
+        'estadisticas': services.obtener_estadisticas(),
+    })
 
 
-@login_required
-@user_passes_test(es_gestor)
+@gestor_requerido
 def carga_datos(request):
-    """Vista para la página de carga de datos."""
-    context = {'estadisticas': get_datos_estadisticos()}
-    return render(request, 'admin/carga_datos.html', context)
+    """Vista para la página de gestión de datos."""
+    return render(request, 'admin/carga_datos.html', {
+        'estadisticas': services.obtener_estadisticas(),
+    })
 
 
-@login_required
-@user_passes_test(es_gestor)
+@gestor_requerido
 def resultados_view(request):
-    """Vista para la página de resultados."""
-    resultados = ResultadoOptimizacion.objects.select_related('parametros').order_by('-fecha_ejecucion')[:10]
-    context = {'resultados': resultados}
-    return render(request, 'admin/resultados.html', context)
+    """Vista para la página de resultados de optimización."""
+    resultados = (
+        ResultadoOptimizacion.objects
+        .select_related('parametros')
+        .order_by('-fecha_ejecucion')[:10]
+    )
+    return render(request, 'admin/resultados.html', {
+        'resultados': resultados,
+    })
 
 
 # ============================================================
@@ -164,21 +69,22 @@ def resultados_view(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_datos_mapa(request):
-    """API que devuelve todos los datos para el mapa administrativo."""
+    """Datos completos para el mapa administrativo."""
     try:
-        datos = get_datos_mapa_context()
-        return JsonResponse(datos, safe=False)
+        return JsonResponse(services.obtener_datos_mapa(), safe=False)
     except Exception as e:
+        logger.error(f"Error en api_datos_mapa: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_estadisticas(request):
-    """API que devuelve estadísticas generales."""
+    """Estadísticas generales del sistema."""
     try:
-        return JsonResponse(get_datos_estadisticos())
+        return JsonResponse(services.obtener_estadisticas())
     except Exception as e:
+        logger.error(f"Error en api_estadisticas: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -189,45 +95,50 @@ def api_estadisticas(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_ejecutar_optimizacion(request):
-    """API para ejecutar un modelo de optimización."""
+    """Ejecuta un modelo de optimización con los parámetros dados."""
+    param_id = request.data.get('parametros_id')
+    if not param_id:
+        return JsonResponse({'error': 'Se requiere parametros_id'}, status=400)
+
     try:
-        param_id = request.data.get('parametros_id')
-        if not param_id:
-            return JsonResponse({'error': 'Se requiere parametros_id'}, status=400)
-        
         parametros = get_object_or_404(ParametrosModelo, pk=param_id)
         resultado = ejecutar_optimizacion(param_id)
-        
-        if resultado is None:
-            return JsonResponse({'error': 'La optimización no devolvió resultados'}, status=400)
-        
+
+        if not resultado:
+            return JsonResponse(
+                {'error': 'La optimización no devolvió resultados'},
+                status=400,
+            )
         if 'error' in resultado:
             return JsonResponse({'error': resultado['error']}, status=400)
-        
+
         resultado_obj = ResultadoOptimizacion.objects.create(
             parametros=parametros,
-            datos_json=resultado
+            datos_json=resultado,
         )
-        
+
         return JsonResponse({
             'resultado_id': resultado_obj.id,
             'datos': resultado,
-            'mensaje': 'Optimización ejecutada correctamente'
+            'mensaje': 'Optimización ejecutada correctamente',
         })
     except Exception as e:
+        logger.error(f"Error en api_ejecutar_optimizacion: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_listar_resultados(request):
-    """API para listar resultados de optimización."""
+    """Lista los últimos 20 resultados de optimización."""
     try:
-        resultados = ResultadoOptimizacion.objects.select_related('parametros').order_by('-fecha_ejecucion')[:20]
-        
-        data = []
-        for r in resultados:
-            data.append({
+        resultados = (
+            ResultadoOptimizacion.objects
+            .select_related('parametros')
+            .order_by('-fecha_ejecucion')[:20]
+        )
+        data = [
+            {
                 'id': r.id,
                 'fecha': r.fecha_ejecucion.strftime('%Y-%m-%d %H:%M'),
                 'escenario': r.parametros.nombre_escenario if r.parametros else 'Sin escenario',
@@ -239,32 +150,36 @@ def api_listar_resultados(request):
                     'costo_total': r.datos_json.get('costo_total'),
                 },
                 'centros': r.datos_json.get('centros', [])[:5],
-            })
-        
+            }
+            for r in resultados
+        ]
         return JsonResponse(data, safe=False)
     except Exception as e:
+        logger.error(f"Error en api_listar_resultados: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_detalle_resultado(request, resultado_id):
-    """API para obtener detalle de un resultado específico."""
+    """Devuelve el detalle de un resultado específico."""
     try:
         resultado = get_object_or_404(
             ResultadoOptimizacion.objects.select_related('parametros'),
-            pk=resultado_id
+            pk=resultado_id,
         )
-        
         data = {
             'id': resultado.id,
             'fecha': resultado.fecha_ejecucion.strftime('%Y-%m-%d %H:%M'),
-            'escenario': resultado.parametros.nombre_escenario if resultado.parametros else 'Sin escenario',
+            'escenario': (
+                resultado.parametros.nombre_escenario
+                if resultado.parametros else 'Sin escenario'
+            ),
         }
         data.update(resultado.datos_json)
-        
         return JsonResponse(data)
     except Exception as e:
+        logger.error(f"Error en api_detalle_resultado: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -275,59 +190,71 @@ def api_detalle_resultado(request, resultado_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_mapa_calor(request):
-    """API para generar mapa de calor."""
+    """Genera el mapa de calor con pesos personalizables."""
     try:
         pesos = {
-            'densidad': float(request.query_params.get('densidad', 1.0)),
-            'vulnerabilidad': float(request.query_params.get('vulnerabilidad', 1.0)),
-            'distancia': float(request.query_params.get('distancia', 1.0)),
-            'heridos': float(request.query_params.get('heridos', 1.0)),
-            'fallecidos': float(request.query_params.get('fallecidos', 1.0)),
-            'damnificados': float(request.query_params.get('damnificados', 1.0)),
-            'reportes': float(request.query_params.get('reportes', 1.0)),
+            clave: float(request.query_params.get(clave, 1.0))
+            for clave in (
+                'densidad', 'vulnerabilidad', 'distancia',
+                'heridos', 'fallecidos', 'damnificados', 'reportes',
+            )
         }
-        
-        puntos = generar_mapa_calor(pesos)
-        return JsonResponse(puntos, safe=False)
+        return JsonResponse(generar_mapa_calor(pesos), safe=False)
     except Exception as e:
+        logger.error(f"Error en api_mapa_calor: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
 
 # ============================================================
-# APIs DE EJECUCIÓN DE COMANDOS
+# APIs DE COMANDOS DE GESTIÓN
 # ============================================================
+
+COMANDOS_PERMITIDOS = (
+    'cargar_datos_prueba',
+    'cargar_datos_masivos',
+    'importar_limites',
+)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_ejecutar_comando(request):
-    """API para ejecutar comandos de gestión."""
+    """
+    Ejecuta comandos de gestión predefinidos.
+
+    ⚠️ Solo permite comandos de la whitelist COMANDOS_PERMITIDOS.
+    Requiere que el usuario sea gestor o superusuario.
+    """
+    if not es_gestor(request.user):
+        return JsonResponse(
+            {'error': 'Se requieren permisos de gestor'},
+            status=403,
+        )
+
+    comando = request.data.get('comando')
+    if not comando:
+        return JsonResponse({'error': 'Se requiere un comando'}, status=400)
+    if comando not in COMANDOS_PERMITIDOS:
+        return JsonResponse(
+            {'error': f'Comando no permitido: {comando}'},
+            status=400,
+        )
+
+    salida = StringIO()
+    stdout_original = sys.stdout
     try:
-        from django.core.management import call_command
-        from io import StringIO
-        import sys
-        
-        comando = request.data.get('comando')
-        comandos_permitidos = ['cargar_datos_prueba', 'cargar_datos_masivos', 'importar_limites']
-        
-        if not comando:
-            return JsonResponse({'error': 'Se requiere un comando'}, status=400)
-        
-        if comando not in comandos_permitidos:
-            return JsonResponse({'error': f'Comando no permitido: {comando}'}, status=400)
-        
-        salida = StringIO()
         sys.stdout = salida
         call_command(comando)
-        sys.stdout = sys.__stdout__
-        
         return JsonResponse({
             'success': True,
             'mensaje': f'Comando {comando} ejecutado correctamente',
-            'salida': salida.getvalue()
+            'salida': salida.getvalue(),
         })
     except Exception as e:
-        sys.stdout = sys.__stdout__
+        logger.error(f"Error ejecutando comando {comando}: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
+    finally:
+        sys.stdout = stdout_original
 
 
 # ============================================================
@@ -337,16 +264,24 @@ def api_ejecutar_comando(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_exportar_csv(request):
-    """API para exportar resultados a CSV."""
+    """Exporta los resultados de optimización a CSV."""
     try:
-        resultados = ResultadoOptimizacion.objects.select_related('parametros').order_by('-fecha_ejecucion')
-        
+        resultados = (
+            ResultadoOptimizacion.objects
+            .select_related('parametros')
+            .order_by('-fecha_ejecucion')
+        )
+
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="resultados_optimizacion.csv"'
-        
+        response['Content-Disposition'] = (
+            'attachment; filename="resultados_optimizacion.csv"'
+        )
+
         writer = csv.writer(response)
-        writer.writerow(['ID', 'Fecha', 'Escenario', 'Distancia Total (km)', 'Población Atendida', '% Cubierto', 'Costo Total'])
-        
+        writer.writerow([
+            'ID', 'Fecha', 'Escenario', 'Distancia Total (km)',
+            'Población Atendida', '% Cubierto', 'Costo Total',
+        ])
         for r in resultados:
             writer.writerow([
                 r.id,
@@ -357,47 +292,46 @@ def api_exportar_csv(request):
                 r.datos_json.get('porcentaje_cubierto', 0),
                 r.datos_json.get('costo_total', 0),
             ])
-        
         return response
     except Exception as e:
+        logger.error(f"Error en api_exportar_csv: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_exportar_geojson(request):
-    """API para exportar centros seleccionados a GeoJSON."""
+    """Exporta los centros del último resultado a GeoJSON."""
     try:
         resultado = ResultadoOptimizacion.objects.order_by('-fecha_ejecucion').first()
-        
         if not resultado:
-            return JsonResponse({'error': 'No hay resultados para exportar'}, status=404)
-        
-        features = []
-        for centro in resultado.datos_json.get('centros', []):
-            features.append({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [centro.get('lng', 0), centro.get('lat', 0)]
-                },
-                'properties': {
-                    'nombre': centro.get('nombre', ''),
-                    'id': centro.get('id', None),
-                }
-            })
-        
-        geojson = {
-            'type': 'FeatureCollection',
-            'features': features
-        }
-        
+            return JsonResponse(
+                {'error': 'No hay resultados para exportar'},
+                status=404,
+            )
+
+        geojson = services.construir_geojson_centros(resultado.datos_json)
         response = HttpResponse(
             json.dumps(geojson, indent=2, ensure_ascii=False),
-            content_type='application/json'
+            content_type='application/geo+json',
         )
-        response['Content-Disposition'] = 'attachment; filename="centros_seleccionados.geojson"'
-        
+        response['Content-Disposition'] = (
+            'attachment; filename="centros_seleccionados.geojson"'
+        )
         return response
     except Exception as e:
+        logger.error(f"Error en api_exportar_geojson: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
+
+
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+def health_check(request):
+    """Endpoint público para verificación de salud del servicio."""
+    return JsonResponse({
+        'status': 'ok',
+        'service': 'cobijo-vzla',
+        'timestamp': __import__('django.utils.timezone', fromlist=['now']).now().isoformat(),
+    })

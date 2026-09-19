@@ -1,3 +1,10 @@
-from django.contrib import admin
+"""
+Administración del módulo `publico`.
 
-# Register your models here.
+Este módulo sirve las APIs del portal público (mapa, búsqueda, reportes).
+No define modelos propios: los reportes ciudadanos se registran en
+`apps.emergencias.admin`.
+
+Aquí no se registra nada, pero mantenemos el archivo por convención.
+"""
+from django.contrib import admin  # noqa: F401
