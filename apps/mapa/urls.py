@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 urlpatterns = [
@@ -7,4 +7,5 @@ urlpatterns = [
     path('gestor/', views.panel_gestor, name='panel_gestor'),
     path('carga-datos/', views.carga_datos, name='carga_datos'),
     path('resultados/', views.resultados_view, name='resultados'),
+    path('datos/', include('apps.mapa.urls_crud')),   # ← NUEVO
 ]
