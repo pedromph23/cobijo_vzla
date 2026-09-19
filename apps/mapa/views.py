@@ -1,8 +1,17 @@
 """
-Vistas para la aplicación de mapa administrativo.
+Vistas del módulo `mapa` (panel administrativo).
 
 Los controladores son delgados: delegan la lógica de negocio a
 `services.py` y la autorización a `decorators.py`.
+
+Estructura:
+- Vistas de plantilla: panel_control, panel_admin, panel_gestor, carga_datos, resultados_view
+- APIs de mapa: datos_mapa, estadisticas
+- APIs de optimización: ejecutar, listar, detalle
+- APIs de mapa de calor
+- APIs de comandos de gestión
+- APIs de exportación (CSV, GeoJSON)
+- Health check
 """
 import csv
 import json
@@ -10,9 +19,10 @@ import logging
 import sys
 from io import StringIO
 
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
 from django.core.management import call_command
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
@@ -21,10 +31,12 @@ from apps.optimizacion.optimizer import ejecutar_optimizacion
 from apps.optimizacion.heatmap import generar_mapa_calor
 
 from . import services
-from .decorators import es_gestor, gestor_requerido
-
-from django.shortcuts import redirect
-from .decorators import admin_requerido, gestor_requerido, es_administrador, es_gestor
+from .decorators import (
+    es_gestor,
+    es_administrador,
+    gestor_requerido,
+    admin_requerido,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -36,17 +48,50 @@ logger = logging.getLogger(__name__)
 
 @gestor_requerido
 def panel_control(request):
-    """Vista principal del panel de control."""
+    """
+    Dispatcher: redirige al panel específico según el grupo del usuario.
+
+    - Administradores (super/staff/grupo Administradores) → panel_admin
+    - Gestores                                              → panel_gestor
+    """
+    if es_administrador(request.user):
+        return redirect('panel_admin')
+    return redirect('panel_gestor')
+
+
+@admin_requerido
+def panel_admin(request):
+    """
+    Panel completo para administradores.
+
+    Incluye: mapa, datos, optimización, reportes y herramientas de gestión.
+    """
     parametros = ParametrosModelo.objects.order_by('-fecha_creacion')
-    return render(request, 'admin/panel_control.html', {
+    return render(request, 'admin/panel_admin.html', {
         'parametros': parametros,
         'estadisticas': services.obtener_estadisticas(),
+        'es_admin': True,
+        'grupos_usuario': list(request.user.groups.values_list('name', flat=True)),
     })
 
 
 @gestor_requerido
+def panel_gestor(request):
+    """
+    Panel operativo para gestores.
+
+    Incluye: mapa, datos (lectura), reportes. Sin configuración crítica.
+    """
+    return render(request, 'admin/panel_gestor.html', {
+        'estadisticas': services.obtener_estadisticas(),
+        'es_admin': es_administrador(request.user),
+        'grupos_usuario': list(request.user.groups.values_list('name', flat=True)),
+    })
+
+
+@admin_requerido
 def carga_datos(request):
-    """Vista para la página de gestión de datos."""
+    """Vista para la página de gestión de datos (solo administradores)."""
     return render(request, 'admin/carga_datos.html', {
         'estadisticas': services.obtener_estadisticas(),
     })
@@ -77,7 +122,7 @@ def api_datos_mapa(request):
         return JsonResponse(services.obtener_datos_mapa(), safe=False)
     except Exception as e:
         logger.error(f"Error en api_datos_mapa: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Error al obtener datos del mapa'}, status=500)
 
 
 @api_view(['GET'])
@@ -88,7 +133,7 @@ def api_estadisticas(request):
         return JsonResponse(services.obtener_estadisticas())
     except Exception as e:
         logger.error(f"Error en api_estadisticas: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Error al obtener estadísticas'}, status=500)
 
 
 # ============================================================
@@ -127,7 +172,7 @@ def api_ejecutar_optimizacion(request):
         })
     except Exception as e:
         logger.error(f"Error en api_ejecutar_optimizacion: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Error al ejecutar la optimización'}, status=500)
 
 
 @api_view(['GET'])
@@ -159,7 +204,7 @@ def api_listar_resultados(request):
         return JsonResponse(data, safe=False)
     except Exception as e:
         logger.error(f"Error en api_listar_resultados: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Error al listar resultados'}, status=500)
 
 
 @api_view(['GET'])
@@ -183,7 +228,7 @@ def api_detalle_resultado(request, resultado_id):
         return JsonResponse(data)
     except Exception as e:
         logger.error(f"Error en api_detalle_resultado: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Error al obtener el detalle'}, status=500)
 
 
 # ============================================================
@@ -205,7 +250,7 @@ def api_mapa_calor(request):
         return JsonResponse(generar_mapa_calor(pesos), safe=False)
     except Exception as e:
         logger.error(f"Error en api_mapa_calor: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Error al generar el mapa de calor'}, status=500)
 
 
 # ============================================================
@@ -298,7 +343,7 @@ def api_exportar_csv(request):
         return response
     except Exception as e:
         logger.error(f"Error en api_exportar_csv: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Error al exportar CSV'}, status=500)
 
 
 @api_view(['GET'])
@@ -324,7 +369,7 @@ def api_exportar_geojson(request):
         return response
     except Exception as e:
         logger.error(f"Error en api_exportar_geojson: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Error al exportar GeoJSON'}, status=500)
 
 
 # ============================================================
@@ -333,62 +378,10 @@ def api_exportar_geojson(request):
 
 def health_check(request):
     """Endpoint público para verificación de salud del servicio."""
+    from django.utils import timezone
+
     return JsonResponse({
         'status': 'ok',
         'service': 'cobijo-vzla',
-        'timestamp': __import__('django.utils.timezone', fromlist=['now']).now().isoformat(),
-    })
-
-    # ============================================================
-# PANEL DE CONTROL (SEGÚN GRUPO)
-# ============================================================
-
-@gestor_requerido
-def panel_control(request):
-    """
-    Dispatcher: redirige al panel específico según el grupo del usuario.
-
-    - Administradores → panel_admin
-    - Gestores → panel_gestor
-    """
-    if es_administrador(request.user):
-        return redirect('panel_admin')
-    return redirect('panel_gestor')
-
-
-@admin_requerido
-def panel_admin(request):
-    """
-    Panel completo para administradores.
-
-    Incluye: mapa, datos, optimización, reportes y herramientas de gestión.
-    """
-    parametros = ParametrosModelo.objects.order_by('-fecha_creacion')
-    return render(request, 'admin/panel_admin.html', {
-        'parametros': parametros,
-        'estadisticas': services.obtener_estadisticas(),
-        'es_admin': True,
-        'grupos_usuario': list(request.user.groups.values_list('name', flat=True)),
-    })
-
-
-@gestor_requerido
-def panel_gestor(request):
-    """
-    Panel operativo para gestores.
-
-    Incluye: mapa, datos (lectura), reportes. Sin configuración crítica.
-    """
-    return render(request, 'admin/panel_gestor.html', {
-        'estadisticas': services.obtener_estadisticas(),
-        'es_admin': es_administrador(request.user),
-        'grupos_usuario': list(request.user.groups.values_list('name', flat=True)),
-    })
-
-
-@admin_requerido
-def carga_datos(request):
-    """Vista para la página de gestión de datos (solo administradores)."""
-    return render(request, 'admin/carga_datos.html', {
-        'estadisticas': services.obtener_estadisticas(),
+        'timestamp': timezone.now().isoformat(),
     })
