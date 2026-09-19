@@ -6,7 +6,7 @@
 {% block content %}
 <div class="panel-container">
     
-    <!-- ==================== ENCABEZADO DEL PANEL ==================== -->
+    <!-- ==================== ENCABEZADO ==================== -->
     <div class="panel-header">
         <div class="panel-header-left">
             <div class="panel-icon">
@@ -14,7 +14,7 @@
             </div>
             <div>
                 <h2>Panel de Control</h2>
-                <p>Gestión de emergencias y optimización de recursos</p>
+                <p>Gestión de emergencias y recursos</p>
             </div>
         </div>
         <div class="panel-header-right">
@@ -38,17 +38,13 @@
             <i class="fas fa-database"></i>
             <span>Datos</span>
         </button>
-        <button class="tab" data-tab="optimizacion">
-            <i class="fas fa-cogs"></i>
-            <span>Optimización</span>
-        </button>
         <button class="tab" data-tab="reportes">
             <i class="fas fa-chart-bar"></i>
             <span>Reportes</span>
         </button>
     </div>
     
-    <!-- ==================== CONTENIDO DE PESTAÑAS ==================== -->
+    <!-- ==================== CONTENIDO ==================== -->
     <div class="panel-content">
         
         <!-- ============ PESTAÑA: MAPA ============ -->
@@ -62,10 +58,6 @@
                             <span><i class="fas fa-users"></i> Demandas</span>
                         </label>
                         <label class="checkbox-item">
-                            <input type="checkbox" id="chk-candidatos" checked>
-                            <span><i class="fas fa-building"></i> Candidatos</span>
-                        </label>
-                        <label class="checkbox-item">
                             <input type="checkbox" id="chk-refugios" checked>
                             <span><i class="fas fa-home"></i> Refugios</span>
                         </label>
@@ -75,9 +67,6 @@
                         </label>
                     </div>
                     <div class="toolbar-group">
-                        <button id="btn-calor-admin" class="btn-tool">
-                            <i class="fas fa-fire"></i> Mapa de Calor
-                        </button>
                         <button id="btn-limpiar-mapa" class="btn-tool">
                             <i class="fas fa-broom"></i> Limpiar
                         </button>
@@ -107,11 +96,6 @@
                             <i class="fas fa-users"></i>
                             <span id="stat-demandas">-</span>
                             <label>Demandas</label>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-building"></i>
-                            <span id="stat-sitios">-</span>
-                            <label>Sitios</label>
                         </div>
                         <div class="stat-item">
                             <i class="fas fa-home"></i>
@@ -149,54 +133,12 @@
             </div>
         </div>
         
-        <!-- ============ PESTAÑA: OPTIMIZACIÓN ============ -->
-        <div id="tab-optimizacion" class="tab-content">
-            <div class="optimizacion-layout">
-                <div class="optimizacion-form">
-                    <h3><i class="fas fa-cogs"></i> Ejecutar Optimización</h3>
-                    
-                    <form id="form-optimizacion" class="opt-form">
-                        {% csrf_token %}
-                        
-                        <div class="form-group">
-                            <label for="parametros-id">
-                                <i class="fas fa-tasks"></i> Seleccione un Escenario
-                            </label>
-                            <select id="parametros-id" class="form-control" required>
-                                <option value="">-- Seleccione --</option>
-                                {% for p in parametros %}
-                                    <option value="{{ p.id }}">{{ p.nombre_escenario }}</option>
-                                {% empty %}
-                                    <option value="">No hay escenarios disponibles</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <button type="submit" class="btn-ejecutar" id="btn-ejecutar">
-                            <i class="fas fa-play"></i> Ejecutar Optimización
-                        </button>
-                    </form>
-                </div>
-                
-                <div class="optimizacion-resultado">
-                    <h3><i class="fas fa-chart-line"></i> Resultados</h3>
-                    <div id="resultado-opt" class="resultado-content">
-                        <div class="placeholder-resultado" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
-                            <i class="fas fa-cogs fa-2x"></i>
-                            <p>Ejecute un modelo para ver resultados</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
         <!-- ============ PESTAÑA: REPORTES ============ -->
         <div id="tab-reportes" class="tab-content">
             <div class="reportes-layout">
                 
-                <!-- Historial -->
                 <div class="reportes-tabla">
-                    <h3><i class="fas fa-history"></i> Historial de Optimizaciones</h3>
+                    <h3><i class="fas fa-history"></i> Historial de Actividad</h3>
                     <div class="table-responsive">
                         <table id="tabla-resultados" class="tabla-resultados">
                             <thead>
@@ -214,22 +156,11 @@
                     </div>
                 </div>
                 
-                <!-- Exportaciones y Reportes Estadísticos -->
                 <div class="reportes-acciones">
-                    <h3><i class="fas fa-download"></i> Exportar Datos</h3>
+                    <h3><i class="fas fa-download"></i> Reportes Estadísticos</h3>
                     
                     <div class="export-group">
-                        <h4><i class="fas fa-cogs"></i> Optimización</h4>
-                        <button class="btn-export" onclick="window.location.href='/api/exportar-csv/'">
-                            <i class="fas fa-file-csv"></i> CSV Resultados
-                        </button>
-                        <button class="btn-export" onclick="window.location.href='/api/exportar-geojson/'">
-                            <i class="fas fa-map"></i> GeoJSON Centros
-                        </button>
-                    </div>
-                    
-                    <div class="export-group">
-                        <h4><i class="fas fa-chart-bar"></i> Reportes Estadísticos</h4>
+                        <h4><i class="fas fa-chart-bar"></i> Disponibles</h4>
                         <button class="btn-export" onclick="generarReporte('excel', 'zonas')">
                             <i class="fas fa-file-excel" style="color: #28a745;"></i> Excel - Zonas Afectadas
                         </button>
@@ -291,19 +222,42 @@
 
     window.actualizarEstadisticas = function() {
         fetch('/api/estadisticas/').then(r => r.json()).then(data => {
-            const m = {'stat-estados': data.estados, 'stat-parroquias': data.parroquias, 'stat-demandas': data.puntos_demanda, 'stat-sitios': data.sitios_candidatos, 'stat-refugios': data.refugios, 'stat-zonas': data.zonas_afectadas};
-            Object.keys(m).forEach(id => { const el = document.getElementById(id); if (el) el.textContent = m[id] || 0; });
-        });
+            const m = {
+                'stat-estados': data.estados,
+                'stat-parroquias': data.parroquias,
+                'stat-demandas': data.puntos_demanda,
+                'stat-refugios': data.refugios,
+                'stat-zonas': data.zonas_afectadas
+            };
+            Object.keys(m).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = m[id] || 0;
+            });
+        }).catch(() => {});
     };
 
     window.cargarResultados = function() {
         fetch('/api/listar-resultados/').then(r => r.json()).then(data => {
             const tbody = document.querySelector('#tabla-resultados tbody');
-            if(!tbody) return;
+            if (!tbody) return;
             tbody.innerHTML = '';
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Sin actividad registrada</td></tr>';
+                return;
+            }
             data.forEach(r => {
-                tbody.innerHTML += `<tr><td>${r.id}</td><td>${r.fecha.substring(0,10)}</td><td>${r.escenario}</td><td>${r.resumen.distancia_total}km</td><td>${r.resumen.poblacion_atendida}</td><td>${r.resumen.porcentaje_cubierto}%</td></tr>`;
+                tbody.innerHTML += `<tr>
+                    <td>${r.id}</td>
+                    <td>${r.fecha.substring(0,10)}</td>
+                    <td>${r.escenario}</td>
+                    <td>${r.resumen.distancia_total}km</td>
+                    <td>${r.resumen.poblacion_atendida}</td>
+                    <td>${r.resumen.porcentaje_cubierto}%</td>
+                </tr>`;
             });
+        }).catch(() => {
+            const tbody = document.querySelector('#tabla-resultados tbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Sin actividad registrada</td></tr>';
         });
     };
 
@@ -320,7 +274,6 @@
                 if (data.success) {
                     msg.className = 'mensaje-reporte success';
                     msg.innerHTML = `<i class="fas fa-check-circle"></i> ${data.mensaje}`;
-                    // Iniciar descarga automática del archivo generado
                     window.location.href = `/api/reportes/descargar/${data.archivo}/`;
                 } else {
                     msg.className = 'mensaje-reporte error';
@@ -353,38 +306,43 @@
     .panel-content { background: var(--bg-card, #ffffff); border: 1px solid var(--border-color, #dee2e6); border-radius: 12px; overflow: hidden; }
     .tab-content { display: none; padding: 1.5rem; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     
     /* MAPA ADMIN */
-    .mapa-toolbar { display: flex; gap: 1rem; flex-wrap: wrap; background: var(--bg-hover, #f0f0f0); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .mapa-toolbar { display: flex; gap: 1rem; flex-wrap: wrap; background: var(--bg-hover, #f0f0f0); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; justify-content: space-between; align-items: center; }
+    .toolbar-group { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .toolbar-label { font-weight: bold; color: var(--text-secondary, #6c757d); font-size: 0.85rem; }
     .checkbox-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
+    .btn-tool { background: var(--bg-card, #ffffff); border: 1px solid var(--border-color, #dee2e6); padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; color: var(--text-primary, #333); font-weight: bold; }
+    .btn-tool:hover { background: var(--bg-hover, #e0e0e0); }
     .mapa-admin { height: 450px; width: 100%; border-radius: 8px; z-index: 1; background: #e5e5e5; }
     [data-theme="dark"] .mapa-tema-oscuro .leaflet-tile { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3); }
     
     /* GRIDS GENERALES */
-    .datos-grid, .optimizacion-layout, .reportes-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
-    .resumen-card, .acciones-card, .optimizacion-form, .optimizacion-resultado, .reportes-tabla, .reportes-acciones { background: var(--bg-hover, #f0f0f0); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color, #dee2e6); }
+    .datos-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+    .resumen-card, .acciones-card, .reportes-tabla, .reportes-acciones { background: var(--bg-hover, #f0f0f0); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color, #dee2e6); }
     
     .resumen-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; margin-top: 1rem; }
     .stat-item { background: var(--bg-card, #ffffff); padding: 1rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-color, #dee2e6); }
     .stat-item i { color: #0066cc; font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
     .stat-item span { font-size: 1.5rem; font-weight: bold; display: block; }
+    .stat-item label { font-size: 0.75rem; color: var(--text-secondary, #6c757d); }
     
     .acciones-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
     .accion-item { background: var(--bg-card, #ffffff); color: var(--text-primary, #333); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color, #dee2e6); text-decoration: none; display: flex; gap: 0.5rem; align-items: center; cursor: pointer; font-weight: bold; }
-    
-    .form-control { width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color, #dee2e6); background: var(--bg-card, #ffffff); color: var(--text-primary, #333); margin-top: 0.5rem; }
-    .btn-ejecutar, .btn-export { width: 100%; padding: 0.75rem; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center; justify-content: center; }
-    .btn-ejecutar { background: #0066cc; color: white; }
-    .btn-export { background: var(--bg-card, #ffffff); color: var(--text-primary, #333); border: 1px solid var(--border-color, #dee2e6); text-align: left; }
-    .btn-export:hover { background: var(--bg-hover, #e0e0e0); }
+    .accion-item:hover { background: var(--bg-hover, #e0e0e0); }
+    .accion-item i:last-child { margin-left: auto; color: var(--text-secondary, #6c757d); }
     
     .table-responsive { overflow-x: auto; margin-top: 1rem; }
     .tabla-resultados { width: 100%; border-collapse: collapse; min-width: 400px; }
     .tabla-resultados th { background: #0066cc; color: white; padding: 0.75rem; text-align: left; }
     .tabla-resultados td { padding: 0.75rem; border-bottom: 1px solid var(--border-color, #dee2e6); }
 
+    .reportes-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
     .export-group { margin-bottom: 1.25rem; }
     .export-group h4 { font-size: 0.85rem; color: var(--text-secondary, #6c757d); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+    .btn-export { width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color, #dee2e6); background: var(--bg-card, #ffffff); color: var(--text-primary, #333); cursor: pointer; font-weight: bold; margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center; justify-content: flex-start; text-align: left; }
+    .btn-export:hover { background: var(--bg-hover, #e0e0e0); }
 
     .mensaje-reporte { padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-top: 1rem; font-weight: bold; }
     .mensaje-reporte.success { background: #d4edda; color: #155724; }
@@ -397,8 +355,8 @@
     @media (max-width: 768px) {
         .panel-header { justify-content: center; text-align: center; }
         .panel-header-left { flex-direction: column; }
-        .tab span { display: none; } /* Ocultar texto de pestañas en móvil para ahorrar espacio */
-        .datos-grid, .optimizacion-layout, .reportes-layout { grid-template-columns: 1fr; }
+        .tab span { display: none; }
+        .datos-grid, .reportes-layout { grid-template-columns: 1fr; }
         .resumen-stats { grid-template-columns: repeat(2, 1fr); }
         .mapa-admin { height: 350px; }
         .tab-content { padding: 1rem; }

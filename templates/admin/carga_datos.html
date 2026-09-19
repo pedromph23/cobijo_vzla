@@ -1,44 +1,19 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Carga de Datos - CobijoVzla{% endblock %}
+{% block title %}Gestión de Datos - CobijoVzla{% endblock %}
+
 {% block content %}
 <div class="data-container">
     <div class="data-card">
         <div class="data-header">
             <div class="data-icon"><i class="fas fa-database"></i></div>
             <h2>Gestión de Datos</h2>
-            <p>Importe y administre los datos del sistema</p>
+            <p>Estado actual de la base de datos del sistema</p>
         </div>
         <div class="data-body">
-            <div id="mensaje-resultado" class="mensaje-resultado" style="display: none;"></div>
-            {% csrf_token %}
             
             <div class="data-section">
-                <h3><i class="fas fa-upload"></i> Carga de Datos Masivos</h3>
-                <div class="data-grid">
-                    <div class="data-card-item">
-                        <div class="card-icon blue"><i class="fas fa-map-marked-alt"></i></div>
-                        <h4>Importar Límites</h4>
-                        <p>Cargar estados y parroquias desde GeoJSON</p>
-                        <button class="btn-action" onclick="ejecutarComando('importar_limites')"><i class="fas fa-play"></i> Ejecutar</button>
-                    </div>
-                    <div class="data-card-item">
-                        <div class="card-icon green"><i class="fas fa-flask"></i></div>
-                        <h4>Datos de Prueba</h4>
-                        <p>Generar datos ficticios para probar</p>
-                        <button class="btn-action" onclick="ejecutarComando('cargar_datos_prueba')"><i class="fas fa-play"></i> Ejecutar</button>
-                    </div>
-                    <div class="data-card-item">
-                        <div class="card-icon orange"><i class="fas fa-database"></i></div>
-                        <h4>Datos Masivos</h4>
-                        <p>Generar 1500 puntos de demanda completos</p>
-                        <button class="btn-action" onclick="ejecutarComando('cargar_datos_masivos')"><i class="fas fa-play"></i> Ejecutar</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="data-section">
-                <h3><i class="fas fa-chart-bar"></i> Estado Actual de la Base de Datos</h3>
+                <h3><i class="fas fa-chart-bar"></i> Estado Actual</h3>
                 <div class="stats-grid" id="stats-grid">
                     <div class="stat-card">
                         <i class="fas fa-map-marker-alt stat-icon"></i>
@@ -62,13 +37,6 @@
                         </div>
                     </div>
                     <div class="stat-card">
-                        <i class="fas fa-building stat-icon"></i>
-                        <div class="stat-info">
-                            <span class="stat-value" id="stat-sitios">-</span>
-                            <span class="stat-label">Sitios Candidatos</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
                         <i class="fas fa-home stat-icon"></i>
                         <div class="stat-info">
                             <span class="stat-value" id="stat-refugios">-</span>
@@ -89,7 +57,7 @@
             </div>
             
             <div class="data-section">
-                <h3><i class="fas fa-tools"></i> Herramientas Adicionales</h3>
+                <h3><i class="fas fa-tools"></i> Herramientas</h3>
                 <div class="btn-group">
                     <a href="/admin/" class="btn-secondary"><i class="fas fa-cog"></i> Panel de Administración</a>
                     <a href="{% url 'panel_control' %}" class="btn-secondary"><i class="fas fa-tachometer-alt"></i> Panel de Control</a>
@@ -104,37 +72,20 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() { actualizarEstadisticas(); });
     
-    window.ejecutarComando = function(comando) {
-        const msg = document.getElementById('mensaje-resultado');
-        if (!confirm('¿Está seguro de ejecutar este comando?')) return;
-        
-        msg.style.display = 'flex'; msg.className = 'mensaje-resultado alert-info';
-        msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ejecutando...';
-        
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-        fetch('/api/ejecutar-comando/', {
-            method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
-            body: JSON.stringify({ comando: comando })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                msg.className = 'mensaje-resultado alert-success';
-                msg.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.mensaje;
-                actualizarEstadisticas();
-            } else {
-                msg.className = 'mensaje-resultado alert-error';
-                msg.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + data.error;
-            }
-            setTimeout(() => { msg.style.display = 'none'; }, 5000);
-        });
-    };
-    
     window.actualizarEstadisticas = function() {
         fetch('/api/estadisticas/').then(res => res.json()).then(data => {
-            const elements = {'stat-estados': data.estados, 'stat-parroquias': data.parroquias, 'stat-demandas': data.puntos_demanda, 'stat-sitios': data.sitios_candidatos, 'stat-refugios': data.refugios, 'stat-zonas': data.zonas_afectadas};
-            Object.keys(elements).forEach(id => { const el = document.getElementById(id); if (el) el.textContent = elements[id] || 0; });
-        });
+            const elements = {
+                'stat-estados': data.estados,
+                'stat-parroquias': data.parroquias,
+                'stat-demandas': data.puntos_demanda,
+                'stat-refugios': data.refugios,
+                'stat-zonas': data.zonas_afectadas
+            };
+            Object.keys(elements).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = elements[id] || 0;
+            });
+        }).catch(() => {});
     };
 </script>
 {% endblock %}
@@ -150,29 +101,19 @@
     .data-section { margin-bottom: 2rem; }
     .data-section h3 { font-size: 1.1rem; border-bottom: 2px solid #0066cc; padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--text-primary); }
     
-    .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
-    .data-card-item { background: var(--bg-hover, #f0f0f0); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; text-align: center; }
-    .card-icon { width: 50px; height: 50px; margin: 0 auto 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; }
-    .card-icon.blue { background: #0066cc; } .card-icon.green { background: #28a745; } .card-icon.orange { background: #ff6600; }
-    .btn-action { background: #0066cc; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 1rem; font-weight: bold; }
-    
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
     .stat-card { background: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; }
     .stat-icon { font-size: 1.5rem; color: #0066cc; }
-    .stat-value { font-size: 1.2rem; font-weight: bold; }
+    .stat-value { font-size: 1.2rem; font-weight: bold; display: block; }
     .stat-label { font-size: 0.75rem; color: var(--text-secondary); }
     
-    .btn-refresh-stats { background: #0066cc; color: white; border: none; padding: 0.75rem; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 1rem;}
+    .btn-refresh-stats { background: #0066cc; color: white; border: none; padding: 0.75rem; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 1rem; width: 100%; }
     .btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-    .btn-secondary { background: var(--border-color); color: var(--text-primary); padding: 0.75rem; border-radius: 6px; text-decoration: none; text-align: center; flex: 1; min-width: 200px; font-weight: bold;}
-    
-    .mensaje-resultado { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: bold; }
-    .alert-info { background: #d1ecf1; color: #0c5460; }
-    .alert-success { background: #d4edda; color: #155724; }
-    .alert-error { background: #f8d7da; color: #721c24; }
+    .btn-secondary { background: var(--border-color); color: var(--text-primary); padding: 0.75rem; border-radius: 6px; text-decoration: none; text-align: center; flex: 1; min-width: 200px; font-weight: bold; }
+    .btn-secondary:hover { background: var(--bg-hover); }
 
     @media (max-width: 480px) {
-        .data-grid, .stats-grid { grid-template-columns: 1fr; }
+        .stats-grid { grid-template-columns: 1fr; }
         .data-header { padding: 1.5rem 1rem; }
         .btn-group { flex-direction: column; }
         .btn-secondary { width: 100%; }
