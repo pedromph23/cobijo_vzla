@@ -1,9 +1,19 @@
-/* Popups personalizados */
+/* ============================================================
+   COBIJOVZLA · POPUPS DE LEAFLET (personalizados)
+   ============================================================ */
+
 .leaflet-popup-content-wrapper {
+    background: var(--bg-card);
+    color: var(--text-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     padding: 0;
     overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.leaflet-popup-tip {
+    background: var(--bg-card);
 }
 
 .leaflet-popup-content {
@@ -11,8 +21,12 @@
     padding: 0;
     width: 280px !important;
     max-width: 280px;
+    color: var(--text-primary);
 }
 
+/* ------------------------------------------------------------
+   TARJETA DE POPUP
+   ------------------------------------------------------------ */
 .popup-card {
     padding: 1rem;
 }
@@ -23,13 +37,13 @@
     gap: 0.5rem;
     margin-bottom: 0.75rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--gray-200);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .popup-title {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--dark);
+    color: var(--text-primary);
 }
 
 .popup-icon {
@@ -41,23 +55,25 @@
     justify-content: center;
     color: white;
     font-size: 0.9rem;
+    flex-shrink: 0;
 }
 
 .popup-icon.refugio {
-    background: var(--primary);
+    background: var(--color-primary);
 }
 
 .popup-icon.zona {
-    background: var(--danger);
+    background: var(--color-danger);
 }
 
 .popup-icon.demanda {
-    background: var(--warning);
-    color: var(--dark);
+    background: var(--color-warning);
+    color: var(--color-dark);
 }
 
 .popup-body {
     font-size: 0.85rem;
+    color: var(--text-primary);
 }
 
 .popup-row {
@@ -70,7 +86,8 @@
 .popup-row i {
     width: 20px;
     text-align: center;
-    color: var(--gray-600);
+    color: var(--text-secondary);
+    flex-shrink: 0;
 }
 
 .popup-actions {
@@ -78,7 +95,7 @@
     gap: 0.5rem;
     margin-top: 0.75rem;
     padding-top: 0.5rem;
-    border-top: 1px solid var(--gray-200);
+    border-top: 1px solid var(--border-color);
 }
 
 .popup-btn {
@@ -90,20 +107,21 @@
     font-size: 0.8rem;
     font-weight: 600;
     transition: background var(--transition-fast);
+    font-family: inherit;
 }
 
 .popup-btn.como-llegar {
-    background: var(--primary);
+    background: var(--color-primary);
     color: white;
 }
 
 .popup-btn.como-llegar:hover {
-    background: var(--primary-dark);
+    background: var(--color-primary-dark);
 }
 
 .popup-btn.mas-info {
     background: var(--gray-200);
-    color: var(--dark);
+    color: var(--color-dark);
 }
 
 .popup-btn.mas-info:hover {

@@ -1,37 +1,69 @@
-/* ==================== MAP LAYOUT ==================== */
+/* ============================================================
+   COBIJOVZLA · MAPA (layout y toolbar)
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   LAYOUT
+   ------------------------------------------------------------ */
 .map-layout {
     display: flex;
-    flex-direction: row; /* CRÍTICO: Fuerza elementos lado a lado */
+    flex-direction: row;
     align-items: stretch;
-    height: 65vh;
+    height: calc(100vh - var(--header-height, 60px));
+    height: calc(100dvh - var(--header-height, 60px));
     min-height: 500px;
     position: relative;
-    margin: 20px 0;
-    border-radius: var(--radius-lg, 12px);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
     background: var(--bg-card);
-    box-shadow: var(--shadow-lg);
-    transition: all var(--transition-normal, 0.3s ease);
+    overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+@media (min-width: 769px) {
+    .map-layout {
+        height: calc(100vh - var(--header-height, 72px) - 40px);
+        margin: 20px auto;
+        max-width: 1400px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-lg);
+    }
 }
 
 .map-layout.map-fullscreen {
     position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    margin: 0; border-radius: 0; border: none;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    max-width: none;
+    border-radius: 0;
+    border: none;
     z-index: 9999;
 }
 
 .map-main-container {
     flex: 1;
-    min-width: 0; /* CRÍTICO: Impide que Leaflet rompa el Flexbox */
+    min-width: 0; /* CRÍTICO: evita que Leaflet rompa flexbox */
     position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
+    background: #e5e5e5;
 }
 
+.main-map {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: auto;
+    z-index: 1;
+}
+
+/* ------------------------------------------------------------
+   TOOLBAR (si se usa)
+   ------------------------------------------------------------ */
 .map-toolbar {
     display: flex;
     align-items: center;
@@ -44,53 +76,150 @@
 }
 
 .btn-toolbar {
-    background: var(--bg-hover, #f0f0f0);
+    background: var(--bg-hover);
     border: 1px solid var(--border-color);
     padding: 0.4rem 0.6rem;
-    border-radius: var(--radius-sm, 4px);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     color: var(--text-primary);
-    transition: background 0.2s;
+    transition: background var(--transition-fast);
 }
 
 .btn-toolbar:hover {
-    background: var(--gray-200, #e9ecef);
+    background: var(--gray-200);
 }
 
-.map-status { font-size: 0.75rem; color: var(--text-secondary); margin-left: 0.5rem; }
-.pulse-dot { color: #28a745; animation: pulse 2s infinite; font-size: 0.6rem; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-.main-map {
-    flex: 1;
-    width: 100%;
-    height: 100%; 
-    min-height: auto;
+.map-status {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
 }
 
-.mapa-tema-oscuro .leaflet-tile {
-    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+.pulse-dot {
+    color: var(--color-success);
+    animation: pulse 2s infinite;
+    font-size: 0.6rem;
 }
-.leaflet-tile { transition: filter 0.3s ease; }
 
-/* ==================== MINIMAPA ==================== */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* ------------------------------------------------------------
+   MODO OSCURO · TILES DE LEAFLET
+   ------------------------------------------------------------ */
+.mapa-tema-oscuro .leaflet-tile,
+[data-theme="dark"] .leaflet-tile {
+    filter: brightness(0.6) invert(1) contrast(3)
+            hue-rotate(200deg) saturate(0.3);
+    transition: filter var(--transition-normal);
+}
+
+.leaflet-tile {
+    transition: filter var(--transition-normal);
+}
+
+/* ------------------------------------------------------------
+   MINIMAPA
+   ------------------------------------------------------------ */
 .minimap-container {
-    position: absolute; bottom: 20px; right: 20px;
-    width: 200px; height: 150px;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 200px;
+    height: 150px;
     background: var(--bg-card);
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
-    z-index: 400; transition: all 0.5s;
-    overflow: hidden; border: 2px solid var(--border-color);
+    z-index: 400;
+    transition: all var(--transition-slow);
+    overflow: hidden;
+    border: 2px solid var(--border-color);
 }
-.minimap-container.expanded { width: 100%; height: 100%; bottom: 0; right: 0; border-radius: 0; border: none; }
+
+.minimap-container.expanded {
+    width: 100%;
+    height: 100%;
+    bottom: 0;
+    right: 0;
+    border-radius: 0;
+    border: none;
+}
+
 .minimap-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 5px 10px; background: var(--bg-hover, #f0f0f0); font-size: 12px; font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px;
+    background: var(--bg-hover);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
 }
-.btn-minimap { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 14px; }
-.minimap { width: 100%; height: calc(100% - 28px); }
+
+.btn-minimap {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.minimap {
+    width: 100%;
+    height: calc(100% - 28px);
+}
 
 @media (max-width: 768px) {
-    .minimap-container { width: 120px; height: 90px; bottom: 70px; right: 10px; }
+    .minimap-container {
+        width: 120px;
+        height: 90px;
+        bottom: 70px;
+        right: 10px;
+    }
+}
+
+/* ------------------------------------------------------------
+   CONTROLES FLOTANTES DEL MAPA
+   ------------------------------------------------------------ */
+.map-floating-controls {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.map-action-btn {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-md);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: background var(--transition-fast),
+                transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.map-action-btn:hover {
+    background: var(--bg-hover);
+}
+
+.map-action-btn:active {
+    transform: scale(0.94);
+}
+
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none;
+    }
 }

@@ -1,67 +1,105 @@
-/* Dispositivos muy pequeños (320px - 480px) */
+/* ============================================================
+   COBIJOVZLA · RESPONSIVE (media queries específicas)
+   ============================================================
+   Se complementa con las media queries de main.css y map.css.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   MÓVIL PEQUEÑO (320px - 480px)
+   ------------------------------------------------------------ */
 @media (max-width: 480px) {
     .header-container {
         padding: 0.25rem 0.5rem;
     }
-    
+
     .app-logo a {
         font-size: 1rem;
     }
-    
+
     .main-nav .nav-link {
         padding: 0.25rem 0.5rem;
         font-size: 0.8rem;
     }
-    
+
     .main-map {
         min-height: 300px;
     }
-    
+
     .minimap-container {
         width: 100px;
         height: 75px;
         bottom: 5px;
         right: 5px;
     }
-    
-    .btn-primary, .btn-secondary {
+
+    .btn-primary,
+    .btn-secondary {
         padding: 0.5rem;
         font-size: 0.8rem;
     }
 }
 
-/* Tablets (481px - 768px) */
+/* ------------------------------------------------------------
+   TABLET (481px - 768px)
+   ------------------------------------------------------------ */
 @media (min-width: 481px) and (max-width: 768px) {
     .sidebar {
         width: 250px;
     }
-    
+
     .main-map {
         min-height: 400px;
     }
-    
+
     .minimap-container {
         width: 150px;
         height: 110px;
     }
 }
 
-/* Desktop (769px+) */
+/* ------------------------------------------------------------
+   DESKTOP (769px+)
+   ------------------------------------------------------------ */
 @media (min-width: 769px) {
     .sidebar {
         width: 320px;
     }
-    
+
     .sidebar.collapsed {
-        width: 60px;
+        width: 0;
     }
-    
+
     .main-map {
         min-height: 500px;
     }
-    
+
     .minimap-container {
         width: 220px;
         height: 160px;
+    }
+}
+
+/* ------------------------------------------------------------
+   LANDSCAPE BAJO (móvil tumbado)
+   ------------------------------------------------------------ */
+@media (max-height: 500px) and (orientation: landscape) {
+    :root {
+        --header-height: 48px;
+    }
+
+    .sidebar {
+        width: 260px;
+    }
+
+    .sidebar-content {
+        padding: 0.5rem;
+    }
+
+    .sidebar-section {
+        margin-bottom: 0.75rem;
+    }
+
+    .logo-img {
+        height: 26px;
     }
 }
