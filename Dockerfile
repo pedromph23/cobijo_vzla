@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     libgeos-dev \
     libproj-dev \
     libpq-dev \
+    .cache/
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

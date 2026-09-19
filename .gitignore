@@ -59,3 +59,8 @@ backup_*.dump
 
 # Backups de base de datos
 *.dump
+
+# Cache de Django
+.cache/
+# Cache de Django
+.cache/
