@@ -1,31 +1,41 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    const minimapContainer = document.getElementById('minimap-container');
-    
+/**
+ * Ajustes responsive globales.
+ *
+ * Se ejecuta en todas las páginas. Maneja cambios de layout según el ancho
+ * de la ventana. Tolerante a la ausencia de elementos (sidebar, minimapa).
+ */
+(function () {
+    'use strict';
+
     function handleResize() {
-        if (window.innerWidth <= 768) {
-            // Móvil: sidebar oculto por defecto
-            sidebar.classList.remove('collapsed');
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-            
-            // Minimapa más pequeño
-            if (minimapContainer) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const minimapContainer = document.getElementById('minimap-container');
+        const esMovil = window.innerWidth <= 768;
+
+        // Sidebar (solo si existe)
+        if (sidebar) {
+            if (esMovil) {
+                sidebar.classList.remove('collapsed');
+                sidebar.classList.remove('open');
+            }
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        // Minimapa (solo si existe)
+        if (minimapContainer) {
+            if (esMovil) {
                 minimapContainer.style.width = '120px';
                 minimapContainer.style.height = '90px';
-            }
-        } else {
-            // Desktop: sidebar visible
-            overlay.classList.remove('active');
-            
-            if (minimapContainer) {
+            } else {
                 minimapContainer.style.width = '200px';
                 minimapContainer.style.height = '150px';
             }
         }
     }
-    
-    window.addEventListener('resize', handleResize);
-    handleResize();
-});
+
+    document.addEventListener('DOMContentLoaded', function () {
+        window.addEventListener('resize', handleResize);
+        handleResize();
+    });
+})();

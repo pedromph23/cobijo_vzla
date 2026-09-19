@@ -1,40 +1,66 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    const btnToggle = document.getElementById('btn-toggle-sidebar');
-    const btnClose = document.getElementById('btn-close-sidebar');
-    
-    // Abrir/Cerrar sidebar
-    if (btnToggle) {
-        btnToggle.addEventListener('click', function(e) {
+/**
+ * Control del sidebar (menú lateral).
+ *
+ * ⚠️ ADVERTENCIA: `base.html` ya incluye esta lógica inline. Si cargas este
+ * archivo Y `base.html`, el toggle se ejecutará DOS veces y parecerá no
+ * funcionar. Usa uno u otro.
+ */
+(function () {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const btnToggle = document.getElementById('btn-toggle-sidebar');
+        const btnClose = document.getElementById('btn-close-sidebar');
+
+        if (!sidebar || !btnToggle) return;
+
+        function esDesktop() {
+            return window.innerWidth > 768;
+        }
+
+        function sincronizarAria() {
+            const isOpen = esDesktop()
+                ? !sidebar.classList.contains('collapsed')
+                : sidebar.classList.contains('open');
+            btnToggle.setAttribute('aria-expanded', String(isOpen));
+        }
+
+        function cerrarMobile() {
+            sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('active');
+            sincronizarAria();
+        }
+
+        function abrirMobile() {
+            sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('active');
+            sincronizarAria();
+        }
+
+        btnToggle.addEventListener('click', function (e) {
             e.preventDefault();
-            if (!sidebar) return;
-            
-            if (window.innerWidth > 768) {
+            if (esDesktop()) {
                 sidebar.classList.toggle('collapsed');
             } else {
-                sidebar.classList.toggle('open');
-                if (overlay) overlay.classList.toggle('active');
+                sidebar.classList.contains('open') ? cerrarMobile() : abrirMobile();
             }
-            
-            // Forzar al mapa a recalcular su tamaño al mover el menú
-            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 300);
+            sincronizarAria();
+            // Forzar recalcular tamaño del mapa
+            setTimeout(function () {
+                window.dispatchEvent(new Event('resize'));
+            }, 300);
         });
-    }
-    
-    // Botón X para cerrar en móvil
-    if (btnClose) {
-        btnClose.addEventListener('click', function() {
-            if (sidebar) sidebar.classList.remove('open');
-            if (overlay) overlay.classList.remove('active');
+
+        btnClose && btnClose.addEventListener('click', cerrarMobile);
+        overlay && overlay.addEventListener('click', cerrarMobile);
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') cerrarMobile();
         });
-    }
-    
-    // Cerrar al hacer clic en el fondo oscuro
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            if (sidebar) sidebar.classList.remove('open');
-            this.classList.remove('active');
-        });
-    }
-});
+
+        window.addEventListener('resize', sincronizarAria);
+        sincronizarAria();
+    });
+})();
