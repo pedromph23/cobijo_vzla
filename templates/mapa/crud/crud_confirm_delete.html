@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Eliminar {{ verbose_name }} - CobijoVzla{% endblock %}
+
+{% block content %}
+<div class="crud-container single">
+    <main class="crud-main">
+        <div class="delete-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h1>¿Eliminar {{ verbose_name|lower }}?</h1>
+            <p>Esta acción no se puede deshacer.</p>
+
+            <div class="delete-target">
+                <strong>{{ objeto }}</strong>
+            </div>
+
+            <form method="post" class="delete-actions">
+                {% csrf_token %}
+                <a href="{% url 'crud_list' modelo_key %}" class="btn-crud btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-crud btn-danger">
+                    <i class="fas fa-trash"></i> Sí, eliminar
+                </button>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .crud-container.single {
+        display: flex;
+        justify-content: center;
+        padding: 3rem 1.5rem;
+        min-height: calc(100vh - 60px);
+    }
+    .crud-main {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 500px;
+        text-align: center;
+    }
+    .delete-warning i {
+        font-size: 3rem;
+        color: #dc3545;
+        margin-bottom: 1rem;
+    }
+    .delete-warning h1 {
+        font-size: 1.3rem;
+        margin: 0 0 0.5rem 0;
+    }
+    .delete-warning p {
+        color: var(--text-secondary);
+        margin: 0 0 1.5rem 0;
+    }
+    .delete-target {
+        padding: 1rem;
+        background: var(--bg-hover);
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
+    }
+    .delete-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+    }
+    .btn-crud {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.65rem 1.2rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-secondary { background: var(--bg-hover); color: var(--text-primary); }
+    .btn-danger { background: #dc3545; color: white; }
+</style>
+{% endblock %}

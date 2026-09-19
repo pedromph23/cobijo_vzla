@@ -64,14 +64,16 @@ def panel_admin(request):
     """
     Panel completo para administradores.
 
-    Incluye: mapa, datos, optimización, reportes y herramientas de gestión.
+    Incluye: mapa, datos (CRUD), optimización, reportes.
     """
+    from .permissions import modelos_disponibles
+
     parametros = ParametrosModelo.objects.order_by('-fecha_creacion')
     return render(request, 'admin/panel_admin.html', {
         'parametros': parametros,
         'estadisticas': services.obtener_estadisticas(),
+        'menu_modelos': modelos_disponibles(request.user),
         'es_admin': True,
-        'grupos_usuario': list(request.user.groups.values_list('name', flat=True)),
     })
 
 
@@ -80,12 +82,15 @@ def panel_gestor(request):
     """
     Panel operativo para gestores.
 
-    Incluye: mapa, datos (lectura), reportes. Sin configuración crítica.
+    Incluye: mapa, datos (CRUD limitado), reportes.
+    SIN pestaña de optimización.
     """
+    from .permissions import modelos_disponibles
+
     return render(request, 'admin/panel_gestor.html', {
         'estadisticas': services.obtener_estadisticas(),
+        'menu_modelos': modelos_disponibles(request.user),
         'es_admin': es_administrador(request.user),
-        'grupos_usuario': list(request.user.groups.values_list('name', flat=True)),
     })
 
 

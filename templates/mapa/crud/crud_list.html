@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% load crud_extras %}
+{% load static %}
+
+{% block title %}{{ verbose_name_plural }} - CobijoVzla{% endblock %}
+
+{% block content %}
+<div class="crud-container">
+
+    <!-- Sidebar con modelos disponibles -->
+    <aside class="crud-sidebar">
+        <h3><i class="fas fa-database"></i> Modelos</h3>
+        <nav class="crud-menu">
+            {% for m in menu_modelos %}
+                <a href="{% url 'crud_list' m.key %}"
+                   class="crud-menu-item {% if m.key == modelo_key %}active{% endif %}">
+                    <i class="fas {{ m.icon }}"></i>
+                    <span>{{ m.verbose_name_plural }}</span>
+                </a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="crud-main">
+
+        <!-- Encabezado -->
+        <div class="crud-header">
+            <div>
+                <h1><i class="fas {{ config.icon }}"></i> {{ verbose_name_plural }}</h1>
+                <p>Gestión de {{ verbose_name_plural|lower }}</p>
+            </div>
+            {% if 'crear' in acciones %}
+                <a href="{% url 'crud_create' modelo_key %}" class="btn-crud btn-primary">
+                    <i class="fas fa-plus"></i> Nuevo
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Mensajes -->
+        {% if messages %}
+            {% for msg in messages %}
+                <div class="crud-alert crud-alert-{{ msg.tags }}">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Búsqueda -->
+        <form method="get" class="crud-search">
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+                <input type="text"
+                       name="q"
+                       value="{{ query }}"
+                       placeholder="Buscar..."
+                       autocomplete="off">
+            </div>
+            <button type="submit">Buscar</button>
+            {% if query %}
+                <a href="{% url 'crud_list' modelo_key %}" class="btn-clear">
+                    <i class="fas fa-times"></i> Limpiar
+                </a>
+            {% endif %}
+        </form>
+
+        <!-- Tabla -->
+        <div class="crud-table-wrapper">
+            {% if page_obj.object_list %}
+                <table class="crud-table">
+                    <thead>
+                        <tr>
+                            {% for campo in list_display %}
+                                <th>{{ campo|title }}</th>
+                            {% endfor %}
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for obj in page_obj %}
+                            <tr>
+                                {% for campo in list_display %}
+                                    <td>{{ obj|attr:campo|default:"—" }}</td>
+                                {% endfor %}
+                                <td class="crud-actions">
+                                    {% if 'editar' in acciones %}
+                                        <a href="{% url 'crud_update' modelo_key obj.pk %}"
+                                           class="btn-crud btn-sm btn-edit"
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if 'borrar' in acciones %}
+                                        <a href="{% url 'crud_delete' modelo_key obj.pk %}"
+                                           class="btn-crud btn-sm btn-delete"
+                                           title="Borrar">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Paginación -->
+                {% if page_obj.has_other_pages %}
+                    <div class="crud-pagination">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">
+                                ← Anterior
+                            </a>
+                        {% endif %}
+                        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">
+                                Siguiente →
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="crud-empty">
+                    <i class="fas fa-inbox fa-3x"></i>
+                    <p>No hay {{ verbose_name_plural|lower }} {% if query %}que coincidan con "{{ query }}"{% endif %}.</p>
+                    {% if 'crear' in acciones and not query %}
+                        <a href="{% url 'crud_create' modelo_key %}" class="btn-crud btn-primary">
+                            <i class="fas fa-plus"></i> Crear el primero
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .crud-container {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        min-height: calc(100vh - 60px);
+    }
+
+    /* Sidebar */
+    .crud-sidebar {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem;
+        height: fit-content;
+        position: sticky;
+        top: 80px;
+    }
+    .crud-sidebar h3 {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .crud-menu { display: flex; flex-direction: column; gap: 0.25rem; }
+    .crud-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: background 0.15s;
+    }
+    .crud-menu-item:hover { background: var(--bg-hover); }
+    .crud-menu-item.active {
+        background: linear-gradient(135deg, #0066cc, #004a99);
+        color: white;
+        font-weight: 600;
+    }
+    .crud-menu-item i { width: 20px; text-align: center; }
+
+    /* Main */
+    .crud-main {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        min-width: 0;
+    }
+
+    .crud-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    .crud-header h1 {
+        font-size: 1.4rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .crud-header p {
+        margin: 0.25rem 0 0 0;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    /* Alertas */
+    .crud-alert {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+    .crud-alert-success { background: #d4edda; color: #155724; }
+    .crud-alert-error   { background: #f8d7da; color: #721c24; }
+    .crud-alert-warning { background: #fff3cd; color: #856404; }
+
+    /* Búsqueda */
+    .crud-search {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    .search-wrapper {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+    }
+    .search-wrapper i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+    }
+    .search-wrapper input {
+        width: 100%;
+        padding: 0.6rem 0.6rem 0.6rem 2.2rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+    }
+    .crud-search button {
+        padding: 0.6rem 1.2rem;
+        background: #0066cc;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .btn-clear {
+        padding: 0.6rem 1rem;
+        background: var(--bg-hover);
+        color: var(--text-primary);
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    /* Tabla */
+    .crud-table-wrapper {
+        overflow-x: auto;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+    .crud-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 500px;
+    }
+    .crud-table th {
+        background: var(--bg-hover);
+        padding: 0.75rem;
+        text-align: left;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+    }
+    .crud-table td {
+        padding: 0.75rem;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.9rem;
+    }
+    .crud-table tr:hover td { background: var(--bg-hover); }
+
+    .crud-actions { display: flex; gap: 0.4rem; }
+
+    /* Botones */
+    .btn-crud {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .btn-crud:hover { transform: translateY(-1px); }
+    .btn-primary { background: linear-gradient(135deg, #0066cc, #004a99); color: white; }
+    .btn-sm { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+    .btn-edit { background: #ffc107; color: #333; }
+    .btn-delete { background: #dc3545; color: white; }
+
+    /* Empty */
+    .crud-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+    }
+    .crud-empty i { margin-bottom: 1rem; opacity: 0.4; }
+    .crud-empty p { margin-bottom: 1.5rem; }
+
+    /* Paginación */
+    .crud-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        font-size: 0.9rem;
+    }
+    .crud-pagination a {
+        color: #0066cc;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .crud-pagination a:hover { text-decoration: underline; }
+
+    @media (max-width: 900px) {
+        .crud-container { grid-template-columns: 1fr; }
+        .crud-sidebar { position: static; }
+    }
+</style>
+{% endblock %}

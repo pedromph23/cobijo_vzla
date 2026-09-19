@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if modo == 'crear' %}Nuevo{% else %}Editar{% endif %} {{ verbose_name }} - CobijoVzla{% endblock %}
+
+{% block content %}
+<div class="crud-container">
+
+    <!-- Sidebar -->
+    <aside class="crud-sidebar">
+        <h3><i class="fas fa-database"></i> Modelos</h3>
+        <nav class="crud-menu">
+            {% for m in menu_modelos %}
+                <a href="{% url 'crud_list' m.key %}"
+                   class="crud-menu-item {% if m.key == modelo_key %}active{% endif %}">
+                    <i class="fas {{ m.icon }}"></i>
+                    <span>{{ m.verbose_name_plural }}</span>
+                </a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="crud-main">
+        <div class="crud-header">
+            <div>
+                <h1>
+                    <i class="fas {% if modo == 'crear' %}fa-plus-circle{% else %}fa-edit{% endif %}"></i>
+                    {% if modo == 'crear' %}
+                        Nuevo {{ verbose_name }}
+                    {% else %}
+                        Editar {{ verbose_name }}
+                    {% endif %}
+                </h1>
+                <p>
+                    <a href="{% url 'crud_list' modelo_key %}">
+                        <i class="fas fa-arrow-left"></i> Volver a {{ verbose_name_plural }}
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="crud-alert crud-alert-error">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="crud-form">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="crud-field {% if field.errors %}has-error{% endif %}">
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                        {% if field.field.required %}<span class="required">*</span>{% endif %}
+                    </label>
+
+                    {{ field }}
+
+                    {% if field.help_text %}
+                        <small class="help-text">{{ field.help_text }}</small>
+                    {% endif %}
+
+                    {% if field.errors %}
+                        <div class="field-errors">
+                            {% for err in field.errors %}
+                                <p>{{ err }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <div class="crud-form-actions">
+                <a href="{% url 'crud_list' modelo_key %}" class="btn-crud btn-secondary">
+                    Cancelar
+                </a>
+                <button type="submit" class="btn-crud btn-primary">
+                    <i class="fas fa-save"></i>
+                    {% if modo == 'crear' %}Crear{% else %}Guardar cambios{% endif %}
+                </button>
+            </div>
+        </form>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .crud-container {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        min-height: calc(100vh - 60px);
+    }
+
+    .crud-sidebar {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem;
+        height: fit-content;
+        position: sticky;
+        top: 80px;
+    }
+    .crud-sidebar h3 {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .crud-menu { display: flex; flex-direction: column; gap: 0.25rem; }
+    .crud-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+    .crud-menu-item:hover { background: var(--bg-hover); }
+    .crud-menu-item.active {
+        background: linear-gradient(135deg, #0066cc, #004a99);
+        color: white;
+        font-weight: 600;
+    }
+    .crud-menu-item i { width: 20px; text-align: center; }
+
+    .crud-main {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .crud-header { margin-bottom: 1.5rem; }
+    .crud-header h1 {
+        font-size: 1.4rem;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .crud-header p a {
+        color: #0066cc;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .crud-alert {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    .crud-alert-error { background: #f8d7da; color: #721c24; }
+
+    .crud-form { display: flex; flex-direction: column; gap: 1.2rem; }
+
+    .crud-field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .crud-field label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+    }
+    .crud-field .required { color: #dc3545; }
+    .crud-field input[type="text"],
+    .crud-field input[type="email"],
+    .crud-field input[type="number"],
+    .crud-field input[type="password"],
+    .crud-field input[type="date"],
+    .crud-field input[type="datetime-local"],
+    .crud-field select,
+    .crud-field textarea {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-family: inherit;
+    }
+    .crud-field input:focus,
+    .crud-field select:focus,
+    .crud-field textarea:focus {
+        outline: none;
+        border-color: #0066cc;
+        box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15);
+    }
+    .crud-field input[type="checkbox"] {
+        width: auto;
+        margin-right: 0.5rem;
+    }
+
+    .help-text {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .crud-field.has-error input,
+    .crud-field.has-error select,
+    .crud-field.has-error textarea {
+        border-color: #dc3545;
+    }
+    .field-errors { color: #dc3545; font-size: 0.85rem; }
+    .field-errors p { margin: 0.2rem 0; }
+
+    .crud-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .btn-crud {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.65rem 1.2rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-primary { background: linear-gradient(135deg, #0066cc, #004a99); color: white; }
+    .btn-secondary { background: var(--bg-hover); color: var(--text-primary); }
+
+    @media (max-width: 900px) {
+        .crud-container { grid-template-columns: 1fr; }
+        .crud-sidebar { position: static; }
+    }
+</style>
+{% endblock %}
