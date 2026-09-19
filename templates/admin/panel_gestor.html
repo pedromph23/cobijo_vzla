@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Panel Operativo - CobijoVzla{% endblock %}
+
+{% block content %}
+<div class="panel-container">
+
+    <!-- ENCABEZADO -->
+    <div class="panel-header">
+        <div class="panel-header-left">
+            <div class="panel-icon gestor">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div>
+                <h2>Panel Operativo</h2>
+                <p>Gestión y consulta de datos</p>
+            </div>
+        </div>
+        <div class="panel-header-right">
+            <span class="user-badge gestor">
+                <i class="fas fa-user-circle"></i>
+                {{ user.username }}
+            </span>
+            <button class="btn-refresh" onclick="location.reload()" title="Actualizar">
+                <i class="fas fa-sync"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- PESTAÑAS -->
+    <div class="panel-tabs">
+        <button class="tab active" data-tab="mapa">
+            <i class="fas fa-map"></i><span>Mapa</span>
+        </button>
+        <button class="tab" data-tab="datos">
+            <i class="fas fa-database"></i><span>Datos</span>
+        </button>
+        <button class="tab" data-tab="reportes">
+            <i class="fas fa-chart-bar"></i><span>Reportes</span>
+        </button>
+    </div>
+
+    <!-- CONTENIDO -->
+    <div class="panel-content">
+
+        <!-- MAPA -->
+        <div id="tab-mapa" class="tab-content active">
+            <div class="mapa-admin-wrapper">
+                <div class="mapa-toolbar">
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Capas:</span>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-refugios" checked>
+                            <span><i class="fas fa-home"></i> Refugios</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-zonas" checked>
+                            <span><i class="fas fa-exclamation-triangle"></i> Zonas</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="mapa-admin" class="mapa-admin"></div>
+            </div>
+        </div>
+
+        <!-- DATOS (SOLO LECTURA) -->
+        <div id="tab-datos" class="tab-content">
+            <div class="datos-grid single">
+                <div class="resumen-card">
+                    <h3><i class="fas fa-chart-pie"></i> Resumen General</h3>
+                    <div class="resumen-stats">
+                        <div class="stat-item"><i class="fas fa-map-marker-alt"></i><span id="stat-estados">-</span><label>Estados</label></div>
+                        <div class="stat-item"><i class="fas fa-map"></i><span id="stat-parroquias">-</span><label>Parroquias</label></div>
+                        <div class="stat-item"><i class="fas fa-home"></i><span id="stat-refugios">-</span><label>Refugios</label></div>
+                        <div class="stat-item"><i class="fas fa-exclamation-triangle"></i><span id="stat-zonas">-</span><label>Zonas</label></div>
+                    </div>
+                    <button class="btn-refresh-stats" onclick="actualizarEstadisticas()">
+                        <i class="fas fa-sync"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- REPORTES -->
+        <div id="tab-reportes" class="tab-content">
+            <div class="reportes-layout single">
+                <div class="reportes-acciones">
+                    <h3><i class="fas fa-download"></i> Reportes Disponibles</h3>
+                    <div class="export-group">
+                        <h4><i class="fas fa-chart-bar"></i> Reportes Estadísticos</h4>
+                        <button class="btn-export" onclick="generarReporte('excel', 'zonas')">
+                            <i class="fas fa-file-excel" style="color:#28a745;"></i> Excel - Zonas Afectadas
+                        </button>
+                        <button class="btn-export" onclick="generarReporte('pdf', 'zonas')">
+                            <i class="fas fa-file-pdf" style="color:#dc3545;"></i> PDF - Zonas Afectadas
+                        </button>
+                        <button class="btn-export" onclick="generarReporte('excel', 'general')">
+                            <i class="fas fa-file-excel" style="color:#28a745;"></i> Excel - Estadísticas Generales
+                        </button>
+                        <button class="btn-export" onclick="generarReporte('pdf', 'general')">
+                            <i class="fas fa-file-pdf" style="color:#dc3545;"></i> PDF - Estadísticas Generales
+                        </button>
+                    </div>
+                    <div id="mensaje-reporte" class="mensaje-reporte" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+
+                if (this.dataset.tab === 'mapa' && window.mapaAdmin) {
+                    setTimeout(() => window.mapaAdmin.invalidateSize(), 300);
+                }
+                if (this.dataset.tab === 'datos') actualizarEstadisticas();
+            });
+        });
+
+        if (typeof L !== 'undefined' && document.getElementById('mapa-admin')) {
+            window.mapaAdmin = L.map('mapa-admin', { center: [10.0, -66.0], zoom: 6 });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap',
+                referrerPolicy: 'strict-origin-when-cross-origin',
+                maxZoom: 19,
+            }).addTo(window.mapaAdmin);
+        }
+        actualizarEstadisticas();
+    });
+
+    window.actualizarEstadisticas = function () {
+        fetch('/api/estadisticas/').then(r => r.json()).then(data => {
+            const m = {
+                'stat-estados': data.estados,
+                'stat-parroquias': data.parroquias,
+                'stat-refugios': data.refugios,
+                'stat-zonas': data.zonas_afectadas,
+            };
+            Object.keys(m).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = m[id] || 0;
+            });
+        }).catch(() => {});
+    };
+
+    window.generarReporte = function (tipo, contenido) {
+        const msg = document.getElementById('mensaje-reporte');
+        msg.style.display = 'block';
+        msg.className = 'mensaje-reporte loading';
+        msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+
+        fetch(`/api/reportes/generar/?tipo=${tipo}&contenido=${contenido}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    msg.className = 'mensaje-reporte success';
+                    msg.innerHTML = `<i class="fas fa-check-circle"></i> ${data.mensaje}`;
+                    window.location.href = `/api/reportes/descargar/${data.archivo}/`;
+                } else {
+                    msg.className = 'mensaje-reporte error';
+                    msg.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error || 'Error'}`;
+                }
+            });
+    };
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .panel-container { padding: 1rem; min-height: calc(100vh - 60px); color: var(--text-primary); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+    .panel-header-left { display: flex; align-items: center; gap: 1rem; }
+    .panel-icon.gestor { width: 50px; height: 50px; background: linear-gradient(135deg, #0066cc, #004a99); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .user-badge.gestor { background: linear-gradient(135deg, #0066cc, #004a99); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; border: none; }
+    .btn-refresh { padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; }
+
+    .panel-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; overflow-x: auto; padding-bottom: 0.5rem; }
+    .tab { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: 700; flex: 1; text-align: center; transition: all 0.2s; }
+    .tab.active { background: linear-gradient(135deg, #0066cc, #004a99); color: white; border-color: transparent; }
+
+    .panel-content { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+    .tab-content { display: none; padding: 1.5rem; }
+    .tab-content.active { display: block; }
+
+    .mapa-toolbar { display: flex; gap: 1rem; flex-wrap: wrap; background: var(--bg-hover); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .toolbar-group { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .toolbar-label { font-weight: 700; color: var(--text-secondary); font-size: 0.85rem; }
+    .checkbox-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+    .mapa-admin { height: 500px; width: 100%; border-radius: 8px; z-index: 1; background: #e5e5e5; }
+
+    .datos-grid, .reportes-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+    .datos-grid.single, .reportes-layout.single { grid-template-columns: 1fr; max-width: 800px; margin: 0 auto; }
+
+    .resumen-card, .reportes-acciones { background: var(--bg-hover); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
+
+    .resumen-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .stat-item { background: var(--bg-card); padding: 1rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); }
+    .stat-item i { color: #0066cc; font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
+    .stat-item span { font-size: 1.5rem; font-weight: 700; display: block; }
+    .stat-item label { font-size: 0.75rem; color: var(--text-secondary); }
+
+    .btn-refresh-stats { width: 100%; padding: 0.75rem; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; margin-top: 1rem; background: linear-gradient(135deg, #0066cc, #004a99); color: white; font-family: inherit; }
+
+    .export-group { margin-bottom: 1.25rem; }
+    .export-group h4 { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+    .btn-export { width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); cursor: pointer; font-weight: 700; margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center; font-family: inherit; }
+
+    .mensaje-reporte { padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-top: 1rem; font-weight: 700; }
+    .mensaje-reporte.success { background: #d4edda; color: #155724; }
+    .mensaje-reporte.error { background: #f8d7da; color: #721c24; }
+    .mensaje-reporte.loading { background: #d1ecf1; color: #0c5460; }
+
+    @media (max-width: 768px) {
+        .panel-header { justify-content: center; text-align: center; }
+        .panel-header-left { flex-direction: column; }
+        .tab span { display: none; }
+        .mapa-admin { height: 350px; }
+        .tab-content { padding: 1rem; }
+    }
+</style>
+{% endblock %}

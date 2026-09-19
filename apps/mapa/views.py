@@ -23,6 +23,9 @@ from apps.optimizacion.heatmap import generar_mapa_calor
 from . import services
 from .decorators import es_gestor, gestor_requerido
 
+from django.shortcuts import redirect
+from .decorators import admin_requerido, gestor_requerido, es_administrador, es_gestor
+
 
 logger = logging.getLogger(__name__)
 
@@ -334,4 +337,58 @@ def health_check(request):
         'status': 'ok',
         'service': 'cobijo-vzla',
         'timestamp': __import__('django.utils.timezone', fromlist=['now']).now().isoformat(),
+    })
+
+    # ============================================================
+# PANEL DE CONTROL (SEGÚN GRUPO)
+# ============================================================
+
+@gestor_requerido
+def panel_control(request):
+    """
+    Dispatcher: redirige al panel específico según el grupo del usuario.
+
+    - Administradores → panel_admin
+    - Gestores → panel_gestor
+    """
+    if es_administrador(request.user):
+        return redirect('panel_admin')
+    return redirect('panel_gestor')
+
+
+@admin_requerido
+def panel_admin(request):
+    """
+    Panel completo para administradores.
+
+    Incluye: mapa, datos, optimización, reportes y herramientas de gestión.
+    """
+    parametros = ParametrosModelo.objects.order_by('-fecha_creacion')
+    return render(request, 'admin/panel_admin.html', {
+        'parametros': parametros,
+        'estadisticas': services.obtener_estadisticas(),
+        'es_admin': True,
+        'grupos_usuario': list(request.user.groups.values_list('name', flat=True)),
+    })
+
+
+@gestor_requerido
+def panel_gestor(request):
+    """
+    Panel operativo para gestores.
+
+    Incluye: mapa, datos (lectura), reportes. Sin configuración crítica.
+    """
+    return render(request, 'admin/panel_gestor.html', {
+        'estadisticas': services.obtener_estadisticas(),
+        'es_admin': es_administrador(request.user),
+        'grupos_usuario': list(request.user.groups.values_list('name', flat=True)),
+    })
+
+
+@admin_requerido
+def carga_datos(request):
+    """Vista para la página de gestión de datos (solo administradores)."""
+    return render(request, 'admin/carga_datos.html', {
+        'estadisticas': services.obtener_estadisticas(),
     })
