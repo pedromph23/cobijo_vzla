@@ -1,9 +1,5 @@
 # 🏠 Cobijo VZLA
 
-git add README.md
-git commit -m "docs: README completo con guía de mantenimiento"
-git push origin main
-
 > Sistema de gestión geoespacial de refugios y zonas afectadas para situaciones de emergencia en Venezuela.
 
 [![Django](https://img.shields.io/badge/Django-6.1-092E20?logo=django)](https://www.djangoproject.com/)
@@ -20,16 +16,16 @@ git push origin main
 - [Stack tecnológico](#-stack-tecnológico)
 - [Arquitectura](#-arquitectura)
 - [Funcionalidades](#-funcionalidades)
+- [Sistema de roles y permisos](#-sistema-de-roles-y-permisos)
 - [Estructura del proyecto](#-estructura-del-proyecto)
 - [Instalación local](#-instalación-local)
 - [Variables de entorno](#-variables-de-entorno)
-- [Comandos de Django](#-comandos-de-django)
-- [Base de datos](#-base-de-datos)
+- [Guía de uso](#-guía-de-uso)
+- [API REST](#-api-rest)
 - [Deployment](#-deployment)
 - [Mantenimiento](#-mantenimiento)
 - [Troubleshooting](#-troubleshooting)
 - [Reglas de oro](#-reglas-de-oro)
-- [Autor](#-autor)
 
 ---
 
@@ -39,11 +35,12 @@ git push origin main
 
 - Visualizar en un mapa interactivo los refugios existentes y las zonas afectadas por emergencias.
 - Gestionar puntos de demanda (necesidades humanitarias) georreferenciados.
-- Optimizar la ubicación de nuevos sitios candidatos según parámetros configurables.
-- Generar reportes y análisis geoespaciales.
-- Proveer un panel administrativo completo para la gestión de datos.
+- Optimizar la ubicación de nuevos sitios candidatos mediante programación lineal entera.
+- Generar reportes PDF y Excel con estadísticas.
+- Proveer un **panel de administración propio** con permisos granulares por grupo de usuario.
+- Servir un mapa de calor con índice de necesidad calculado por parroquia.
 
-Está diseñado para apoyar a organizaciones humanitarias y equipos de respuesta ante emergencias en Venezuela.
+Diseñado para apoyar a organizaciones humanitarias en la gestión de emergencias.
 
 ---
 
@@ -54,13 +51,12 @@ Está diseñado para apoyar a organizaciones humanitarias y equipos de respuesta
 | **Backend** | Python 3.12 · Django 6.1 |
 | **API** | Django REST Framework |
 | **Base de datos** | PostgreSQL 17 + PostGIS 3.3 |
-| **Frontend** | HTML · CSS · JavaScript · Leaflet |
-| **Optimización** | PuLP (programación lineal) |
-| **Reportes** | ReportLab · openpyxl |
+| **Frontend** | HTML · CSS · JavaScript · Leaflet 1.9 |
+| **Optimización** | PuLP (programación lineal entera) |
+| **Reportes** | ReportLab (PDF) · openpyxl (Excel) |
 | **Análisis** | pandas · numpy · matplotlib |
 | **Geoespacial** | GeoDjango · geopy · geojson |
-| **Deploy** | Docker · Render |
-| **BD en producción** | Supabase |
+| **Deploy** | Docker · Render · Supabase |
 | **CI/CD** | GitHub + Render Auto-Deploy |
 
 ---
@@ -76,7 +72,6 @@ Está diseñado para apoyar a organizaciones humanitarias y equipos de respuesta
                       └─────────────────┘
                               ▲
                               │ git push
-                              │
                       ┌─────────────────┐
                       │  GitHub         │
                       │  (código)       │
@@ -99,22 +94,93 @@ Está diseñado para apoyar a organizaciones humanitarias y equipos de respuesta
 
 | App | Descripción |
 |-----|-------------|
-| `core` | Modelos base: Estados, Parroquias, Zonas Afectadas, Refugios, Puntos de Demanda |
+| `core` | Modelos base: Estados, Parroquias, Zonas Afectadas, Refugios, Puntos de Demanda, Sitios Candidatos, Parámetros |
 | `emergencias` | Gestión de eventos y reportes ciudadanos |
-| `optimizacion` | Algoritmos de optimización de ubicación de refugios |
-| `mapa` | Vistas y APIs para el mapa interactivo |
+| `optimizacion` | Algoritmos de optimización (P-mediana, P-centro, Cobertura máxima, Capacidades) |
+| `mapa` | Panel de gestión + APIs del mapa administrativo |
 | `reportes` | Generación de PDFs y Excel |
-| `publico` | Vistas públicas del sistema |
+| `publico` | Mapa público interactivo + búsqueda + reportes ciudadanos |
 
 ### Características destacadas
 
 - 🗺️ **Mapa interactivo** con Leaflet (marker clustering, heatmap, minimap)
 - 📊 **Análisis geoespacial** con PostGIS
-- 🎯 **Optimización de ubicaciones** con PuLP
+- 🎯 **Optimización de ubicaciones** con PuLP (4 modelos de localización)
 - 📄 **Reportes dinámicos** en PDF y Excel
-- 🔐 **Panel administrativo** completo
+- 🔐 **Sistema CRUD propio** con permisos por grupo (mini-admin personalizado)
 - 🌐 **API REST** para integraciones
-- 📱 **Diseño responsive** con modo oscuro
+- 📱 **Diseño responsive** con tema oscuro neón
+- 🎤 **Navegación por voz** con Web Speech API (español México)
+- 🧭 **Rutas interactivas** con Leaflet Routing Machine + OSRM
+- ⚡ **Caché en disco** + precalentamiento del heatmap
+- 🛡️ **Protección contra XSS** y path traversal
+
+---
+
+## 👥 Sistema de roles y permisos
+
+El sistema tiene **3 niveles de acceso**:
+
+### 🔴 Superusuario / Staff
+
+- Acceso total a todo el sistema.
+- Puede acceder a `/admin/` (Django admin, solo para desarrolladores).
+- Ve el **Panel de Administración** con todas las pestañas.
+- Puede crear, editar y borrar cualquier modelo.
+
+### 🟣 Administradores (grupo `Administradores`)
+
+- Ve el **Panel de Administración** (`/panel/admin/`).
+- Puede gestionar **todos los modelos** del CRUD.
+- Puede ejecutar **optimizaciones**.
+- Puede cargar datos masivos.
+- **NO accede** al `/admin/` de Django (a menos que sea staff).
+
+### 🔵 Gestores (grupo `Gestores`)
+
+- Ve el **Panel Operativo** (`/panel/gestor/`).
+- Puede gestionar un **subconjunto de modelos** con permisos limitados:
+  - `PuntoDemanda`: ver, crear, editar
+  - `RefugioExistente`: ver, editar
+  - `ZonaAfectada`: ver, editar
+  - `Evento`: ver, editar
+  - `Reporte`: ver, editar
+  - `SitioCandidato` / `ParametrosModelo`: solo ver
+- **NO ve** la pestaña "Optimización".
+- **NO puede** borrar registros.
+
+### Matriz de permisos
+
+| Recurso | Admin | Gestor |
+|---------|:-----:|:------:|
+| Mapa interactivo | ✅ | ✅ |
+| Datos (CRUD) | ✅ Total | ⚠️ Limitado |
+| Optimización | ✅ | ❌ |
+| Reportes | ✅ | ✅ |
+| Carga de datos | ✅ | ❌ |
+| Django admin | Solo staff | ❌ |
+
+### Configuración
+
+Los permisos se definen en `apps/mapa/permissions.py`:
+
+```python
+PERMISOS_POR_GRUPO = {
+    'Administradores': {
+        'core_estado': ['ver', 'crear', 'editar', 'borrar'],
+        # ...todos los modelos
+    },
+    'Gestores': {
+        'core_puntodemanda': ['ver', 'crear', 'editar'],
+        'core_refugioexistente': ['ver', 'editar'],
+        # ...
+    },
+}
+```
+
+**Para agregar un grupo nuevo**:
+1. Crearlo en el admin de Django (`/admin/auth/group/add/`)
+2. Agregar la entrada en `PERMISOS_POR_GRUPO`
 
 ---
 
@@ -122,32 +188,92 @@ Está diseñado para apoyar a organizaciones humanitarias y equipos de respuesta
 
 ```
 cobijo_vzla/
-├── .env                     # Variables REALES (NO subir a Git)
-├── .env.example             # Plantilla pública (SÍ subir)
-├── .gitignore               # Archivos que Git ignora
-├── .gitattributes           # Normalización de line endings
-├── .dockerignore            # Archivos que Docker ignora
-├── Dockerfile               # Receta de construcción Docker
-├── start.sh                 # Script de arranque en producción
-├── render.yaml              # Config del deploy en Render
-├── requirements.txt         # Dependencias Python
-├── manage.py                # Entry point de Django
-├── myvenv/                  # Entorno virtual (NO subir)
-├── cobijo_vzla/             # Configuración del proyecto
+├── .env                          # Variables REALES (NO subir a Git)
+├── .env.example                  # Plantilla pública (SÍ subir)
+├── .gitignore                    # Exclusiones de Git
+├── .gitattributes                # Normalización LF
+├── .dockerignore                 # Exclusiones de Docker
+├── Dockerfile                    # Receta de construcción
+├── start.sh                      # Script de arranque en producción
+├── render.yaml                   # Config del deploy en Render
+├── requirements.txt              # Dependencias Python
+├── manage.py                     # Entry point de Django
+│
+├── cobijo_vzla/                  # Configuración del proyecto
 │   ├── settings.py
 │   ├── urls.py
 │   ├── wsgi.py
 │   └── asgi.py
-├── apps/                    # Apps de Django
-│   ├── core/
-│   ├── emergencias/
-│   ├── optimizacion/
-│   ├── mapa/
-│   ├── reportes/
-│   └── publico/
-├── templates/               # HTMLs
-├── static/                  # CSS, JS, imágenes
-└── media/                   # Uploads de usuarios (NO subir)
+│
+├── apps/                         # Aplicaciones Django
+│   ├── core/                     # Modelos base
+│   │   ├── models.py             # Estado, Parroquia, Refugio, Zona...
+│   │   ├── admin.py              # Admin de Django
+│   │   ├── views.py              # APIs KPIs
+│   │   └── urls.py
+│   │
+│   ├── emergencias/              # Eventos y reportes
+│   │   ├── models.py             # Evento, Reporte
+│   │   ├── admin.py
+│   │   ├── views.py
+│   │   └── urls.py
+│   │
+│   ├── mapa/                     # Panel de gestión
+│   │   ├── decorators.py         # @gestor_requerido, @admin_requerido
+│   │   ├── permissions.py        # ⭐ Config CRUD por grupo
+│   │   ├── crud_views.py         # ⭐ Vistas genéricas CBV
+│   │   ├── urls_crud.py          # ⭐ Rutas /panel/datos/<modelo>/
+│   │   ├── services.py           # Lógica de negocio
+│   │   ├── views.py              # Vistas de plantilla + APIs
+│   │   ├── urls.py
+│   │   └── urls_api.py
+│   │
+│   ├── optimizacion/             # Algoritmos
+│   │   ├── optimizer.py          # PuLP + 4 modelos
+│   │   ├── heatmap.py            # Índice de necesidad
+│   │   ├── management/
+│   │   │   └── commands/
+│   │   │       └── precalcular_heatmap.py
+│   │   └── tests.py
+│   │
+│   ├── publico/                  # Portal público
+│   │   ├── services.py
+│   │   ├── views.py              # Mapa, búsqueda, reporte ciudadano
+│   │   ├── forms.py
+│   │   └── urls_api.py
+│   │
+│   └── reportes/                 # Generación de reportes
+│       ├── generador_reportes.py # Excel + PDF
+│       ├── services.py
+│       ├── views.py
+│       └── urls_api.py
+│
+├── templates/
+│   ├── base.html
+│   ├── admin/
+│   │   ├── panel_admin.html      # Panel completo (admins)
+│   │   ├── panel_gestor.html     # Panel operativo (gestores)
+│   │   ├── carga_datos.html
+│   │   ├── reportes.html
+│   │   └── resultados.html
+│   ├── mapa/crud/                # Templates del CRUD
+│   │   ├── crud_list.html
+│   │   ├── crud_form.html
+│   │   └── crud_confirm_delete.html
+│   ├── publico/
+│   │   ├── mapa_publico.html
+│   │   └── reporte_ciudadano.html
+│   └── registration/
+│       └── login.html
+│
+├── static/
+│   ├── css/                      # Hojas de estilo
+│   ├── js/                       # JavaScript
+│   ├── img/                      # Imágenes
+│   └── vendor/                   # Librerías externas
+│       └── leaflet-routing-machine/
+│
+└── media/                        # Uploads de usuarios (NO subir)
 ```
 
 ---
@@ -159,6 +285,7 @@ cobijo_vzla/
 - Python 3.12+
 - PostgreSQL 15+ con PostGIS
 - GDAL/GEOS (para GeoDjango)
+- Node.js (para dependencias de Leaflet)
 - Git
 
 ### Windows: instalar GDAL/GEOS
@@ -191,20 +318,26 @@ python -m venv myvenv
 myvenv\Scripts\activate          # Windows
 source myvenv/bin/activate       # Linux/Mac
 
-# 3. Instalar dependencias
+# 3. Instalar dependencias Python
 pip install -r requirements.txt
 
-# 4. Copiar el archivo de ejemplo y editar variables
-cp .env.example .env
-# Editar .env con los valores reales
+# 4. Instalar dependencias JS
+npm install
 
-# 5. Aplicar migraciones
+# 5. Copiar y editar .env
+cp .env.example .env
+# Editar .env con valores reales
+
+# 6. Aplicar migraciones
 python manage.py migrate
 
-# 6. Crear superusuario
+# 7. Crear superusuario
 python manage.py createsuperuser
 
-# 7. Ejecutar servidor de desarrollo
+# 8. Precalcular heatmap (opcional, ~30s)
+python manage.py precalcular_heatmap
+
+# 9. Ejecutar
 python manage.py runserver
 ```
 
@@ -214,7 +347,7 @@ Abrir en el navegador: http://127.0.0.1:8000/
 
 ## 🔐 Variables de entorno
 
-El proyecto usa `python-dotenv` para leer variables del archivo `.env`.
+El proyecto usa `python-dotenv` para leer variables del `.env`.
 
 ### `.env` (local, **NO se sube a Git**)
 
@@ -232,14 +365,14 @@ DB_HOST=localhost
 DB_PORT=5432
 
 # === Supabase (producción) ===
-DATABASE_URL=postgresql://postgres.<project-id>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+DATABASE_URL=postgresql://postgres.<project>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
 
 # === GeoDjango (Windows) ===
 GDAL_LIBRARY_PATH=...
 GEOS_LIBRARY_PATH=...
 ```
 
-### `.env.example` (público, **SÍ se sube a Git**)
+### `.env.example` (público)
 
 ```env
 DJANGO_SECRET_KEY=
@@ -264,139 +397,95 @@ GEOS_LIBRARY_PATH=
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-> ⚠️ **Nunca** subas el `.env` real al repositorio. Ya está en `.gitignore`.
+---
+
+## 📚 Guía de uso
+
+### Para Superusuarios / Administradores
+
+1. **Acceder**: `https://cobijo-vzla.onrender.com/panel/`
+2. Serás redirigido a `/panel/admin/`
+3. Pestañas disponibles:
+
+| Pestaña | Función |
+|---------|---------|
+| 🗺️ **Mapa** | Visualización geoespacial con capas configurables |
+| 📊 **Datos** | CRUD completo de todos los modelos |
+| ⚙️ **Optimización** | Ejecutar modelos de localización |
+| 📄 **Reportes** | Descargar PDF/Excel |
+
+### Para Gestores
+
+1. **Acceder**: `https://cobijo-vzla.onrender.com/panel/`
+2. Serás redirigido a `/panel/gestor/`
+3. Pestañas disponibles:
+
+| Pestaña | Función |
+|---------|---------|
+| 🗺️ **Mapa** | Visualización (refugios + zonas) |
+| 📊 **Datos** | CRUD limitado (según permisos) |
+| 📄 **Reportes** | Descargar PDF/Excel |
+
+**NO verás** la pestaña "Optimización".
+
+### CRUD de datos (`/panel/datos/`)
+
+1. **Listar**: clic en cualquier tarjeta del grid
+2. **Buscar**: campo de búsqueda en la parte superior
+3. **Crear**: botón "Nuevo" (si tienes permiso)
+4. **Editar**: ícono ✏️ en cada fila
+5. **Borrar**: ícono 🗑️ en cada fila (con confirmación)
+
+### Crear un usuario gestor
+
+1. Ir al admin: `/admin/auth/user/add/`
+2. Completar username y password
+3. **NO marcar** "Staff status" ni "Superuser status"
+4. En la sección **Groups**, mover **"Gestores"** a la derecha
+5. Guardar
+
+El usuario podrá iniciar sesión y verá el panel de gestor.
+
+### Crear un usuario administrador
+
+1. Ir al admin: `/admin/auth/user/add/`
+2. Completar username y password
+3. En la sección **Groups**, mover **"Administradores"** a la derecha
+4. (Opcional) Marcar "Staff status" si necesita acceso al admin Django
+5. Guardar
 
 ---
 
-## ⚙️ Comandos de Django
+## 🌐 API REST
 
-### Activar / desactivar entorno
+### Endpoints públicos
 
-```bash
-myvenv\Scripts\activate      # Windows
-source myvenv/bin/activate   # Linux/Mac
-deactivate                   # Salir
-```
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/publico/refugios/` | Lista de refugios operativos |
+| GET | `/api/publico/zonas-afectadas/` | Zonas activas |
+| GET | `/api/publico/mapa-calor/` | Puntos del heatmap |
+| GET | `/api/publico/buscar-lugar/?q=<query>` | Búsqueda de lugares |
+| POST | `/api/publico/reporte-ciudadano/` | Crear reporte |
+| GET | `/api/publico/info-emergencia/` | Teléfonos de emergencia |
 
-### Comandos habituales
+### Endpoints autenticados
 
-| Comando | Descripción |
-|---------|-------------|
-| `python manage.py check` | Verifica que no haya errores |
-| `python manage.py runserver` | Inicia servidor de desarrollo |
-| `python manage.py migrate` | Aplica migraciones a la BD |
-| `python manage.py makemigrations` | Genera migraciones desde modelos |
-| `python manage.py showmigrations` | Ver migraciones aplicadas |
-| `python manage.py createsuperuser` | Crear admin |
-| `python manage.py changepassword <user>` | Cambiar contraseña |
-| `python manage.py shell` | Consola interactiva |
-| `python manage.py collectstatic` | Recolectar archivos estáticos |
-| `python manage.py dbshell` | Abrir consola SQL de la BD |
-
-### Comandos personalizados del proyecto
-
-| Comando | Descripción |
-|---------|-------------|
-| `python manage.py cargar_datos_masivos` | Cargar datos desde archivos |
-| `python manage.py importar_limites` | Importar límites geográficos |
-| `python manage.py importar_osm` | Importar desde OpenStreetMap |
-| `python manage.py importar_zonas_local` | Importar zonas afectadas |
-
-### Consola interactiva
-
-```bash
-python manage.py shell
-```
-
-Ejemplos:
-
-```python
-from django.contrib.auth import get_user_model
-from apps.core.models import Estado, Parroquia, RefugioExistente
-
-# Contar registros
-Estado.objects.count()
-Parroquia.objects.count()
-RefugioExistente.objects.count()
-
-# Listar usuarios
-User = get_user_model()
-list(User.objects.values_list('username', 'is_superuser'))
-
-exit()
-```
-
----
-
-## 🗄️ Base de datos
-
-### Exportar backup (desde Postgres local)
-
-```bash
-pg_dump -U postgres -h localhost -p 5432 -d cobijo_vzla_db \
-  -F c -b -f "backup_$(date +%Y-%m-%d).dump"
-```
-
-### Restaurar datos en Supabase
-
-```bash
-# Solo datos (requiere que las tablas ya existan)
-pg_restore -d "$DATABASE_URL" \
-  --no-owner --no-acl --data-only -v \
-  "backup.dump"
-```
-
-### Restaurar una sola tabla
-
-```bash
-pg_restore -d "$DATABASE_URL" \
-  --no-owner --no-acl --data-only \
-  -t core_zonaafectada -v \
-  "backup.dump"
-```
-
-### Filtrar errores reales del log
-
-```bash
-grep "error:" restore_log.txt | grep -v "RI_ConstraintTrigger"
-```
-
-### Consultas útiles en Supabase (SQL Editor)
-
-```sql
--- Ver todas las tablas
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public' 
-ORDER BY table_name;
-
--- Verificar PostGIS
-SELECT PostGIS_Version();
-
--- Ver migraciones aplicadas
-SELECT app, name, applied 
-FROM django_migrations 
-ORDER BY applied DESC;
-
--- Conteo de filas
-SELECT 'core_estado' AS tabla, COUNT(*) FROM core_estado
-UNION ALL
-SELECT 'core_parroquia', COUNT(*) FROM core_parroquia
-UNION ALL
-SELECT 'core_zonaafectada', COUNT(*) FROM core_zonaafectada
-UNION ALL
-SELECT 'core_refugioexistente', COUNT(*) FROM core_refugioexistente;
-```
-
-### Connection strings de Supabase
-
-| Modo | Puerto | Host | Uso |
-|------|--------|------|-----|
-| Direct | 5432 | `db.<project>.supabase.co` | A veces bloqueado |
-| Session Pooler | 5432 | `aws-0-<region>.pooler.supabase.com` | Migraciones |
-| **Transaction Pooler** | **6543** | `aws-0-<region>.pooler.supabase.com` | **Apps** ✅ |
-
-> 💡 **Usa siempre el Transaction Pooler (6543)** para Django en producción.
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/estadisticas/` | KPIs generales |
+| GET | `/api/datos-mapa/` | Datos del mapa admin |
+| POST | `/api/ejecutar-optimizacion/` | Ejecutar optimización |
+| GET | `/api/listar-resultados/` | Historial de optimizaciones |
+| GET | `/api/resultados/<id>/` | Detalle de un resultado |
+| GET | `/api/mapa-calor-admin/` | Heatmap admin (pesos custom) |
+| POST | `/api/ejecutar-comando/` | Ejecutar comando (whitelist) |
+| GET | `/api/exportar-csv/` | Exportar resultados CSV |
+| GET | `/api/exportar-geojson/` | Exportar centros GeoJSON |
+| GET | `/api/reportes/generar/` | Generar reporte |
+| GET | `/api/reportes/descargar/<archivo>/` | Descargar reporte |
+| GET | `/api/core/api/kpis/` | KPIs extendidos |
+| GET | `/api/emergencias/api/kpis/` | KPIs de emergencias |
 
 ---
 
@@ -411,20 +500,20 @@ GitHub notifica a Render (webhook)
         ↓
 Render construye la imagen Docker
         ↓
-Ejecuta start.sh (migrate + collectstatic + gunicorn)
+Ejecuta start.sh (migrate + collectstatic + precalcular_heatmap + gunicorn)
         ↓
 Health check a /admin/
         ↓
 Live ✅ (o Failed ❌)
 ```
 
-### Archivos clave del deploy
+### Archivos clave
 
-**`Dockerfile`** — instala Python, GDAL, GEOS, PROJ, libpq y las dependencias Python.
-
-**`start.sh`** — corre en runtime: migrate + collectstatic + gunicorn.
-
-**`render.yaml`** — configuración del servicio en Render.
+| Archivo | Función |
+|---------|---------|
+| `Dockerfile` | Instala Python, GDAL, GEOS, PROJ, libpq y deps Python |
+| `start.sh` | Runtime: migrate + collectstatic + heatmap + gunicorn |
+| `render.yaml` | Config del servicio en Render |
 
 ### Variables de entorno en Render
 
@@ -432,13 +521,13 @@ Configuradas en **Dashboard → Service → Environment**:
 
 | Variable | Valor |
 |----------|-------|
-| `DJANGO_SECRET_KEY` | Generada por Render (automático) |
+| `DJANGO_SECRET_KEY` | Generada por Render |
 | `DJANGO_DEBUG` | `False` |
-| `DJANGO_ALLOWED_HOSTS` | `<app-name>.onrender.com,localhost,127.0.0.1` |
-| `DATABASE_URL` | URL de Supabase (Transaction Pooler, puerto 6543) |
+| `DJANGO_ALLOWED_HOSTS` | `<app>.onrender.com,localhost,127.0.0.1` |
+| `DATABASE_URL` | URL de Supabase (Transaction Pooler, puerto `6543`) |
 | `PYTHON_VERSION` | `3.12.1` |
 
-### Forzar redeploy
+### Deploy manual
 
 1. Dashboard → servicio → **Manual Deploy**
 2. Elegir **Deploy latest commit**
@@ -446,90 +535,97 @@ Configuradas en **Dashboard → Service → Environment**:
 
 ### Sleep del plan gratis
 
-Render Free duerme la app tras **15 minutos sin tráfico**. La primera petición tarda **30-50 segundos** en despertarla.
+Render Free duerme la app tras **15 min sin tráfico**. La primera petición tarda **30-50 segundos**.
 
-**Opciones**:
-
-- Usar un servicio de ping externo (UptimeRobot, cron-job.org) cada 10 min.
-- Subir a plan pagado.
+**Soluciones**:
+- Servicio de ping externo (UptimeRobot) cada 10 min
+- Upgrade a plan pagado
 
 ---
 
 ## 🔧 Mantenimiento
 
-### Hacer un cambio y desplegarlo
+### Comandos habituales
+
+```bash
+# Servidor local
+python manage.py runserver
+
+# Migraciones
+python manage.py makemigrations
+python manage.py migrate
+python manage.py showmigrations
+
+# Tests
+python manage.py test
+python manage.py test apps.core
+python manage.py test apps.mapa
+
+# Precalcular heatmap (necesario tras cambios de datos)
+python manage.py precalcular_heatmap
+
+# Consola interactiva
+python manage.py shell
+```
+
+### Comandos personalizados
+
+| Comando | Descripción |
+|---------|-------------|
+| `python manage.py cargar_datos_prueba` | Generar datos ficticios |
+| `python manage.py cargar_datos_masivos` | Generar 1500 puntos de demanda |
+| `python manage.py importar_limites` | Importar estados/parroquias desde GeoJSON |
+| `python manage.py importar_osm` | Importar desde OpenStreetMap |
+| `python manage.py importar_zonas_local` | Importar zonas afectadas |
+| `python manage.py precalcular_heatmap` | Precalcular caché del heatmap |
+
+### Flujo de un cambio
 
 ```bash
 # 1. Activar venv
 myvenv\Scripts\activate
 
-# 2. Hacer los cambios en el código
+# 2. Hacer cambios
+# ...
 
-# 3. Probar en local
+# 3. Verificar
 python manage.py check
-python manage.py runserver
+python manage.py test
 
-# 4. Ver qué cambió
-git status
-git diff
-
-# 5. Commit
+# 4. Commit + push (Render redespliega automáticamente)
 git add .
 git commit -m "feat: descripción del cambio"
-
-# 6. Push → Render redespliega automáticamente
 git push origin main
 ```
 
-### Agregar un nuevo modelo
+### Backup de la BD
 
 ```bash
-# 1. Editar apps/mi_app/models.py
+# Exportar Postgres local
+pg_dump -U postgres -h localhost -d cobijo_vzla_db -F c -f backup.dump
 
-# 2. Crear migración
-python manage.py makemigrations mi_app
-
-# 3. Aplicar en local
-python manage.py migrate
-
-# 4. Commit + push
-git add .
-git commit -m "feat: agregar modelo X"
-git push origin main
+# Restaurar en Supabase (con --data-only si las tablas ya existen)
+pg_restore -d "$DATABASE_URL" --no-owner --no-acl --data-only backup.dump
 ```
 
-### Backup completo de la BD
+### Agregar un modelo al CRUD
 
-```bash
-pg_dump -U postgres -h localhost -p 5432 \
-  -d cobijo_vzla_db -F c -b \
-  -f "backup_$(date +%Y-%m-%d).dump"
-```
-
-Guardar el archivo en un lugar seguro (Drive, Dropbox, etc.).
-
-### Cambiar la contraseña de Supabase
-
-1. Supabase → **Project Settings** → **Database** → **Reset password**
-2. Copiar la nueva contraseña
-3. Actualizar `.env` local
-4. Render → **Environment** → editar `DATABASE_URL`
-5. Render redeploya automáticamente
-
-### Reset del schema (⚠️ emergencia)
-
-**Solo usar si la BD está corrupta**. Borra TODOS los datos:
-
-```sql
-DROP SCHEMA IF EXISTS public CASCADE;
-CREATE SCHEMA public;
-GRANT ALL ON SCHEMA public TO postgres;
-GRANT ALL ON SCHEMA public TO public;
-CREATE EXTENSION IF NOT EXISTS postgis SCHEMA public;
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
-```
-
-Después: `python manage.py migrate` + `pg_restore --data-only`.
+1. Editar `apps/mapa/permissions.py`
+2. Agregar la entrada en `MODELOS_CRUD`:
+   ```python
+   'mi_app_mimodelo': {
+       'app_label': 'mi_app',
+       'model_name': 'MiModelo',
+       'verbose_name': 'Mi Modelo',
+       'verbose_name_plural': 'Mis Modelos',
+       'icon': 'fa-icon',
+       'list_display': ['campo1', 'campo2'],
+       'search_fields': ['campo1'],
+       'ordering': ['-pk'],
+   },
+   ```
+3. Agregar permisos en `PERMISOS_POR_GRUPO` para cada grupo
+4. **No hace falta tocar las vistas** → son genéricas
 
 ---
 
@@ -537,45 +633,22 @@ Después: `python manage.py migrate` + `pg_restore --data-only`.
 
 ### `exec format error` en Render
 
-**Causa**: `start.sh` tiene line endings CRLF (Windows).
+**Causa**: `start.sh` tiene line endings CRLF.
 
 **Solución**:
-
 ```bash
-# Convertir a LF
 sed -i 's/\r$//' start.sh
-git add start.sh
-git commit -m "fix: convertir start.sh a LF"
-git push origin main
-```
-
-En Windows PowerShell:
-
-```powershell
-$content = Get-Content start.sh -Raw
-$content = $content -replace "`r`n", "`n"
-[System.IO.File]::WriteAllText("$PWD\start.sh", $content, [System.Text.UTF8Encoding]::new($false))
 ```
 
 ### `password authentication failed`
 
-**Causa**: contraseña incorrecta en `.env` o en Render.
+**Causa**: contraseña incorrecta en `.env` o Render.
 
-**Solución**: verificar que ambos tengan la misma URL actualizada.
-
-### `relation "X" does not exist`
-
-**Causa**: migraciones no aplicadas.
-
-**Solución**:
-
-```bash
-python manage.py migrate
-```
+**Solución**: verificar que ambos tengan la misma URL.
 
 ### `column "name" does not exist` en `django_content_type`
 
-**Causa**: tabla en estado inconsistente (típico tras `pg_restore` incompleto).
+**Causa**: tabla en estado inconsistente tras `pg_restore`.
 
 **Solución**: reset del schema + migrar + recargar datos.
 
@@ -583,30 +656,25 @@ python manage.py migrate
 
 **Causa**: falta `GDAL_LIBRARY_PATH` o librería no instalada.
 
-**Solución local (Windows)**:
+**Solución local (Windows)**: configurar en `.env`. **Producción**: el Dockerfile ya incluye `gdal-bin`.
 
-```env
-GDAL_LIBRARY_PATH=C:\...\OSGeo4W\bin\gdal313.dll
-GEOS_LIBRARY_PATH=C:\...\OSGeo4W\bin\geos_c.dll
-```
+### 403 Forbidden en `/panel/`
 
-**Solución producción**: revisar que el `Dockerfile` incluya `gdal-bin`.
+**Causa**: el usuario no está en ningún grupo con acceso.
 
-### Render dice "Live" pero la página da 500
+**Solución**: agregar el usuario al grupo `Gestores` o `Administradores` desde el admin.
 
-**Causa**: el health check `/admin/` puede pasar incluso si la BD falla.
+### El heatmap tarda 30s cada vez
 
-**Solución**:
+**Causa**: la caché expira o no se precargó.
 
-1. Ver logs de Render
-2. Buscar `Traceback`
-3. Corregir y redeployar
+**Solución**: `python manage.py precalcular_heatmap` después de cambios de datos.
 
-### La app tarda 30-50 segundos en cargar
+### La app tarda 30-50s en cargar
 
 **Causa**: Render Free duerme tras 15 min sin tráfico.
 
-**Solución**: usar uptime robot o subir a plan pagado.
+**Solución**: uptime robot o upgrade.
 
 ---
 
@@ -619,13 +687,13 @@ GEOS_LIBRARY_PATH=C:\...\OSGeo4W\bin\geos_c.dll
 5. **Nunca** corras `migrate --fake` sin entender por qué
 6. **Nunca** uses `DROP SCHEMA CASCADE` en producción sin backup
 7. **Si dudas, prueba primero en local**
-8. **Los emojis y acentos rompen scripts de shell** — usa ASCII en `.sh`, `Dockerfile`, `.yaml`
-9. **Los archivos que se ejecutan en Linux deben tener LF** — usa `.gitattributes`
-10. **Rota credenciales** si accidentalmente las expones
+8. **Los scripts `.sh`, `Dockerfile`, `.yaml` van con LF** — usa `.gitattributes`
+9. **Rota credenciales** si las expones accidentalmente
+10. **Un commit = un cambio lógico** (no "varios fixes mezclados")
 
 ---
 
-## 🎓 Comandos de emergencia (cheat sheet)
+## 🎓 Comandos de emergencia
 
 ```bash
 # === ENTORNO ===
@@ -635,52 +703,27 @@ deactivate                                     # Desactivar
 # === DIAGNÓSTICO ===
 python manage.py check                         # Verificar Django
 python manage.py showmigrations                # Ver migraciones
-grep DATABASE_URL .env                         # Ver URL
+python manage.py test                          # Correr tests
 
 # === GIT ===
 git status                                     # Ver cambios
 git add . && git commit -m "fix: X" && git push origin main
 
-# === BD ===
-python manage.py migrate                       # Aplicar migraciones
-python manage.py shell                         # Consola interactiva
-
 # === BACKUP ===
 pg_dump -U postgres -h localhost -d cobijo_vzla_db -F c -f backup.dump
 
 # === RESTORE ===
-pg_restore -d "$DATABASE_URL" --no-owner --no-acl --data-only -v "backup.dump"
+pg_restore -d "$DATABASE_URL" --no-owner --no-acl --data-only backup.dump
 
 # === LINE ENDINGS ===
-file start.sh                                  # Debe decir "ASCII text" (no "CRLF")
+file start.sh                                  # Debe decir "ASCII text"
 ```
-
----
-
-## 🤝 Contribuir
-
-1. Fork el repositorio
-2. Crea una rama: `git checkout -b feature/nueva-funcionalidad`
-3. Commit: `git commit -m "feat: agregar nueva funcionalidad"`
-4. Push: `git push origin feature/nueva-funcionalidad`
-5. Abre un Pull Request
-
-### Convenciones de commits
-
-| Prefijo | Uso |
-|---------|-----|
-| `feat:` | Nueva funcionalidad |
-| `fix:` | Corrección de bug |
-| `docs:` | Documentación |
-| `chore:` | Tareas varias |
-| `refactor:` | Reestructuración |
-| `style:` | Formato |
 
 ---
 
 ## 📄 Licencia
 
-Este proyecto está licenciado bajo la **MIT License**. Ver el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto está licenciado bajo la **MIT License**. Ver [LICENSE](LICENSE).
 
 ---
 
@@ -700,6 +743,8 @@ Este proyecto está licenciado bajo la **MIT License**. Ver el archivo [LICENSE]
 | Repositorio | https://github.com/pedromph23/cobijo_vzla |
 | App en producción | https://cobijo-vzla.onrender.com |
 | Admin de producción | https://cobijo-vzla.onrender.com/admin/ |
+| Panel de admin | https://cobijo-vzla.onrender.com/panel/admin/ |
+| Panel de gestor | https://cobijo-vzla.onrender.com/panel/gestor/ |
 | Dashboard Supabase | https://supabase.com/dashboard |
 | Dashboard Render | https://dashboard.render.com |
 
