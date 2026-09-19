@@ -1,454 +1,362 @@
 """
-Generador de reportes estadísticos para CobijoVzla.
+Generador de reportes en Excel y PDF.
 
-Este módulo genera reportes en formato Excel y PDF usando pandas.
+Usa `services.py` para obtener los datos y los serializa a archivos.
+Los archivos se guardan en `MEDIA_ROOT/reportes/` con nombre único.
 """
+from __future__ import annotations
 
-import os
 import logging
-from datetime import datetime
-from typing import Dict, List, Optional
+import os
+from datetime import datetime, timedelta
+from typing import Optional
 
 import pandas as pd
-from django.db.models import Count, Sum, Avg, Q
-from django.utils import timezone
+from django.conf import settings
 
-from apps.core.models import (
-    Estado,
-    Parroquia,
-    PuntoDemanda,
-    SitioCandidato,
-    RefugioExistente,
-    ZonaAfectada,
-    ResultadoOptimizacion,
-)
-from apps.emergencias.models import Evento, Reporte
+from . import services
 
-# Configurar logger
+
 logger = logging.getLogger(__name__)
 
-# Directorio para guardar reportes
-REPORTES_DIR = os.path.join('media', 'reportes')
-
-
-def asegurar_directorio():
-    """Crea el directorio de reportes si no existe."""
-    os.makedirs(REPORTES_DIR, exist_ok=True)
-
 
 # ============================================================
-# FUNCIONES DE DATOS
+# CONFIGURACIÓN
 # ============================================================
 
-def obtener_datos_zonas_afectadas() -> pd.DataFrame:
-    """
-    Obtiene datos de zonas afectadas como DataFrame.
-    """
-    zonas = ZonaAfectada.objects.select_related('evento').all()
-    
-    data = []
-    for z in zonas:
-        data.append({
-            'ID': z.id,
-            'Nombre': z.nombre,
-            'Evento': z.evento.nombre if z.evento else 'Sin evento',
-            'Tipo Evento': z.evento.tipo if z.evento else '',
-            'Nivel Alerta': z.nivel_alerta.upper(),
-            'Descripción': z.descripcion or '',
-            'Heridos': z.heridos or 0,
-            'Fallecidos': z.fallecidos or 0,
-            'Damnificados': z.damnificados or 0,
-            'Fecha Inicio': z.fecha_inicio.strftime('%Y-%m-%d %H:%M') if z.fecha_inicio else '',
-            'Fecha Fin': z.fecha_fin.strftime('%Y-%m-%d %H:%M') if z.fecha_fin else 'Activa',
-        })
-    
-    return pd.DataFrame(data)
+EXTENSIONES_PERMITIDAS = {'.xlsx', '.pdf'}
+DIAS_RETENCION_REPORTES = 7
 
 
-def obtener_datos_por_estado() -> pd.DataFrame:
-    """
-    Obtiene datos agregados por estado.
-    """
-    estados = Estado.objects.all()
-    
-    data = []
-    for estado in estados:
-        parroquias = Parroquia.objects.filter(estado=estado)
-        zonas = ZonaAfectada.objects.filter(geom__within=estado.geom) if estado.geom else []
-        
-        data.append({
-            'Estado': estado.nombre,
-            'Total Parroquias': parroquias.count(),
-            'Población Total': parroquias.aggregate(Sum('poblacion'))['poblacion__sum'] or 0,
-            'Total Zonas Afectadas': len(zonas),
-            'Heridos': sum(z.heridos for z in zonas if z.heridos),
-            'Fallecidos': sum(z.fallecidos for z in zonas if z.fallecidos),
-            'Damnificados': sum(z.damnificados for z in zonas if z.damnificados),
-            'Vulnerabilidad Promedio': parroquias.aggregate(Avg('indice_vulnerabilidad'))['indice_vulnerabilidad__avg'] or 0,
-        })
-    
-    return pd.DataFrame(data)
+def _reportes_dir() -> str:
+    """Ruta absoluta del directorio de reportes, basada en MEDIA_ROOT."""
+    ruta = os.path.join(settings.MEDIA_ROOT, 'reportes')
+    os.makedirs(ruta, exist_ok=True)
+    return ruta
 
 
-def obtener_datos_refugios() -> pd.DataFrame:
-    """
-    Obtiene datos de refugios como DataFrame.
-    """
-    refugios = RefugioExistente.objects.all()
-    
-    data = []
-    for r in refugios:
-        data.append({
-            'ID': r.id,
-            'Nombre': r.nombre,
-            'Dirección': r.direccion,
-            'Capacidad Total': r.capacidad_total,
-            'Capacidad Disponible': r.capacidad_disponible,
-            'Ocupación': f"{((r.capacidad_total - r.capacidad_disponible) / r.capacidad_total * 100) if r.capacidad_total > 0 else 0:.1f}%",
-            'Servicios': ', '.join(r.servicios) if isinstance(r.servicios, list) else '',
-            'Operativo': 'Sí' if r.operativo else 'No',
-            'Teléfono': r.telefono or '',
-        })
-    
-    return pd.DataFrame(data)
+def _nombre_archivo(prefijo: str, extension: str) -> str:
+    """Genera un nombre único con timestamp."""
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    return f"{prefijo}_{ts}{extension}"
 
 
-def obtener_datos_demandas() -> pd.DataFrame:
+def limpiar_reportes_antiguos(dias: int = DIAS_RETENCION_REPORTES) -> int:
     """
-    Obtiene datos de puntos de demanda.
-    """
-    demandas = PuntoDemanda.objects.select_related('parroquia__estado').all()
-    
-    data = []
-    for d in demandas:
-        data.append({
-            'ID': d.id,
-            'Nombre': d.nombre,
-            'Parroquia': d.parroquia.nombre if d.parroquia else '',
-            'Estado': d.parroquia.estado.nombre if d.parroquia and d.parroquia.estado else '',
-            'Población': d.poblacion,
-            'Vulnerabilidad': d.vulnerabilidad,
-        })
-    
-    return pd.DataFrame(data)
+    Elimina reportes con más de `dias` días de antigüedad.
 
-
-def obtener_datos_eventos() -> pd.DataFrame:
-    """
-    Obtiene datos de eventos.
-    """
-    eventos = Evento.objects.all()
-    
-    data = []
-    for e in eventos:
-        data.append({
-            'ID': e.id,
-            'Nombre': e.nombre,
-            'Tipo': e.tipo,
-            'Fecha': e.fecha.strftime('%Y-%m-%d %H:%M'),
-            'Magnitud': e.magnitud or 0,
-            'Descripción': e.descripcion or '',
-            'Activo': 'Sí' if e.activo else 'No',
-        })
-    
-    return pd.DataFrame(data)
-
-
-# ============================================================
-# FUNCIONES DE EXPORTACIÓN EXCEL
-# ============================================================
-
-def generar_excel_zonas_afectadas() -> str:
-    """
-    Genera reporte Excel de zonas afectadas.
-    
     Returns:
-        str: Ruta del archivo generado
+        Cantidad de archivos eliminados.
     """
-    asegurar_directorio()
-    
-    df = obtener_datos_zonas_afectadas()
-    
+    try:
+        directorio = _reportes_dir()
+        limite = datetime.now() - timedelta(days=dias)
+        eliminados = 0
+
+        for nombre in os.listdir(directorio):
+            ruta = os.path.join(directorio, nombre)
+            if not os.path.isfile(ruta):
+                continue
+            _, ext = os.path.splitext(nombre)
+            if ext.lower() not in EXTENSIONES_PERMITIDAS:
+                continue
+            try:
+                if datetime.fromtimestamp(os.path.getmtime(ruta)) < limite:
+                    os.remove(ruta)
+                    eliminados += 1
+            except OSError:
+                continue
+
+        if eliminados:
+            logger.info(f"Limpiados {eliminados} reportes antiguos (>{dias} días)")
+        return eliminados
+    except Exception as e:
+        logger.warning(f"Error limpiando reportes: {e}")
+        return 0
+
+
+# ============================================================
+# EXCEL
+# ============================================================
+
+def generar_excel_zonas_afectadas() -> Optional[str]:
+    """Genera Excel de zonas afectadas con hojas de resumen."""
+    df = services.df_zonas_afectadas()
     if df.empty:
+        logger.info("Sin datos de zonas afectadas")
         return None
-    
-    nombre_archivo = f"reporte_zonas_afectadas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-    ruta = os.path.join(REPORTES_DIR, nombre_archivo)
-    
-    with pd.ExcelWriter(ruta, engine='openpyxl') as writer:
-        # Hoja principal
-        df.to_excel(writer, sheet_name='Zonas Afectadas', index=False)
-        
-        # Hoja resumen por nivel de alerta
-        resumen_alerta = df.groupby('Nivel Alerta').agg({
-            'Heridos': 'sum',
-            'Fallecidos': 'sum',
-            'Damnificados': 'sum',
-            'ID': 'count'
-        }).rename(columns={'ID': 'Total Zonas'})
-        resumen_alerta.to_excel(writer, sheet_name='Resumen por Alerta')
-        
-        # Hoja resumen por tipo de evento
-        resumen_evento = df.groupby('Tipo Evento').agg({
-            'Heridos': 'sum',
-            'Fallecidos': 'sum',
-            'Damnificados': 'sum',
-            'ID': 'count'
-        }).rename(columns={'ID': 'Total Zonas'})
-        resumen_evento.to_excel(writer, sheet_name='Resumen por Evento')
-    
-    logger.info(f"Reporte Excel generado: {ruta}")
-    return ruta
+
+    ruta = os.path.join(_reportes_dir(), _nombre_archivo('zonas_afectadas', '.xlsx'))
+
+    try:
+        with pd.ExcelWriter(ruta, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Zonas Afectadas', index=False)
+
+            # Resumen por alerta
+            resumen_alerta = (
+                df.groupby('Nivel Alerta')
+                .agg({
+                    'Heridos': 'sum',
+                    'Fallecidos': 'sum',
+                    'Damnificados': 'sum',
+                    'ID': 'count',
+                })
+                .rename(columns={'ID': 'Total Zonas'})
+            )
+            resumen_alerta.to_excel(writer, sheet_name='Resumen por Alerta')
+
+            # Resumen por evento
+            resumen_evento = (
+                df.groupby('Tipo Evento')
+                .agg({
+                    'Heridos': 'sum',
+                    'Fallecidos': 'sum',
+                    'Damnificados': 'sum',
+                    'ID': 'count',
+                })
+                .rename(columns={'ID': 'Total Zonas'})
+            )
+            resumen_evento.to_excel(writer, sheet_name='Resumen por Evento')
+
+        logger.info(f"Excel zonas generado: {ruta}")
+        return ruta
+    except Exception as e:
+        logger.error(f"Error generando Excel zonas: {e}", exc_info=True)
+        return None
 
 
-def generar_excel_estadisticas_generales() -> str:
-    """
-    Genera reporte Excel con estadísticas generales.
-    
-    Returns:
-        str: Ruta del archivo generado
-    """
-    asegurar_directorio()
-    
-    nombre_archivo = f"reporte_estadisticas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-    ruta = os.path.join(REPORTES_DIR, nombre_archivo)
-    
-    with pd.ExcelWriter(ruta, engine='openpyxl') as writer:
-        # Estados
-        df_estados = obtener_datos_por_estado()
-        df_estados.to_excel(writer, sheet_name='Por Estado', index=False)
-        
-        # Refugios
-        df_refugios = obtener_datos_refugios()
-        df_refugios.to_excel(writer, sheet_name='Refugios', index=False)
-        
-        # Demandas
-        df_demandas = obtener_datos_demandas()
-        df_demandas.to_excel(writer, sheet_name='Puntos de Demanda', index=False)
-        
-        # Eventos
-        df_eventos = obtener_datos_eventos()
-        df_eventos.to_excel(writer, sheet_name='Eventos', index=False)
-        
-        # Resumen general
-        resumen = pd.DataFrame({
-            'Métrica': [
-                'Total Estados',
-                'Total Parroquias',
-                'Total Refugios',
-                'Total Puntos de Demanda',
-                'Total Zonas Afectadas',
-                'Total Eventos',
-                'Total Heridos',
-                'Total Fallecidos',
-                'Total Damnificados',
-            ],
-            'Valor': [
-                Estado.objects.count(),
-                Parroquia.objects.count(),
-                RefugioExistente.objects.count(),
-                PuntoDemanda.objects.count(),
-                ZonaAfectada.objects.count(),
-                Evento.objects.count(),
-                ZonaAfectada.objects.aggregate(Sum('heridos'))['heridos__sum'] or 0,
-                ZonaAfectada.objects.aggregate(Sum('fallecidos'))['fallecidos__sum'] or 0,
-                ZonaAfectada.objects.aggregate(Sum('damnificados'))['damnificados__sum'] or 0,
-            ]
-        })
-        resumen.to_excel(writer, sheet_name='Resumen General', index=False)
-    
-    logger.info(f"Reporte Excel general generado: {ruta}")
-    return ruta
+def generar_excel_estadisticas_generales() -> Optional[str]:
+    """Genera Excel con estadísticas generales (multi-hoja)."""
+    ruta = os.path.join(_reportes_dir(), _nombre_archivo('estadisticas', '.xlsx'))
+
+    try:
+        with pd.ExcelWriter(ruta, engine='openpyxl') as writer:
+            services.df_por_estado().to_excel(writer, sheet_name='Por Estado', index=False)
+            services.df_refugios().to_excel(writer, sheet_name='Refugios', index=False)
+            services.df_demandas().to_excel(writer, sheet_name='Puntos de Demanda', index=False)
+            services.df_eventos().to_excel(writer, sheet_name='Eventos', index=False)
+
+            r = services.resumen_general()
+            resumen_df = pd.DataFrame({
+                'Métrica': [
+                    'Total Estados', 'Total Parroquias', 'Total Refugios',
+                    'Total Puntos de Demanda', 'Total Zonas Afectadas',
+                    'Total Eventos', 'Total Heridos', 'Total Fallecidos',
+                    'Total Damnificados',
+                ],
+                'Valor': [
+                    r.get('estados', 0), r.get('parroquias', 0),
+                    r.get('refugios', 0), r.get('demandas', 0),
+                    r.get('zonas', 0), r.get('eventos', 0),
+                    r.get('heridos', 0), r.get('fallecidos', 0),
+                    r.get('damnificados', 0),
+                ],
+            })
+            resumen_df.to_excel(writer, sheet_name='Resumen General', index=False)
+
+        logger.info(f"Excel general generado: {ruta}")
+        return ruta
+    except Exception as e:
+        logger.error(f"Error generando Excel general: {e}", exc_info=True)
+        return None
 
 
 # ============================================================
-# FUNCIONES DE EXPORTACIÓN PDF
+# PDF
 # ============================================================
 
-def generar_pdf_zonas_afectadas() -> str:
-    """
-    Genera reporte PDF de zonas afectadas.
-    
-    Returns:
-        str: Ruta del archivo generado
-    """
+def _estilos_pdf():
+    """Retorna estilos reutilizables para PDFs."""
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER
+
+    styles = getSampleStyleSheet()
+    return {
+        'titulo': ParagraphStyle(
+            'Titulo', parent=styles['Heading1'],
+            fontSize=18, alignment=TA_CENTER, spaceAfter=20,
+        ),
+        'subtitulo': styles['Heading2'],
+        'normal': styles['Normal'],
+    }
+
+
+def _colores_pdf():
+    from reportlab.lib import colors
+    return {
+        'azul': colors.HexColor('#0066cc'),
+        'naranja': colors.HexColor('#ff6600'),
+        'verde': colors.HexColor('#28a745'),
+        'gris': colors.grey,
+        'beige': colors.beige,
+        'blanco': colors.white,
+    }
+
+
+def generar_pdf_zonas_afectadas() -> Optional[str]:
+    """Genera PDF de zonas afectadas en formato landscape."""
     from reportlab.lib.pagesizes import letter, landscape
-    from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    
-    asegurar_directorio()
-    
-    df = obtener_datos_zonas_afectadas()
-    
-    if df.empty:
-        return None
-    
-    nombre_archivo = f"reporte_zonas_afectadas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    ruta = os.path.join(REPORTES_DIR, nombre_archivo)
-    
-    # Crear documento
-    doc = SimpleDocTemplate(ruta, pagesize=landscape(letter))
-    elementos = []
-    
-    # Estilos
-    styles = getSampleStyleSheet()
-    titulo_style = ParagraphStyle(
-        'Titulo',
-        parent=styles['Heading1'],
-        fontSize=18,
-        alignment=1,
-        spaceAfter=20
+    from reportlab.platypus import (
+        SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
     )
-    
-    # Título
-    elementos.append(Paragraph('Reporte de Zonas Afectadas', titulo_style))
-    elementos.append(Paragraph(f'Generado: {datetime.now().strftime("%Y-%m-%d %H:%M")}', styles['Normal']))
-    elementos.append(Spacer(1, 20))
-    
-    # Datos para tabla
-    columnas = ['Nombre', 'Evento', 'Nivel Alerta', 'Heridos', 'Fallecidos', 'Damnificados']
-    filas = [columnas]
-    
-    for _, row in df.iterrows():
-        filas.append([
-            row['Nombre'],
-            row['Evento'],
-            row['Nivel Alerta'],
-            str(row['Heridos']),
-            str(row['Fallecidos']),
-            str(row['Damnificados']),
-        ])
-    
-    # Crear tabla
-    tabla = Table(filas)
-    tabla.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0066cc')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-        ('FONTSIZE', (0, 1), (-1, -1), 9),
-    ]))
-    
-    elementos.append(tabla)
-    
-    # Resumen
-    elementos.append(Spacer(1, 30))
-    elementos.append(Paragraph('Resumen por Nivel de Alerta', styles['Heading2']))
-    
-    resumen = df.groupby('Nivel Alerta').agg({
-        'Heridos': 'sum',
-        'Fallecidos': 'sum',
-        'Damnificados': 'sum'
-    }).reset_index()
-    
-    filas_resumen = [['Nivel Alerta', 'Heridos', 'Fallecidos', 'Damnificados']]
-    for _, row in resumen.iterrows():
-        filas_resumen.append([
-            row['Nivel Alerta'],
-            str(row['Heridos']),
-            str(row['Fallecidos']),
-            str(row['Damnificados']),
-        ])
-    
-    tabla_resumen = Table(filas_resumen)
-    tabla_resumen.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#ff6600')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-    ]))
-    
-    elementos.append(tabla_resumen)
-    
-    doc.build(elementos)
-    
-    logger.info(f"Reporte PDF generado: {ruta}")
-    return ruta
+
+    df = services.df_zonas_afectadas()
+    if df.empty:
+        logger.info("Sin datos de zonas afectadas")
+        return None
+
+    ruta = os.path.join(_reportes_dir(), _nombre_archivo('zonas_afectadas', '.pdf'))
+
+    try:
+        styles = _estilos_pdf()
+        c = _colores_pdf()
+
+        doc = SimpleDocTemplate(ruta, pagesize=landscape(letter))
+        elementos = [
+            Paragraph('Reporte de Zonas Afectadas', styles['titulo']),
+            Paragraph(
+                f'Generado: {datetime.now().strftime("%Y-%m-%d %H:%M")}',
+                styles['normal'],
+            ),
+            Spacer(1, 20),
+        ]
+
+        # Tabla principal
+        columnas = ['Nombre', 'Evento', 'Nivel', 'Heridos', 'Fallecidos', 'Damnificados']
+        filas = [columnas]
+        for _, row in df.iterrows():
+            filas.append([
+                str(row.get('Nombre', ''))[:40],
+                str(row.get('Evento', ''))[:30],
+                str(row.get('Nivel Alerta', '')),
+                str(row.get('Heridos', 0)),
+                str(row.get('Fallecidos', 0)),
+                str(row.get('Damnificados', 0)),
+            ])
+
+        tabla = Table(filas, repeatRows=1)
+        tabla.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), c['azul']),
+            ('TEXTCOLOR', (0, 0), (-1, 0), c['blanco']),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), c['beige']),
+            ('GRID', (0, 0), (-1, -1), 0.5, c['gris']),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ]))
+        elementos.append(tabla)
+        elementos.append(Spacer(1, 30))
+
+        # Resumen por alerta
+        elementos.append(Paragraph('Resumen por Nivel de Alerta', styles['subtitulo']))
+        resumen = (
+            df.groupby('Nivel Alerta')
+            .agg({'Heridos': 'sum', 'Fallecidos': 'sum', 'Damnificados': 'sum'})
+            .reset_index()
+        )
+        filas_res = [['Nivel Alerta', 'Heridos', 'Fallecidos', 'Damnificados']]
+        for _, row in resumen.iterrows():
+            filas_res.append([
+                str(row.get('Nivel Alerta', '')),
+                str(row.get('Heridos', 0)),
+                str(row.get('Fallecidos', 0)),
+                str(row.get('Damnificados', 0)),
+            ])
+
+        tabla_res = Table(filas_res)
+        tabla_res.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), c['naranja']),
+            ('TEXTCOLOR', (0, 0), (-1, 0), c['blanco']),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 0.5, c['gris']),
+        ]))
+        elementos.append(tabla_res)
+
+        doc.build(elementos)
+        logger.info(f"PDF zonas generado: {ruta}")
+        return ruta
+    except Exception as e:
+        logger.error(f"Error generando PDF zonas: {e}", exc_info=True)
+        return None
 
 
-def generar_pdf_estadisticas_generales() -> str:
-    """
-    Genera reporte PDF con estadísticas generales.
-    """
+def generar_pdf_estadisticas_generales() -> Optional[str]:
+    """Genera PDF con estadísticas generales."""
     from reportlab.lib.pagesizes import letter
-    from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    
-    asegurar_directorio()
-    
-    nombre_archivo = f"reporte_estadisticas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    ruta = os.path.join(REPORTES_DIR, nombre_archivo)
-    
-    doc = SimpleDocTemplate(ruta, pagesize=letter)
-    elementos = []
-    
-    styles = getSampleStyleSheet()
-    titulo_style = ParagraphStyle('Titulo', parent=styles['Heading1'], fontSize=18, alignment=1, spaceAfter=20)
-    
-    elementos.append(Paragraph('Reporte Estadístico General', titulo_style))
-    elementos.append(Paragraph(f'Generado: {datetime.now().strftime("%Y-%m-%d %H:%M")}', styles['Normal']))
-    elementos.append(Spacer(1, 20))
-    
-    # Resumen general
-    resumen = [
-        ['Métrica', 'Valor'],
-        ['Total Estados', str(Estado.objects.count())],
-        ['Total Parroquias', str(Parroquia.objects.count())],
-        ['Total Refugios', str(RefugioExistente.objects.count())],
-        ['Total Puntos de Demanda', str(PuntoDemanda.objects.count())],
-        ['Total Zonas Afectadas', str(ZonaAfectada.objects.count())],
-        ['Total Eventos', str(Evento.objects.count())],
-        ['Total Heridos', str(ZonaAfectada.objects.aggregate(Sum('heridos'))['heridos__sum'] or 0)],
-        ['Total Fallecidos', str(ZonaAfectada.objects.aggregate(Sum('fallecidos'))['fallecidos__sum'] or 0)],
-        ['Total Damnificados', str(ZonaAfectada.objects.aggregate(Sum('damnificados'))['damnificados__sum'] or 0)],
-    ]
-    
-    tabla_resumen = Table(resumen, colWidths=[300, 150])
-    tabla_resumen.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0066cc')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-        ('PADDING', (0, 0), (-1, -1), 8),
-    ]))
-    
-    elementos.append(tabla_resumen)
-    elementos.append(Spacer(1, 30))
-    
-    # Datos por estado
-    elementos.append(Paragraph('Datos por Estado', styles['Heading2']))
-    df_estados = obtener_datos_por_estado()
-    
-    filas_estados = [['Estado', 'Parroquias', 'Población', 'Heridos', 'Fallecidos', 'Damnificados']]
-    for _, row in df_estados.iterrows():
-        filas_estados.append([
-            row['Estado'],
-            str(row['Total Parroquias']),
-            str(row['Población Total']),
-            str(row['Heridos']),
-            str(row['Fallecidos']),
-            str(row['Damnificados']),
-        ])
-    
-    tabla_estados = Table(filas_estados, repeatRows=1)
-    tabla_estados.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#28a745')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-        ('FONTSIZE', (0, 0), (-1, -1), 8),
-    ]))
-    
-    elementos.append(tabla_estados)
-    
-    doc.build(elementos)
-    
-    logger.info(f"Reporte PDF general generado: {ruta}")
-    return ruta
+    from reportlab.platypus import (
+        SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
+    )
+
+    ruta = os.path.join(_reportes_dir(), _nombre_archivo('estadisticas', '.pdf'))
+
+    try:
+        styles = _estilos_pdf()
+        c = _colores_pdf()
+
+        doc = SimpleDocTemplate(ruta, pagesize=letter)
+        elementos = [
+            Paragraph('Reporte Estadístico General', styles['titulo']),
+            Paragraph(
+                f'Generado: {datetime.now().strftime("%Y-%m-%d %H:%M")}',
+                styles['normal'],
+            ),
+            Spacer(1, 20),
+        ]
+
+        r = services.resumen_general()
+        resumen = [
+            ['Métrica', 'Valor'],
+            ['Total Estados', str(r.get('estados', 0))],
+            ['Total Parroquias', str(r.get('parroquias', 0))],
+            ['Total Refugios', str(r.get('refugios', 0))],
+            ['Total Puntos de Demanda', str(r.get('demandas', 0))],
+            ['Total Zonas Afectadas', str(r.get('zonas', 0))],
+            ['Total Eventos', str(r.get('eventos', 0))],
+            ['Total Heridos', str(r.get('heridos', 0))],
+            ['Total Fallecidos', str(r.get('fallecidos', 0))],
+            ['Total Damnificados', str(r.get('damnificados', 0))],
+        ]
+
+        tabla = Table(resumen, colWidths=[300, 150])
+        tabla.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), c['azul']),
+            ('TEXTCOLOR', (0, 0), (-1, 0), c['blanco']),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 0.5, c['gris']),
+            ('PADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elementos.append(tabla)
+        elementos.append(Spacer(1, 30))
+
+        # Tabla por estado
+        elementos.append(Paragraph('Datos por Estado', styles['subtitulo']))
+        df_estados = services.df_por_estado()
+
+        filas = [['Estado', 'Parroquias', 'Población', 'Heridos', 'Fallecidos', 'Damnificados']]
+        for _, row in df_estados.iterrows():
+            filas.append([
+                str(row.get('Estado', ''))[:25],
+                str(row.get('Total Parroquias', 0)),
+                f"{row.get('Población Total', 0):,}".replace(',', '.'),
+                str(row.get('Heridos', 0)),
+                str(row.get('Fallecidos', 0)),
+                str(row.get('Damnificados', 0)),
+            ])
+
+        tabla_est = Table(filas, repeatRows=1)
+        tabla_est.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), c['verde']),
+            ('TEXTCOLOR', (0, 0), (-1, 0), c['blanco']),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 0.5, c['gris']),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ]))
+        elementos.append(tabla_est)
+
+        doc.build(elementos)
+        logger.info(f"PDF general generado: {ruta}")
+        return ruta
+    except Exception as e:
+        logger.error(f"Error generando PDF general: {e}", exc_info=True)
+        return None

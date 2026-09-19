@@ -2,4 +2,6 @@ from django.apps import AppConfig
 
 
 class OptimizacionConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.optimizacion'
+    verbose_name = 'Análisis y optimización'
