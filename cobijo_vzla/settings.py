@@ -195,3 +195,23 @@ EMAIL_BACKEND = os.getenv(
 if os.name == 'nt':
     GDAL_LIBRARY_PATH = os.getenv('GDAL_LIBRARY_PATH')
     GEOS_LIBRARY_PATH = os.getenv('GEOS_LIBRARY_PATH')
+
+    # ==========================================
+# CACHÉ
+# ==========================================
+# Cache basado en archivos: comparte datos entre procesos
+# (útil con gunicorn multi-worker y entre comandos manage.py)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': BASE_DIR / '.cache',
+        'TIMEOUT': 1800,  # 30 minutos por defecto
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 3,
+        },
+    }
+}
+
+# Crear el directorio si no existe
+os.makedirs(BASE_DIR / '.cache', exist_ok=True)

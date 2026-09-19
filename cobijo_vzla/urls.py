@@ -9,6 +9,8 @@ urlpatterns = [
     path('', include('apps.publico.urls')),
     path('panel/', include('apps.mapa.urls')),
     path('api/', include('apps.mapa.urls_api')),
+    path('api/emergencias/', include('apps.emergencias.urls')),
+    path('api/core/', include('apps.core.urls')),
     path('api/publico/', include('apps.publico.urls_api')),
     path('api/reportes/', include('apps.reportes.urls_api')),
     path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
