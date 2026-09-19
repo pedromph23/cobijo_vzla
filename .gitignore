@@ -62,5 +62,3 @@ backup_*.dump
 
 # Cache de Django
 .cache/
-# Cache de Django
-.cache/
