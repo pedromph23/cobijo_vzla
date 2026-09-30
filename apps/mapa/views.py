@@ -34,6 +34,7 @@ from . import services
 from .decorators import (
     es_gestor,
     es_administrador,
+    EsAdministrador,
     gestor_requerido,
     admin_requerido,
 )
@@ -146,9 +147,9 @@ def api_estadisticas(request):
 # ============================================================
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, EsAdministrador])
 def api_ejecutar_optimizacion(request):
-    """Ejecuta un modelo de optimización con los parámetros dados."""
+    """Ejecuta un modelo de optimización con los parámetros dados. Solo administradores."""
     param_id = request.data.get('parametros_id')
     if not param_id:
         return JsonResponse({'error': 'Se requiere parametros_id'}, status=400)
@@ -270,20 +271,14 @@ COMANDOS_PERMITIDOS = (
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, EsAdministrador])
 def api_ejecutar_comando(request):
     """
     Ejecuta comandos de gestión predefinidos.
 
-    ⚠️ Solo permite comandos de la whitelist COMANDOS_PERMITIDOS.
-    Requiere que el usuario sea gestor o superusuario.
+    Solo permite comandos de la whitelist COMANDOS_PERMITIDOS y requiere
+    permisos de administrador.
     """
-    if not es_gestor(request.user):
-        return JsonResponse(
-            {'error': 'Se requieren permisos de gestor'},
-            status=403,
-        )
-
     comando = request.data.get('comando')
     if not comando:
         return JsonResponse({'error': 'Se requiere un comando'}, status=400)
@@ -305,7 +300,7 @@ def api_ejecutar_comando(request):
         })
     except Exception as e:
         logger.error(f"Error ejecutando comando {comando}: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Error al ejecutar el comando'}, status=500)
     finally:
         sys.stdout = stdout_original
 
