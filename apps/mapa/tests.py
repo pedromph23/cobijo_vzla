@@ -5,6 +5,7 @@ Verifica permisos, servicios y endpoints del panel administrativo.
 """
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.contrib.gis.geos import Point
 
 from apps.core.models import PuntoDemanda, RefugioExistente
@@ -126,6 +127,11 @@ class APITest(TestCase):
         self.user = User.objects.create_user(
             username='api', password='pass1234', is_staff=True
         )
+        self.gestor = User.objects.create_user(
+            username='gestor', password='pass1234'
+        )
+        grupo_gestor, _ = Group.objects.get_or_create(name='Gestores')
+        self.gestor.groups.add(grupo_gestor)
         self.client.force_login(self.user)
 
     def test_api_estadisticas(self):
@@ -144,3 +150,27 @@ class APITest(TestCase):
         self.client.logout()
         response = self.client.get('/api/estadisticas/')
         self.assertIn(response.status_code, (401, 403))
+
+    def test_gestor_no_puede_ejecutar_optimizacion(self):
+        self.client.force_login(self.gestor)
+        response = self.client.post('/api/ejecutar-optimizacion/', {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_administrador_puede_acceder_a_optimizacion(self):
+        self.client.force_login(self.user)
+        response = self.client.post('/api/ejecutar-optimizacion/', {})
+        # La autorización pasa; el endpoint continúa con su validación funcional.
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'Se requiere parametros_id')
+
+    def test_gestor_no_puede_ejecutar_comandos(self):
+        self.client.force_login(self.gestor)
+        response = self.client.post('/api/ejecutar-comando/', {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_administrador_puede_acceder_a_comandos(self):
+        self.client.force_login(self.user)
+        response = self.client.post('/api/ejecutar-comando/', {})
+        # La autorización pasa; el endpoint continúa con su validación funcional.
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'Se requiere un comando')
