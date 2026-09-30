@@ -9,6 +9,7 @@ Define 3 niveles de acceso:
 from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from rest_framework.permissions import BasePermission
 
 
 # Grupos reconocidos por el sistema
@@ -67,6 +68,19 @@ def es_gestor(user) -> bool:
     if not user or not user.is_authenticated:
         return False
     return es_administrador(user) or _en_grupo(user, GRUPO_GESTOR)
+
+
+# ============================================================
+# PERMISOS PARA APIs DRF
+# ============================================================
+
+class EsAdministrador(BasePermission):
+    """Permiso DRF para operaciones exclusivas de administradores."""
+
+    message = 'Se requieren permisos de administrador.'
+
+    def has_permission(self, request, view) -> bool:
+        return es_administrador(request.user)
 
 
 # ============================================================
