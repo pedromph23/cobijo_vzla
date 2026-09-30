@@ -9,6 +9,7 @@ from django.contrib.gis.admin import GISModelAdmin
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.db.models import Count, Sum
+from . import audit_admin  # noqa: F401,E402
 
 from .models import (
     Estado,
