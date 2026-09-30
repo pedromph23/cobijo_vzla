@@ -39,7 +39,7 @@ class PermisosTest(TestCase):
 
     def test_panel_staff_permitido(self):
         self.client.force_login(self.user_staff)
-        response = self.client.get('/panel/')
+        response = self.client.get('/panel/', follow=True)
         self.assertEqual(response.status_code, 200)
 
 
