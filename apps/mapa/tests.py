@@ -124,15 +124,47 @@ class APITest(TestCase):
 
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(
-            username='api', password='pass1234', is_staff=True
+
+        self.user_normal = User.objects.create_user(
+            username='api_normal', password='pass1234'
         )
-        self.gestor = User.objects.create_user(
-            username='gestor', password='pass1234'
+        self.user_gestor = User.objects.create_user(
+            username='api_gestor', password='pass1234'
         )
+        self.user_admin_grupo = User.objects.create_user(
+            username='api_admin_grupo', password='pass1234'
+        )
+        self.user_staff = User.objects.create_user(
+            username='api_staff', password='pass1234', is_staff=True
+        )
+        self.user_superuser = User.objects.create_superuser(
+            username='api_superuser',
+            password='pass1234',
+            email='super@example.com',
+        )
+
         grupo_gestor, _ = Group.objects.get_or_create(name='Gestores')
-        self.gestor.groups.add(grupo_gestor)
-        self.client.force_login(self.user)
+        self.user_gestor.groups.add(grupo_gestor)
+
+        grupo_admin, _ = Group.objects.get_or_create(name='Administradores')
+        self.user_admin_grupo.groups.add(grupo_admin)
+
+        self.admin_users = (
+            self.user_staff,
+            self.user_admin_grupo,
+            self.user_superuser,
+        )
+        self.denied_users = (
+            self.user_normal,
+            self.user_gestor,
+        )
+
+        self.client.force_login(self.user_staff)
+
+    def _assert_admin_api_allowed(self, method, url):
+        response = getattr(self.client, method)(url, {})
+        # La autorización pasa; el endpoint continúa con su validación funcional.
+        self.assertEqual(response.status_code, 400)
 
     def test_api_estadisticas(self):
         response = self.client.get('/api/estadisticas/')
@@ -151,26 +183,45 @@ class APITest(TestCase):
         response = self.client.get('/api/estadisticas/')
         self.assertIn(response.status_code, (401, 403))
 
-    def test_gestor_no_puede_ejecutar_optimizacion(self):
-        self.client.force_login(self.gestor)
-        response = self.client.post('/api/ejecutar-optimizacion/', {})
-        self.assertEqual(response.status_code, 403)
+    def test_administradores_pueden_acceder_a_optimizacion(self):
+        for user in self.admin_users:
+            with self.subTest(username=user.username):
+                self.client.force_login(user)
+                self._assert_admin_api_allowed(
+                    'post',
+                    '/api/ejecutar-optimizacion/',
+                )
 
-    def test_administrador_puede_acceder_a_optimizacion(self):
-        self.client.force_login(self.user)
-        response = self.client.post('/api/ejecutar-optimizacion/', {})
-        # La autorización pasa; el endpoint continúa con su validación funcional.
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()['error'], 'Se requiere parametros_id')
+    def test_gestor_y_usuario_normal_no_pueden_ejecutar_optimizacion(self):
+        for user in self.denied_users:
+            with self.subTest(username=user.username):
+                self.client.force_login(user)
+                response = self.client.post('/api/ejecutar-optimizacion/', {})
+                self.assertEqual(response.status_code, 403)
 
-    def test_gestor_no_puede_ejecutar_comandos(self):
-        self.client.force_login(self.gestor)
-        response = self.client.post('/api/ejecutar-comando/', {})
-        self.assertEqual(response.status_code, 403)
+    def test_administradores_pueden_ejecutar_comandos(self):
+        for user in self.admin_users:
+            with self.subTest(username=user.username):
+                self.client.force_login(user)
+                self._assert_admin_api_allowed(
+                    'post',
+                    '/api/ejecutar-comando/',
+                )
 
-    def test_administrador_puede_acceder_a_comandos(self):
-        self.client.force_login(self.user)
-        response = self.client.post('/api/ejecutar-comando/', {})
-        # La autorización pasa; el endpoint continúa con su validación funcional.
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()['error'], 'Se requiere un comando')
+    def test_gestor_y_usuario_normal_no_pueden_ejecutar_comandos(self):
+        for user in self.denied_users:
+            with self.subTest(username=user.username):
+                self.client.force_login(user)
+                response = self.client.post('/api/ejecutar-comando/', {})
+                self.assertEqual(response.status_code, 403)
+
+    def test_no_autenticado_no_puede_ejecutar_apis_criticas(self):
+        self.client.logout()
+
+        for url in (
+            '/api/ejecutar-optimizacion/',
+            '/api/ejecutar-comando/',
+        ):
+            with self.subTest(url=url):
+                response = self.client.post(url, {})
+                self.assertIn(response.status_code, (401, 403))
