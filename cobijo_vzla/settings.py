@@ -7,10 +7,43 @@ from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
 
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / '.env')
+
+# ==========================================
+# SEGURIDAD
+# ==========================================
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+
+if not SECRET_KEY:
+    raise ValueError(
+        "DJANGO_SECRET_KEY no está definida en el archivo .env"
+    )
+
+DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
+
+# ==========================================
+# SEGURIDAD HTTP / HTTPS
+# ==========================================
+if DEBUG:
+    # Desarrollo local
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    # Producción
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    # HSTS: activar solamente cuando el dominio
+    # de producción funcione correctamente por HTTPS.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ==========================================
 # SEGURIDAD (leído desde .env)
