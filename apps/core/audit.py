@@ -174,6 +174,7 @@ def registrar_auditoria(
     resultado: str = "exitoso",
     modelo: str = "",
     objeto_id: str = "",
+    objeto_repr: str = "",
     usuario=None,
 ) -> AuditLog | None:
     """
@@ -207,8 +208,6 @@ def registrar_auditoria(
         # OBJETO
         # ----------------------------------------------------
 
-        objeto_repr = ""
-
         if objeto is not None:
             meta = objeto._meta
 
@@ -222,6 +221,8 @@ def registrar_auditoria(
             )
 
             objeto_repr = str(objeto)[:255]
+        else:
+            objeto_repr = str(objeto_repr or "")[:255]
 
         # ----------------------------------------------------
         # CONTEXTO HTTP
@@ -229,7 +230,7 @@ def registrar_auditoria(
 
         # IMPORTANTE:
         # getattr() puede devolver None si el atributo existe
-        # pero su valor es None. Por eso utilizamos "or """.
+        # pero su valor es None. Por eso utilizamos "or ''".
         metodo_http = getattr(request, "method", "") or ""
 
         ruta = getattr(request, "path", "") or ""
@@ -368,9 +369,7 @@ def auditar_login_fallido(
 
     registrar_auditoria(
         request=request,
-        accion=ACCION_LOGIN_FALLIDO,
         descripcion=(
-            "Intento de inicio de sesión fallido para "
             f"{str(username)[:100]}"
         ),
         resultado="fallido",
