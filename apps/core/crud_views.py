@@ -2,6 +2,7 @@
 Vistas CRUD genericas para el panel.
 """
 import logging
+
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
@@ -9,14 +10,20 @@ from django.db.models import Q
 from django.forms import modelform_factory
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import View
+
+from apps.core.audit import (
+    ACCION_CREATE,
+    ACCION_UPDATE,
+    ACCION_DELETE,
+    registrar_auditoria,
+    serializar_instancia,
+)
+
 from .permissions import (
     get_config, get_modelo_class, modelos_disponibles,
     obtener_permisos_usuario, tiene_permiso,
 )
-from apps.core.audit import (
-    ACCION_CREATE, ACCION_UPDATE, ACCION_DELETE,
-    registrar_auditoria, serializar_instancia,
-)
+
 
 logger = logging.getLogger(__name__)
 
@@ -87,22 +94,38 @@ class CrudCreateView(View):
             raise PermissionDenied("Modelo no encontrado.")
         if not tiene_permiso(request.user, modelo_key, 'crear'):
             raise PermissionDenied("Sin permiso para crear.")
+
         FormClass = _form_class(modelo_key)
         form = FormClass(request.POST, request.FILES)
+
         if form.is_valid():
             obj = form.save()
+
             registrar_auditoria(
-                request,
-                ACCION_CREATE,
-                obj,
-                descripcion=f"Creación de {config['verbose_name']}.",
+                request=request,
+                accion=ACCION_CREATE,
+                objeto=obj,
                 datos_nuevos=serializar_instancia(obj),
+                descripcion=(
+                    f"Creación de {config['verbose_name']}"
+                ),
+                resultado="exitoso",
             )
-            messages.success(request, f"{config['verbose_name']} creado.")
-            return redirect('crud_list', modelo_key=modelo_key)
+
+            messages.success(
+                request,
+                f"{config['verbose_name']} creado."
+            )
+
+            return redirect(
+                'crud_list',
+                modelo_key=modelo_key
+            )
+
         return render(request, 'mapa/crud/crud_form.html', {
             **_contexto_base(request, modelo_key, config),
-            'form': form, 'modo': 'crear',
+            'form': form,
+            'modo': 'crear',
         })
 
 
@@ -113,13 +136,16 @@ class CrudUpdateView(View):
             raise PermissionDenied("Modelo no encontrado.")
         if not tiene_permiso(request.user, modelo_key, 'editar'):
             raise PermissionDenied("Sin permiso para editar.")
+
         Model = get_modelo_class(modelo_key)
         obj = get_object_or_404(Model, pk=pk)
         FormClass = _form_class(modelo_key)
+
         return render(request, 'mapa/crud/crud_form.html', {
             **_contexto_base(request, modelo_key, config),
             'form': FormClass(instance=obj),
-            'objeto': obj, 'modo': 'editar',
+            'objeto': obj,
+            'modo': 'editar',
         })
 
     def post(self, request, modelo_key, pk):
@@ -128,26 +154,51 @@ class CrudUpdateView(View):
             raise PermissionDenied("Modelo no encontrado.")
         if not tiene_permiso(request.user, modelo_key, 'editar'):
             raise PermissionDenied("Sin permiso para editar.")
+
         Model = get_modelo_class(modelo_key)
         obj = get_object_or_404(Model, pk=pk)
-        datos_anteriores = serializar_instancia(obj)
         FormClass = _form_class(modelo_key)
-        form = FormClass(request.POST, request.FILES, instance=obj)
+
+        form = FormClass(
+            request.POST,
+            request.FILES,
+            instance=obj
+        )
+
         if form.is_valid():
+            datos_anteriores = serializar_instancia(obj)
+
             obj = form.save()
+
+            datos_nuevos = serializar_instancia(obj)
+
             registrar_auditoria(
-                request,
-                ACCION_UPDATE,
-                obj,
-                descripcion=f"Actualización de {config['verbose_name']}.",
+                request=request,
+                accion=ACCION_UPDATE,
+                objeto=obj,
                 datos_anteriores=datos_anteriores,
-                datos_nuevos=serializar_instancia(obj),
+                datos_nuevos=datos_nuevos,
+                descripcion=(
+                    f"Actualización de {config['verbose_name']}"
+                ),
+                resultado="exitoso",
             )
-            messages.success(request, f"{config['verbose_name']} actualizado.")
-            return redirect('crud_list', modelo_key=modelo_key)
+
+            messages.success(
+                request,
+                f"{config['verbose_name']} actualizado."
+            )
+
+            return redirect(
+                'crud_list',
+                modelo_key=modelo_key
+            )
+
         return render(request, 'mapa/crud/crud_form.html', {
             **_contexto_base(request, modelo_key, config),
-            'form': form, 'objeto': obj, 'modo': 'editar',
+            'form': form,
+            'objeto': obj,
+            'modo': 'editar',
         })
 
 
@@ -158,8 +209,10 @@ class CrudDeleteView(View):
             raise PermissionDenied("Modelo no encontrado.")
         if not tiene_permiso(request.user, modelo_key, 'borrar'):
             raise PermissionDenied("Sin permiso para borrar.")
+
         Model = get_modelo_class(modelo_key)
         obj = get_object_or_404(Model, pk=pk)
+
         return render(request, 'mapa/crud/crud_confirm_delete.html', {
             **_contexto_base(request, modelo_key, config),
             'objeto': obj,
@@ -171,32 +224,47 @@ class CrudDeleteView(View):
             raise PermissionDenied("Modelo no encontrado.")
         if not tiene_permiso(request.user, modelo_key, 'borrar'):
             raise PermissionDenied("Sin permiso para borrar.")
+
         Model = get_modelo_class(modelo_key)
         obj = get_object_or_404(Model, pk=pk)
+
         nombre = str(obj)
-        datos_anteriores = serializar_instancia(obj)
         objeto_id = str(obj.pk)
+        datos_anteriores = serializar_instancia(obj)
+
         try:
             obj.delete()
+
             registrar_auditoria(
-                request,
-                ACCION_DELETE,
-                descripcion=f"Eliminación de {config['verbose_name']}.",
-                modelo=f"{Model._meta.app_label}.{Model._meta.model_name}",
+                request=request,
+                accion=ACCION_DELETE,
+                modelo=obj._meta.label_lower,
                 objeto_id=objeto_id,
+                objeto_repr=nombre,
                 datos_anteriores=datos_anteriores,
+                descripcion=(
+                    f"Eliminación de {config['verbose_name']}"
+                ),
+                resultado="exitoso",
             )
-            messages.success(request, f"{config['verbose_name']} «{nombre}» eliminado.")
+
+            messages.success(
+                request,
+                f"{config['verbose_name']} «{nombre}» eliminado."
+            )
+
         except Exception as e:
-            logger.error(f"Error al borrar: {e}", exc_info=True)
-            registrar_auditoria(
-                request,
-                ACCION_DELETE,
-                descripcion=f"Error al eliminar {config['verbose_name']}.",
-                modelo=f"{Model._meta.app_label}.{Model._meta.model_name}",
-                objeto_id=objeto_id,
-                datos_anteriores=datos_anteriores,
-                resultado='fallido',
+            logger.error(
+                f"Error al borrar: {e}",
+                exc_info=True
             )
-            messages.error(request, "No se pudo eliminar el registro.")
-        return redirect('crud_list', modelo_key=modelo_key)
+
+            messages.error(
+                request,
+                f"No se pudo eliminar: {e}"
+            )
+
+        return redirect(
+            'crud_list',
+            modelo_key=modelo_key
+        )
