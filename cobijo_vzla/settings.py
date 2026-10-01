@@ -15,15 +15,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ==========================================
 # SEGURIDAD (leído desde .env)
 # ==========================================
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
-if not SECRET_KEY:
-    raise ValueError("❌ DJANGO_SECRET_KEY no está definida en el .env")
-
-DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
-
-ALLOWED_HOSTS = os.getenv(
-    'DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1'
-).split(',')
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        'DJANGO_ALLOWED_HOSTS',
+        'localhost,127.0.0.1'
+    ).split(',')
+    if host.strip()
+]
 
 CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS if host != 'localhost']
 
