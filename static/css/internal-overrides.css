@@ -341,3 +341,45 @@
     .reporte-filtros-header { flex-direction: column; }
     .reporte-filtros-grid { grid-template-columns: 1fr; }
 }
+
+
+.reporte-modo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .7rem;
+    margin-bottom: 1rem;
+}
+.reporte-modo label {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .65rem .8rem;
+    border: 1px solid var(--comfort-border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--comfort-surface) 82%, var(--comfort-border));
+    cursor: pointer;
+    font-weight: 600;
+}
+.reporte-historico-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    gap: .9rem;
+    margin-bottom: .9rem;
+}
+.reporte-historico-grid label {
+    display: grid;
+    gap: .4rem;
+    font-weight: 600;
+}
+.reporte-historico-grid input {
+    width: 100%;
+    min-height: 42px;
+    padding: .55rem .7rem;
+    border: 1px solid var(--comfort-border);
+    border-radius: 10px;
+    background: var(--comfort-surface);
+    color: var(--comfort-text);
+}
+@media (max-width: 520px) {
+    .reporte-historico-grid { grid-template-columns: 1fr; }
+}
