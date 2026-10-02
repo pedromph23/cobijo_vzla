@@ -312,6 +312,188 @@ main {
     font-size: .85rem;
 }
 
+
+/* ============================================================
+   FOOTER GLOBAL · INFORMACIÓN Y CONTACTO
+   ============================================================ */
+.app-footer {
+    margin-top: auto;
+    padding: 1.35rem 1.25rem .85rem;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(82,123,107,.96) 0%, rgba(63,102,87,.96) 55%, rgba(199,109,92,.90) 100%);
+    color: #fff;
+    border-top: 1px solid rgba(255,255,255,.20);
+    box-shadow: 0 -8px 24px rgba(58,67,62,.10);
+}
+
+.footer-container {
+    width: min(100%, 1200px);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.35fr 1fr 1fr;
+    gap: 1.25rem;
+    align-items: center;
+}
+
+.footer-brand,
+.footer-social,
+.footer-contact {
+    min-width: 0;
+}
+
+.footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+
+.footer-title {
+    font-family: 'Orbitron', 'Montserrat', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+
+.footer-description {
+    max-width: 430px;
+    font-size: .78rem;
+    line-height: 1.45;
+    opacity: .90;
+}
+
+.footer-social,
+.footer-contact {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+}
+
+.footer-social-label {
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    opacity: .78;
+}
+
+.footer-social-list,
+.footer-contact-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+}
+
+.footer-social-item,
+.footer-contact-list a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    min-height: 34px;
+    padding: .42rem .62rem;
+    border: 1px solid rgba(255,255,255,.20);
+    border-radius: 10px;
+    background: rgba(255,255,255,.10);
+    color: #fff;
+    font-size: .74rem;
+    font-weight: 600;
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+}
+
+.footer-contact-list a {
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.footer-contact-list a:hover {
+    background: rgba(255,255,255,.20);
+    border-color: rgba(255,255,255,.34);
+    transform: translateY(-1px);
+}
+
+.footer-social-item i,
+.footer-contact-list a i {
+    font-size: .86rem;
+}
+
+.footer-bottom {
+    width: min(100%, 1200px);
+    margin: 1rem auto 0;
+    padding-top: .75rem;
+    border-top: 1px solid rgba(255,255,255,.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: .45rem .7rem;
+    text-align: center;
+    font-size: .68rem;
+    line-height: 1.45;
+    opacity: .84;
+}
+
+.footer-separator {
+    opacity: .55;
+}
+
+[data-theme="dark"] .app-footer {
+    background: linear-gradient(135deg, rgba(49,70,59,.97) 0%, rgba(58,49,53,.97) 52%, rgba(91,61,58,.92) 100%);
+    border-top-color: rgba(226,231,224,.14);
+    box-shadow: 0 -10px 28px rgba(0,0,0,.24);
+}
+
+[data-theme="dark"] .footer-social-item,
+[data-theme="dark"] .footer-contact-list a {
+    background: rgba(255,255,255,.08);
+    border-color: rgba(226,231,224,.14);
+}
+
+@media (max-width: 800px) {
+    .footer-container {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+
+    .footer-brand {
+        grid-column: 1 / -1;
+        text-align: center;
+        align-items: center;
+    }
+
+    .footer-description { max-width: 560px; }
+}
+
+@media (max-width: 520px) {
+    .app-footer {
+        padding: 1.15rem .8rem .75rem;
+    }
+
+    .footer-container {
+        grid-template-columns: 1fr;
+        gap: .9rem;
+        text-align: center;
+    }
+
+    .footer-social,
+    .footer-contact {
+        align-items: center;
+    }
+
+    .footer-social-list,
+    .footer-contact-list {
+        justify-content: center;
+    }
+
+    .footer-bottom {
+        margin-top: .8rem;
+        padding-top: .65rem;
+        font-size: .64rem;
+    }
+
+    .footer-separator { display: none; }
+}
+
 @media (max-width: 900px) {
     .header-container { column-gap: .5rem; }
     .nav-label, .theme-label { display: none; }
