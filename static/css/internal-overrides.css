@@ -1,0 +1,16 @@
+/* Small compatibility refinements kept separate so legacy template structure remains untouched. */
+.reportes-layout.single {
+    display: block;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.reportes-layout.single .reportes-acciones {
+    width: 100%;
+}
+
+@media (max-width: 600px) {
+    .reportes-layout.single {
+        max-width: none;
+    }
+}
