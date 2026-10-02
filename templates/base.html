@@ -23,16 +23,22 @@
     <link rel="stylesheet" href="{% static 'css/clusters.css' %}?v=8">
     <link rel="stylesheet" href="{% static 'css/popups.css' %}?v=8">
     <link rel="stylesheet" href="{% static 'css/sidebar.css' %}?v=8">
-    <link rel="stylesheet" href="{% static 'css/ui-refactor.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/ui-refactor.css' %}?v=4">
 
     <script>
         (() => {
             try {
-                const saved = localStorage.getItem('cobijo-theme');
+                // La versión v2 fuerza el modo claro como valor inicial de esta nueva etapa visual.
+                // A partir de aquí la elección del usuario sí queda persistida.
+                const saved = localStorage.getItem('cobijo-theme-v2');
                 if (saved === 'light' || saved === 'dark') {
                     document.documentElement.setAttribute('data-theme', saved);
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
                 }
-            } catch (_) {}
+            } catch (_) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
         })();
     </script>
 
@@ -51,7 +57,9 @@
             <div class="header-center">
                 <h1 class="app-logo app-logo-optimized">
                     <a href="{% url 'mapa_publico' %}" aria-label="Ir al mapa principal de CobijoVzla">
-                        <img src="{% static 'img/logo.png' %}" alt="CobijoVzla" class="logo-img" width="42" height="42" decoding="async">
+                        <span class="logo-mark">
+                            <img src="{% static 'img/logo.png' %}" alt="Logo institucional CobijoVzla" class="logo-img" width="64" height="64" decoding="async">
+                        </span>
                         <span class="logo-text">CobijoVzla</span>
                     </a>
                 </h1>
@@ -83,7 +91,7 @@
                     </a>
                 {% endif %}
                 <button id="btn-theme-toggle" class="theme-toggle" type="button"
-                        aria-label="Activar modo oscuro" aria-pressed="false" title="Cambiar tema">
+                        aria-label="Activar modo oscuro" aria-pressed="false" title="Cambiar a modo oscuro">
                     <i class="fas fa-moon" aria-hidden="true"></i>
                     <span class="theme-label">Tema</span>
                 </button>
@@ -111,14 +119,14 @@
             root.setAttribute('data-theme', theme);
             themeButton?.setAttribute('aria-pressed', String(isDark));
             themeButton?.setAttribute('aria-label', isDark ? 'Activar modo claro' : 'Activar modo oscuro');
-            themeButton?.setAttribute('title', isDark ? 'Activar modo claro' : 'Activar modo oscuro');
+            themeButton?.setAttribute('title', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
             if (themeButton) {
                 themeButton.innerHTML = isDark
                     ? '<i class="fas fa-sun" aria-hidden="true"></i><span class="theme-label">Tema</span>'
                     : '<i class="fas fa-moon" aria-hidden="true"></i><span class="theme-label">Tema</span>';
             }
             if (themeMeta) themeMeta.setAttribute('content', isDark ? '#08111f' : '#eef2f6');
-            try { localStorage.setItem('cobijo-theme', theme); } catch (_) {}
+            try { localStorage.setItem('cobijo-theme-v2', theme); } catch (_) {}
             window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
         };
 
