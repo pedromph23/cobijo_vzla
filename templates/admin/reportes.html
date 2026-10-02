@@ -30,6 +30,20 @@
             <label><input type="radio" name="modo-reporte" value="historico"> Reconstruir estado histórico</label>
         </div>
 
+        <div class="reporte-presets" id="presets-historico" hidden>
+            <label for="preset-historico">
+                <span><i class="fas fa-history" aria-hidden="true"></i> Momento rápido</span>
+                <select id="preset-historico" aria-label="Seleccionar momento histórico">
+                    <option value="">Selecciona una opción…</option>
+                    <option value="ayer">Cierre del día anterior</option>
+                    <option value="mes_anterior">Cierre del mes anterior</option>
+                    <option value="ano_anterior">Cierre del año anterior</option>
+                    <option value="personalizado">Personalizado</option>
+                </select>
+            </label>
+            <p>Reconstruye los datos tal como estaban al cierre del período seleccionado.</p>
+        </div>
+
         <div class="reporte-historico-grid" id="filtro-historico" hidden>
             <label>
                 <span>Fecha histórica</span>
@@ -39,6 +53,20 @@
                 <span>Hora histórica (opcional)</span>
                 <input type="time" id="hora-historica" name="hora_historica">
             </label>
+        </div>
+
+        <div class="reporte-presets" id="presets-periodo">
+            <label for="preset-periodo">
+                <span><i class="fas fa-bolt" aria-hidden="true"></i> Período rápido</span>
+                <select id="preset-periodo" aria-label="Seleccionar período rápido">
+                    <option value="">Selecciona una opción…</option>
+                    <option value="ayer">Día anterior</option>
+                    <option value="mes_anterior">Mes anterior</option>
+                    <option value="ano_anterior">Año anterior</option>
+                    <option value="personalizado">Personalizado</option>
+                </select>
+            </label>
+            <p>Elige un período completo y el sistema llenará automáticamente las fechas. Luego puedes ajustarlas si lo necesitas.</p>
         </div>
 
         <div class="reporte-filtros-grid" id="filtros-periodo">
@@ -118,6 +146,10 @@
     const modos = document.querySelectorAll('input[name="modo-reporte"]');
     const filtroHistorico = document.getElementById('filtro-historico');
     const filtrosPeriodo = document.getElementById('filtros-periodo');
+    const presetPeriodo = document.getElementById('preset-periodo');
+    const presetHistorico = document.getElementById('preset-historico');
+    const presetsPeriodo = document.getElementById('presets-periodo');
+    const presetsHistorico = document.getElementById('presets-historico');
 
     const filtros = {
         fecha_desde: document.getElementById('fecha-desde'),
@@ -125,6 +157,76 @@
         fecha_hasta: document.getElementById('fecha-hasta'),
         hora_hasta: document.getElementById('hora-hasta')
     };
+
+    
+    function formatoFecha(fecha) {
+        const año = fecha.getFullYear();
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        return `${año}-${mes}-${dia}`;
+    }
+
+    function rangoRapido(tipo) {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        if (tipo === 'ayer') {
+            const ayer = new Date(hoy);
+            ayer.setDate(ayer.getDate() - 1);
+            return { desde: ayer, hasta: ayer };
+        }
+
+        if (tipo === 'mes_anterior') {
+            const inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+            const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+            return { desde: inicio, hasta: fin };
+        }
+
+        if (tipo === 'ano_anterior') {
+            return {
+                desde: new Date(hoy.getFullYear() - 1, 0, 1),
+                hasta: new Date(hoy.getFullYear() - 1, 11, 31)
+            };
+        }
+
+        return null;
+    }
+
+    function aplicarPeriodoRapido(tipo) {
+        const rango = rangoRapido(tipo);
+        if (!rango) {
+            if (tipo === 'personalizado') {
+                filtros.fecha_desde.focus();
+            }
+            return;
+        }
+        filtros.fecha_desde.value = formatoFecha(rango.desde);
+        filtros.hora_desde.value = '';
+        filtros.fecha_hasta.value = formatoFecha(rango.hasta);
+        filtros.hora_hasta.value = '';
+        actualizarResumen();
+    }
+
+    function aplicarHistoricoRapido(tipo) {
+        const rango = rangoRapido(tipo);
+        if (!rango) {
+            if (tipo === 'personalizado') {
+                historico.fecha_historica.focus();
+            }
+            return;
+        }
+        historico.fecha_historica.value = formatoFecha(rango.hasta);
+        historico.hora_historica.value = '23:59';
+        actualizarResumen();
+    }
+
+    presetPeriodo.addEventListener('change', () => {
+        aplicarPeriodoRapido(presetPeriodo.value);
+    });
+
+    presetHistorico.addEventListener('change', () => {
+        aplicarHistoricoRapido(presetHistorico.value);
+    });
 
     function modoActual() {
         return document.querySelector('input[name="modo-reporte"]:checked')?.value || 'actual';
@@ -200,6 +302,8 @@
         const esHistorico = modoActual() === 'historico';
         filtroHistorico.hidden = !esHistorico;
         filtrosPeriodo.hidden = esHistorico;
+        presetsPeriodo.hidden = esHistorico;
+        presetsHistorico.hidden = !esHistorico;
         actualizarResumen();
     }));
 
@@ -209,6 +313,10 @@
         document.querySelector('input[name="modo-reporte"][value="actual"]').checked = true;
         filtroHistorico.hidden = true;
         filtrosPeriodo.hidden = false;
+        presetsPeriodo.hidden = false;
+        presetsHistorico.hidden = true;
+        presetPeriodo.value = '';
+        presetHistorico.value = '';
         actualizarResumen();
     });
 })();
