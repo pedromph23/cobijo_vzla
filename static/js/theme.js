@@ -1,72 +1,80 @@
 /**
- * Gestión del tema claro/oscuro.
+ * Gestión centralizada del tema visual de CobijoVzla.
  *
- * IMPORTANTE: `base.html` actualmente fuerza `data-theme="dark"` y oculta
- * el botón `#btn-toggle-theme`. Este archivo se mantiene por si en el
- * futuro se reactiva el toggle. Si el botón no existe, no hace nada.
+ * Responsabilidades:
+ * - Mantener el tema claro como valor predeterminado.
+ * - Persistir la preferencia del usuario.
+ * - Sincronizar accesibilidad, icono y color del navegador.
+ * - Emitir `themeChanged` para que otros módulos puedan reaccionar.
  */
 (function () {
     'use strict';
 
-    const CLAVE_STORAGE = 'cobijo_theme';
+    const STORAGE_KEY = 'cobijo-theme-v2';
+    const LIGHT_THEME = 'light';
+    const DARK_THEME = 'dark';
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const btnToggle = document.getElementById('btn-toggle-theme');
-        const iconTheme = document.getElementById('icon-theme');
-        const html = document.documentElement;
-
-        // Si no existe el botón, no hay nada que hacer
-        if (!btnToggle || !iconTheme) return;
-
-        function aplicarTema(tema) {
-            const temaSeguro = tema === 'light' ? 'light' : 'dark';
-            html.setAttribute('data-theme', temaSeguro);
-            try {
-                localStorage.setItem(CLAVE_STORAGE, temaSeguro);
-            } catch (_) {
-                /* localStorage bloqueado, ignorar */
-            }
-
-            if (temaSeguro === 'dark') {
-                iconTheme.className = 'fas fa-sun';
-                iconTheme.style.color = '#ffcc00';
-                btnToggle.setAttribute('title', 'Cambiar a modo claro');
-                btnToggle.setAttribute('aria-label', 'Cambiar a modo claro');
-            } else {
-                iconTheme.className = 'fas fa-moon';
-                iconTheme.style.color = 'white';
-                btnToggle.setAttribute('title', 'Cambiar a modo oscuro');
-                btnToggle.setAttribute('aria-label', 'Cambiar a modo oscuro');
-            }
-
-            document.dispatchEvent(
-                new CustomEvent('themeChanged', { detail: { theme: temaSeguro } })
-            );
-        }
-
-        // Cargar tema previo o preferencia del sistema
-        let temaInicial = 'dark';
+    function obtenerTemaGuardado() {
         try {
-            const guardado = localStorage.getItem(CLAVE_STORAGE);
-            if (guardado === 'dark' || guardado === 'light') {
-                temaInicial = guardado;
-            } else if (
-                window.matchMedia &&
-                window.matchMedia('(prefers-color-scheme: dark)').matches
-            ) {
-                temaInicial = 'dark';
-            } else {
-                temaInicial = 'light';
-            }
+            return localStorage.getItem(STORAGE_KEY) === DARK_THEME
+                ? DARK_THEME
+                : LIGHT_THEME;
         } catch (_) {
-            temaInicial = 'dark';
+            return LIGHT_THEME;
         }
-        aplicarTema(temaInicial);
+    }
 
-        btnToggle.addEventListener('click', function (e) {
-            e.preventDefault();
-            const actual = html.getAttribute('data-theme');
-            aplicarTema(actual === 'dark' ? 'light' : 'dark');
+    function aplicarTema(theme, persistir = true) {
+        const root = document.documentElement;
+        const button = document.getElementById('btn-theme-toggle');
+        const meta = document.getElementById('meta-theme-color');
+        const isDark = theme === DARK_THEME;
+        const temaFinal = isDark ? DARK_THEME : LIGHT_THEME;
+
+        root.setAttribute('data-theme', temaFinal);
+
+        if (button) {
+            button.setAttribute('aria-pressed', String(isDark));
+            button.setAttribute('aria-label', isDark ? 'Activar modo claro' : 'Activar modo oscuro');
+            button.setAttribute('title', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+
+            const icon = button.querySelector('i');
+            if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        if (meta) meta.setAttribute('content', isDark ? '#1b1e21' : '#f2eee7');
+
+        if (persistir) {
+            try {
+                localStorage.setItem(STORAGE_KEY, temaFinal);
+            } catch (_) {
+                // El modo visual sigue funcionando aunque localStorage no esté disponible.
+            }
+        }
+
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: temaFinal } }));
+    }
+
+    function inicializar() {
+        const themeButton = document.getElementById('btn-theme-toggle');
+        const temaInicial = document.documentElement.getAttribute('data-theme') === DARK_THEME
+            ? DARK_THEME
+            : obtenerTemaGuardado();
+
+        aplicarTema(temaInicial, false);
+
+        if (!themeButton || themeButton.dataset.themeBound === 'true') return;
+
+        themeButton.dataset.themeBound = 'true';
+        themeButton.addEventListener('click', function () {
+            const actual = document.documentElement.getAttribute('data-theme');
+            aplicarTema(actual === DARK_THEME ? LIGHT_THEME : DARK_THEME);
         });
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', inicializar, { once: true });
+    } else {
+        inicializar();
+    }
 })();
