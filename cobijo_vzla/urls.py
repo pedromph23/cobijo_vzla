@@ -4,6 +4,8 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 
+from apps.core.auth_views import PasswordChangeViewAudited, PasswordResetRequestView, PasswordResetCompleteView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('apps.publico.urls')),
@@ -17,7 +19,7 @@ urlpatterns = [
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path(
         'accounts/password-change/',
-        auth_views.PasswordChangeView.as_view(
+        PasswordChangeViewAudited.as_view(
             template_name='registration/password_change_form.html',
             success_url='/accounts/password-change/done/',
         ),
@@ -32,7 +34,7 @@ urlpatterns = [
     ),
     path(
         'accounts/password-reset/',
-        auth_views.PasswordResetView.as_view(
+        PasswordResetRequestView.as_view(
             template_name='registration/password_reset_form.html',
             email_template_name='registration/password_reset_email.html',
             subject_template_name='registration/password_reset_subject.txt',
@@ -57,7 +59,7 @@ urlpatterns = [
     ),
     path(
         'accounts/password-reset/complete/',
-        auth_views.PasswordResetCompleteView.as_view(
+        PasswordResetCompleteView.as_view(
             template_name='registration/password_reset_complete.html'
         ),
         name='password_reset_complete',
