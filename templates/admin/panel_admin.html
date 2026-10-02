@@ -193,32 +193,26 @@
     const mapaEstado = document.getElementById('mapa-estado');
 
     function activarTab(tab) {
-        const tabName = tab.dataset.tab;
-
+        const nombre = tab.dataset.tab;
         tabs.forEach((item) => {
-            const active = item === tab;
-            item.classList.toggle('active', active);
-            item.setAttribute('aria-selected', String(active));
+            const activo = item === tab;
+            item.classList.toggle('active', activo);
+            item.setAttribute('aria-selected', String(activo));
         });
-
         contents.forEach((content) => {
-            const active = content.id === `tab-${tabName}`;
-            content.classList.toggle('active', active);
-            content.hidden = !active;
+            const activo = content.id === 'tab-' + nombre;
+            content.classList.toggle('active', activo);
+            content.hidden = !activo;
         });
-
-        if (tabName === 'mapa' && window.mapaAdmin) {
+        if (nombre === 'mapa' && window.mapaAdmin) {
             setTimeout(() => window.mapaAdmin.invalidateSize(), 300);
         }
-
-        if (tabName === 'reportes' && typeof window.cargarResultados === 'function') {
+        if (nombre === 'reportes' && typeof window.cargarResultados === 'function') {
             window.cargarResultados();
         }
     }
 
-    tabs.forEach((tab) => {
-        tab.addEventListener('click', () => activarTab(tab));
-    });
+    tabs.forEach((tab) => tab.addEventListener('click', () => activarTab(tab)));
 
     function actualizarEstado(texto, tipo) {
         if (!mapaEstado) return;
@@ -233,10 +227,7 @@
     }
 
     function popupPunto(item, extras) {
-        return `
-            <strong>${escaparHtml(item.nombre || 'Sin nombre')}</strong>
-            ${extras || ''}
-        `;
+        return '<strong>' + escaparHtml(item.nombre || 'Sin nombre') + '</strong>' + (extras || '');
     }
 
     function crearCapasMapa(datos) {
@@ -247,66 +238,56 @@
             zonas: L.layerGroup()
         };
 
+        function coordenadasValidas(item) {
+            const lat = Number(item.lat);
+            const lng = Number(item.lng);
+            return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
+        }
+
         (datos.puntos_demanda || []).forEach((item) => {
-            if (item.lat == null || item.lng == null) return;
-
-            const marker = L.circleMarker([item.lat, item.lng], {
-                radius: 7,
-                weight: 2,
-                fillOpacity: 0.75
-            });
-
-            marker.bindPopup(popupPunto(item,
-                `<br>Población: ${escaparHtml(item.poblacion ?? 0)}` +
-                `<br>Vulnerabilidad: ${escaparHtml(item.vulnerabilidad ?? 'No especificada')}`
-            ));
-            grupos.demandas.addLayer(marker);
+            const coords = coordenadasValidas(item);
+            if (!coords) return;
+            L.circleMarker(coords, { radius: 7, weight: 2, fillOpacity: 0.75 })
+                .bindPopup(popupPunto(item,
+                    '<br>Población: ' + escaparHtml(item.poblacion ?? 0) +
+                    '<br>Vulnerabilidad: ' + escaparHtml(item.vulnerabilidad ?? 'No especificada')))
+                .addTo(grupos.demandas);
         });
 
         (datos.sitios_candidatos || []).forEach((item) => {
-            if (item.lat == null || item.lng == null) return;
-
-            const marker = L.marker([item.lat, item.lng]);
-            marker.bindPopup(popupPunto(item,
-                `<br>Capacidad máxima: ${escaparHtml(item.capacidad_maxima ?? 0)}`
-            ));
-            grupos.candidatos.addLayer(marker);
+            const coords = coordenadasValidas(item);
+            if (!coords) return;
+            L.marker(coords)
+                .bindPopup(popupPunto(item,
+                    '<br>Capacidad máxima: ' + escaparHtml(item.capacidad_maxima ?? 0)))
+                .addTo(grupos.candidatos);
         });
 
         (datos.refugios || []).forEach((item) => {
-            if (item.lat == null || item.lng == null) return;
-
-            const marker = L.marker([item.lat, item.lng]);
-            marker.bindPopup(popupPunto(item,
-                `<br>Capacidad disponible: ${escaparHtml(item.capacidad_disponible ?? 0)}` +
-                `<br>Estado: ${item.operativo ? 'Operativo' : 'No operativo'}`
-            ));
-            grupos.refugios.addLayer(marker);
+            const coords = coordenadasValidas(item);
+            if (!coords) return;
+            L.marker(coords)
+                .bindPopup(popupPunto(item,
+                    '<br>Capacidad disponible: ' + escaparHtml(item.capacidad_disponible ?? 0) +
+                    '<br>Estado: ' + (item.operativo ? 'Operativo' : 'No operativo')))
+                .addTo(grupos.refugios);
         });
 
         (datos.zonas_afectadas || []).forEach((item) => {
             if (!item.geojson) return;
-
             try {
-                const geojson = typeof item.geojson === 'string'
-                    ? JSON.parse(item.geojson)
-                    : item.geojson;
-
-                const capa = L.geoJSON(geojson, {
-                    weight: 2,
-                    fillOpacity: 0.25
-                });
-
-                capa.bindPopup(`
-                    <strong>${escaparHtml(item.nombre || 'Zona afectada')}</strong>
-                    <br>Nivel de alerta: ${escaparHtml(item.nivel_alerta ?? 'No especificado')}
-                    <br>Heridos: ${escaparHtml(item.heridos ?? 0)}
-                    <br>Fallecidos: ${escaparHtml(item.fallecidos ?? 0)}
-                    <br>Damnificados: ${escaparHtml(item.damnificados ?? 0)}
-                `);
+                const geojson = typeof item.geojson === 'string' ? JSON.parse(item.geojson) : item.geojson;
+                const capa = L.geoJSON(geojson, { weight: 2, fillOpacity: 0.25 });
+                capa.bindPopup(
+                    '<strong>' + escaparHtml(item.nombre || 'Zona afectada') + '</strong>' +
+                    '<br>Nivel de alerta: ' + escaparHtml(item.nivel_alerta ?? 'No especificado') +
+                    '<br>Heridos: ' + escaparHtml(item.heridos ?? 0) +
+                    '<br>Fallecidos: ' + escaparHtml(item.fallecidos ?? 0) +
+                    '<br>Damnificados: ' + escaparHtml(item.damnificados ?? 0)
+                );
                 grupos.zonas.addLayer(capa);
             } catch (error) {
-                console.warn('Geometría de zona inválida:', item.id, error);
+                console.warn('[panel_admin] Geometría inválida:', item.id, error);
             }
         });
 
@@ -314,168 +295,145 @@
     }
 
     function configurarControlesCapas(grupos) {
-        const controles = [
+        [
             ['chk-demandas', grupos.demandas],
             ['chk-candidatos', grupos.candidatos],
             ['chk-refugios', grupos.refugios],
             ['chk-zonas', grupos.zonas]
-        ];
-
-        controles.forEach(([id, grupo]) => {
+        ].forEach(([id, grupo]) => {
             const checkbox = document.getElementById(id);
             if (!checkbox) return;
-
             if (checkbox.checked) grupo.addTo(window.mapaAdmin);
-
             checkbox.addEventListener('change', () => {
-                if (checkbox.checked) {
-                    grupo.addTo(window.mapaAdmin);
-                } else {
-                    window.mapaAdmin.removeLayer(grupo);
-                }
+                if (checkbox.checked) grupo.addTo(window.mapaAdmin);
+                else window.mapaAdmin.removeLayer(grupo);
             });
         });
     }
 
-    function cargarDatosMapa() {
+    async function cargarDatosMapa() {
         if (!window.mapaAdmin) return;
-
         actualizarEstado('Cargando datos...', 'loading');
-
-        fetch('/api/datos-mapa/', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-            credentials: 'same-origin'
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`No se pudieron cargar las capas (${response.status}).`);
-                }
-                return response.json();
-            })
-            .then((datos) => {
-                const grupos = crearCapasMapa(datos);
-                configurarControlesCapas(grupos);
-
-                const todas = L.featureGroup([
-                    grupos.demandas,
-                    grupos.candidatos,
-                    grupos.refugios,
-                    grupos.zonas
-                ]);
-
-                if (todas.getLayers().length) {
-                    const bounds = todas.getBounds();
-                    if (bounds.isValid()) {
-                        window.mapaAdmin.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
-                    }
-                }
-
-                const total = [
-                    datos.puntos_demanda,
-                    datos.sitios_candidatos,
-                    datos.refugios,
-                    datos.zonas_afectadas
-                ].reduce((sum, capa) => sum + (Array.isArray(capa) ? capa.length : 0), 0);
-
-                actualizarEstado(`${total} elementos cargados`, 'success');
-            })
-            .catch((error) => {
-                console.error('Error cargando mapa administrativo:', error);
-                actualizarEstado('No fue posible cargar las capas', 'error');
+        try {
+            const response = await fetch('/api/datos-mapa/', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
             });
+            if (!response.ok) throw new Error('No se pudieron cargar las capas.');
+            const datos = await response.json();
+            const grupos = crearCapasMapa(datos);
+            configurarControlesCapas(grupos);
+
+            const todas = L.featureGroup([
+                grupos.demandas, grupos.candidatos, grupos.refugios, grupos.zonas
+            ]);
+            if (todas.getLayers().length) {
+                const bounds = todas.getBounds();
+                if (bounds.isValid()) window.mapaAdmin.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+            }
+
+            const total = [datos.puntos_demanda, datos.sitios_candidatos, datos.refugios, datos.zonas_afectadas]
+                .reduce((sum, capa) => sum + (Array.isArray(capa) ? capa.length : 0), 0);
+            actualizarEstado(total + ' elementos cargados', 'success');
+        } catch (error) {
+            console.error('[panel_admin] Error cargando mapa:', error);
+            actualizarEstado('No fue posible cargar las capas', 'error');
+        }
     }
 
-    if (typeof L !== 'undefined' && document.getElementById('mapa-admin')) {
-        window.mapaAdmin = L.map('mapa-admin', {
-            center: [10.0, -66.0],
-            zoom: 6
-        });
-
+    function inicializarMapa() {
+        const contenedor = document.getElementById('mapa-admin');
+        if (!contenedor || typeof L === 'undefined') {
+            actualizarEstado('Mapa no disponible', 'error');
+            return;
+        }
+        window.mapaAdmin = L.map(contenedor, { center: [10.0, -66.0], zoom: 6 });
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap',
             referrerPolicy: 'strict-origin-when-cross-origin',
             maxZoom: 19
         }).addTo(window.mapaAdmin);
-
         cargarDatosMapa();
-    } else {
-        actualizarEstado('Mapa no disponible', 'error');
     }
 
-    window.cargarResultados = function () {
+    window.cargarResultados = async function () {
         const tbody = document.querySelector('#tabla-resultados tbody');
         if (!tbody) return;
-
-        fetch('/api/listar-resultados/')
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('No se pudo obtener el historial.');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                tbody.innerHTML = '';
-
-                if (!Array.isArray(data) || !data.length) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Sin actividad</td></tr>';
-                    return;
-                }
-
-                data.forEach((resultado) => {
-                    const fila = document.createElement('tr');
-                    const resumen = resultado.resumen || {};
-
-                    fila.innerHTML = `
-                        <td>${resultado.id ?? ''}</td>
-                        <td>${String(resultado.fecha || '').substring(0, 10)}</td>
-                        <td>${resultado.escenario ?? ''}</td>
-                        <td>${resumen.distancia_total ?? 0} km</td>
-                        <td>${resumen.poblacion_atendida ?? 0}</td>
-                        <td>${resumen.porcentaje_cubierto ?? 0}%</td>
-                    `;
-
-                    tbody.appendChild(fila);
-                });
-            })
-            .catch(() => {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No fue posible cargar el historial.</td></tr>';
+        try {
+            const response = await fetch('/api/listar-resultados/', {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
             });
+            if (!response.ok) throw new Error('No se pudo obtener el historial.');
+            const data = await response.json();
+            tbody.innerHTML = '';
+            if (!Array.isArray(data) || !data.length) {
+                const fila = document.createElement('tr');
+                const celda = document.createElement('td');
+                celda.colSpan = 6;
+                celda.textContent = 'Sin actividad';
+                fila.appendChild(celda);
+                tbody.appendChild(fila);
+                return;
+            }
+            data.forEach((resultado) => {
+                const fila = document.createElement('tr');
+                const valores = [
+                    resultado.id ?? '',
+                    String(resultado.fecha || '').substring(0, 10),
+                    resultado.escenario ?? '',
+                    ((resultado.resumen || {}).distancia_total ?? 0) + ' km',
+                    (resultado.resumen || {}).poblacion_atendida ?? 0,
+                    ((resultado.resumen || {}).porcentaje_cubierto ?? 0) + '%'
+                ];
+                valores.forEach((valor) => {
+                    const celda = document.createElement('td');
+                    celda.textContent = valor;
+                    fila.appendChild(celda);
+                });
+                tbody.appendChild(fila);
+            });
+        } catch (error) {
+            console.error('[panel_admin] Error cargando historial:', error);
+            tbody.innerHTML = '';
+            const fila = document.createElement('tr');
+            const celda = document.createElement('td');
+            celda.colSpan = 6;
+            celda.textContent = 'No fue posible cargar el historial.';
+            fila.appendChild(celda);
+            tbody.appendChild(fila);
+        }
     };
 
-    window.generarReporte = function (tipo, contenido) {
+    window.generarReporte = async function (tipo, contenido) {
         const mensaje = document.getElementById('mensaje-reporte');
         if (!mensaje) return;
-
         mensaje.hidden = false;
         mensaje.className = 'mensaje-reporte loading';
-        mensaje.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Generando...';
-
-        fetch(`/api/reportes/generar/?tipo=${encodeURIComponent(tipo)}&contenido=${encodeURIComponent(contenido)}`)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('No fue posible generar el reporte.');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                if (data.success) {
-                    mensaje.className = 'mensaje-reporte success';
-                    mensaje.innerHTML = `<i class="fas fa-check-circle" aria-hidden="true"></i> ${data.mensaje}`;
-                    if (data.archivo) {
-                        window.location.href = `/api/reportes/descargar/${encodeURIComponent(data.archivo)}/`;
-                    }
-                    return;
-                }
-
-                mensaje.className = 'mensaje-reporte error';
-                mensaje.innerHTML = `<i class="fas fa-exclamation-circle" aria-hidden="true"></i> ${data.error || 'Error al generar el reporte.'}`;
-            })
-            .catch((error) => {
-                mensaje.className = 'mensaje-reporte error';
-                mensaje.innerHTML = `<i class="fas fa-exclamation-circle" aria-hidden="true"></i> ${error.message}`;
+        mensaje.textContent = 'Generando...';
+        try {
+            const params = new URLSearchParams({ tipo: tipo, contenido: contenido });
+            const response = await fetch('/api/reportes/generar/?' + params.toString(), {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
             });
+            if (!response.ok) throw new Error('No fue posible generar el reporte.');
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || 'Error al generar el reporte.');
+            mensaje.className = 'mensaje-reporte success';
+            mensaje.textContent = data.mensaje || 'Reporte generado correctamente.';
+            if (data.archivo) {
+                window.location.href = '/api/reportes/descargar/' + encodeURIComponent(data.archivo) + '/';
+            }
+        } catch (error) {
+            console.error('[panel_admin] Error generando reporte:', error);
+            mensaje.className = 'mensaje-reporte error';
+            mensaje.textContent = error.message;
+        }
     };
+
+    inicializarMapa();
 })();
 </script>
 {% endblock %}
