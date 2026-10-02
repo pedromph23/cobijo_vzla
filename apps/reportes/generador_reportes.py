@@ -83,9 +83,9 @@ def limpiar_reportes_antiguos(dias: int = DIAS_RETENCION_REPORTES) -> int:
 # EXCEL
 # ============================================================
 
-def generar_excel_zonas_afectadas(desde=None, hasta=None) -> Optional[str]:
+def generar_excel_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optional[str]:
     """Genera Excel profesional de zonas afectadas, con filtro temporal."""
-    df = services.df_zonas_afectadas(desde=desde, hasta=hasta)
+    df = services.df_zonas_afectadas(desde=desde, hasta=hasta, as_of=as_of)
     if df.empty:
         logger.info("Sin datos de zonas afectadas")
         return None
@@ -130,21 +130,21 @@ def generar_excel_zonas_afectadas(desde=None, hasta=None) -> Optional[str]:
         return None
 
 
-def generar_excel_estadisticas_generales(desde=None, hasta=None) -> Optional[str]:
+def generar_excel_estadisticas_generales(desde=None, hasta=None, as_of=None) -> Optional[str]:
     """Genera Excel general profesional, con filtro temporal."""
     ruta = os.path.join(_reportes_dir(), _nombre_archivo('estadisticas', '.xlsx'))
 
     try:
-        r = services.resumen_general(desde=desde, hasta=hasta)
+        r = services.resumen_general(desde=desde, hasta=hasta, as_of=as_of)
         if not r or not any(r.values()):
             logger.info("Sin datos para estadísticas generales")
             return None
 
         with pd.ExcelWriter(ruta, engine='openpyxl') as writer:
-            services.df_por_estado(desde=desde, hasta=hasta).to_excel(writer, sheet_name='Por Estado', index=False)
-            services.df_refugios().to_excel(writer, sheet_name='Refugios', index=False)
-            services.df_demandas().to_excel(writer, sheet_name='Puntos de Demanda', index=False)
-            services.df_eventos(desde=desde, hasta=hasta).to_excel(writer, sheet_name='Eventos', index=False)
+            services.df_por_estado(desde=desde, hasta=hasta, as_of=as_of).to_excel(writer, sheet_name='Por Estado', index=False)
+            services.df_refugios(as_of=as_of).to_excel(writer, sheet_name='Refugios', index=False)
+            services.df_demandas(as_of=as_of).to_excel(writer, sheet_name='Puntos de Demanda', index=False)
+            services.df_eventos(desde=desde, hasta=hasta, as_of=as_of).to_excel(writer, sheet_name='Eventos', index=False)
 
             resumen_df = pd.DataFrame({
                 'Métrica': [
@@ -253,7 +253,7 @@ def _colores_pdf():
     }
 
 
-def generar_pdf_zonas_afectadas(desde=None, hasta=None) -> Optional[str]:
+def generar_pdf_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optional[str]:
     """Genera PDF de zonas afectadas en formato landscape."""
     from reportlab.lib.pagesizes import letter, landscape
     from reportlab.platypus import (
@@ -353,7 +353,7 @@ def generar_pdf_zonas_afectadas(desde=None, hasta=None) -> Optional[str]:
         return None
 
 
-def generar_pdf_estadisticas_generales(desde=None, hasta=None) -> Optional[str]:
+def generar_pdf_estadisticas_generales(desde=None, hasta=None, as_of=None) -> Optional[str]:
     """Genera PDF con estadísticas generales."""
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import (
