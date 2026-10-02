@@ -65,6 +65,10 @@ def _parsear_filtro_temporal(request):
         errores.append('fecha_desde inválida; use AAAA-MM-DD.')
     if fecha_hasta and not d_hasta:
         errores.append('fecha_hasta inválida; use AAAA-MM-DD.')
+    if hora_desde and not d_desde:
+        errores.append('hora_desde requiere una fecha_desde.')
+    if hora_hasta and not d_hasta:
+        errores.append('hora_hasta requiere una fecha_hasta.')
     if hora_desde and not parsed_h_desde:
         errores.append('hora_desde inválida; use HH:MM.')
     if hora_hasta and not parsed_h_hasta:
