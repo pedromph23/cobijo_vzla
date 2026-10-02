@@ -212,12 +212,20 @@ class SitioCandidatoAdmin(GISModelAdmin):
 
     @admin.action(description='Marcar como disponibles')
     def marcar_disponibles(self, request, queryset):
-        n = queryset.update(disponible=True)
+        n = 0
+        for obj in queryset:
+            obj.disponible = True
+            obj.save(update_fields=['disponible'])
+            n += 1
         self.message_user(request, f"{n} sitios marcados como disponibles.")
 
     @admin.action(description='Marcar como no disponibles')
     def marcar_no_disponibles(self, request, queryset):
-        n = queryset.update(disponible=False)
+        n = 0
+        for obj in queryset:
+            obj.disponible = False
+            obj.save(update_fields=['disponible'])
+            n += 1
         self.message_user(request, f"{n} sitios marcados como no disponibles.")
 
 
@@ -281,12 +289,20 @@ class RefugioExistenteAdmin(GISModelAdmin):
 
     @admin.action(description='Marcar como operativos')
     def marcar_operativos(self, request, queryset):
-        n = queryset.update(operativo=True)
+        n = 0
+        for obj in queryset:
+            obj.operativo = True
+            obj.save(update_fields=['operativo'])
+            n += 1
         self.message_user(request, f"{n} refugios marcados como operativos.")
 
     @admin.action(description='Marcar como no operativos')
     def marcar_no_operativos(self, request, queryset):
-        n = queryset.update(operativo=False)
+        n = 0
+        for obj in queryset:
+            obj.operativo = False
+            obj.save(update_fields=['operativo'])
+            n += 1
         self.message_user(request, f"{n} refugios marcados como no operativos.")
 
 
