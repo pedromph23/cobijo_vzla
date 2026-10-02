@@ -5,9 +5,239 @@
 <div class="resultados-container"><div class="resultados-header"><div class="header-left"><div class="header-icon"><i class="fas fa-chart-bar"></i></div><div><h2>Resultados de Optimización</h2><p>Visualización y análisis</p></div></div><div class="header-actions"><button class="btn-action btn-primary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button><button class="btn-action btn-primary" onclick="exportarGeoJSON()"><i class="fas fa-map"></i> GeoJSON</button></div></div><div class="selector-section"><label for="selector-resultado"><i class="fas fa-list"></i> Seleccionar:</label><select id="selector-resultado" class="form-control" onchange="cargarResultado(this.value)"><option value="">Cargando...</option></select><button class="btn-refresh" onclick="cargarListaResultados()"><i class="fas fa-sync"></i></button></div><div class="resumen-grid"><div class="resumen-card"><div class="card-icon blue"><i class="fas fa-map-marker-alt"></i></div><div class="card-info"><span class="card-value" id="resumen-centros">0</span><span class="card-label">Centros</span></div></div><div class="resumen-card"><div class="card-icon green"><i class="fas fa-users"></i></div><div class="card-info"><span class="card-value" id="resumen-poblacion">0</span><span class="card-label">Población</span></div></div><div class="resumen-card"><div class="card-icon orange"><i class="fas fa-percentage"></i></div><div class="card-info"><span class="card-value" id="resumen-cobertura">0%</span><span class="card-label">Cobertura</span></div></div><div class="resumen-card"><div class="card-icon purple"><i class="fas fa-road"></i></div><div class="card-info"><span class="card-value" id="resumen-distancia">0</span><span class="card-label">km Total</span></div></div></div><div class="resultados-layout"><div class="mapa-resultados"><div class="section-header"><h3><i class="fas fa-map-marked-alt"></i> Mapa</h3></div><div id="mapa-resultados" class="mapa-resultados-container"></div></div><div class="centros-lista"><div class="section-header"><h3><i class="fas fa-list"></i> Centros <span class="badge" id="total-centros">0</span></h3></div><div id="lista-centros" class="lista-centros"><div class="placeholder"><i class="fas fa-building"></i><p>Seleccione un resultado</p></div></div></div></div><div class="detalle-section"><div class="section-header"><h3><i class="fas fa-table"></i> Asignaciones Detalladas</h3></div><div class="table-responsive"><table class="tabla-asignaciones"><thead><tr><th>#</th><th>Demanda</th><th>Centro Asignado</th><th>Estado</th></tr></thead><tbody id="tbody-asignaciones"><tr><td colspan="4" style="text-align:center;">Sin datos</td></tr></tbody></table></div></div></div>
 {% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=1"><link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">{% endblock %}
-{% block extra_js %}<script>
-let mapaRes=null;let capaRes=null;document.addEventListener('DOMContentLoaded',()=>{mapaRes=L.map('mapa-resultados',{center:[10.0,-66.0],zoom:6});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapaRes);capaRes=L.layerGroup().addTo(mapaRes);cargarListaResultados();setTimeout(()=>mapaRes.invalidateSize(),500);});
-function cargarListaResultados(){fetch('/api/listar-resultados/').then(r=>r.json()).then(data=>{const sel=document.getElementById('selector-resultado');sel.innerHTML='';if(data.length===0)return sel.innerHTML='<option value="">Vacío</option>';data.forEach(r=>sel.innerHTML+=`<option value="${r.id}">#${r.id} - ${r.escenario}</option>`);cargarResultado(data[0].id);});}
-function cargarResultado(id){if(!id)return;fetch(`/api/resultados/${id}/`).then(r=>r.json()).then(data=>{document.getElementById('resumen-centros').textContent=data.centros?.length||0;document.getElementById('resumen-poblacion').textContent=data.poblacion_atendida||0;document.getElementById('resumen-cobertura').textContent=(data.porcentaje_cubierto||0)+'%';document.getElementById('resumen-distancia').textContent=data.distancia_total_km||0;capaRes.clearLayers();const lista=document.getElementById('lista-centros');lista.innerHTML='';if(data.centros?.length>0){document.getElementById('total-centros').textContent=data.centros.length;data.centros.forEach(c=>{L.marker([c.lat,c.lng]).bindPopup(c.nombre).addTo(capaRes);const div=document.createElement('div');div.className='centro-item';div.innerHTML=`<strong>${c.nombre}</strong><br><small>ID: ${c.id}</small>`;div.onclick=()=>mapaRes.flyTo([c.lat,c.lng],13);lista.appendChild(div);});mapaRes.fitBounds(capaRes.getBounds().pad(.2));}const tbody=document.getElementById('tbody-asignaciones');tbody.innerHTML='';if(data.asignaciones&&Object.keys(data.asignaciones).length>0){Object.entries(data.asignaciones).forEach(([dId,cId],i)=>{tbody.innerHTML+=`<tr><td>${i+1}</td><td>Punto ${dId}</td><td>Centro ${cId}</td><td style="color:#28a745;">✓</td></tr>`;});}else{tbody.innerHTML='<tr><td colspan="4">Vacio</td></tr>';}});}
-window.exportarCSV=()=>window.location.href='/api/exportar-csv/';window.exportarGeoJSON=()=>window.location.href='/api/exportar-geojson/';
-</script>{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    let mapaRes = null;
+    let capaRes = null;
+
+    function escaparHtml(valor) {
+        const div = document.createElement('div');
+        div.textContent = valor == null ? '' : String(valor);
+        return div.innerHTML;
+    }
+
+    function mostrarError(mensaje) {
+        const lista = document.getElementById('lista-centros');
+        const tbody = document.getElementById('tbody-asignaciones');
+
+        if (lista) {
+            lista.innerHTML = '';
+            const estado = document.createElement('div');
+            estado.className = 'placeholder';
+            estado.setAttribute('role', 'alert');
+            estado.innerHTML = '<i class="fas fa-exclamation-triangle" aria-hidden="true"></i>';
+            const texto = document.createElement('p');
+            texto.textContent = mensaje;
+            estado.appendChild(texto);
+            lista.appendChild(estado);
+        }
+
+        if (tbody) {
+            tbody.innerHTML = '';
+            const fila = document.createElement('tr');
+            const celda = document.createElement('td');
+            celda.colSpan = 4;
+            celda.textContent = mensaje;
+            fila.appendChild(celda);
+            tbody.appendChild(fila);
+        }
+    }
+
+    async function obtenerJson(url, mensajeError) {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            throw new Error(mensajeError || 'No fue posible cargar la información.');
+        }
+
+        return response.json();
+    }
+
+    function inicializarMapa() {
+        const contenedor = document.getElementById('mapa-resultados');
+        if (!contenedor || typeof L === 'undefined') {
+            mostrarError('El mapa de resultados no está disponible.');
+            return false;
+        }
+
+        mapaRes = L.map(contenedor, {
+            center: [10.0, -66.0],
+            zoom: 6
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            referrerPolicy: 'strict-origin-when-cross-origin',
+            maxZoom: 19
+        }).addTo(mapaRes);
+
+        capaRes = L.layerGroup().addTo(mapaRes);
+        return true;
+    }
+
+    async function cargarListaResultados() {
+        const selector = document.getElementById('selector-resultado');
+        if (!selector) return;
+
+        try {
+            const data = await obtenerJson(
+                '/api/listar-resultados/',
+                'No se pudo obtener el historial de optimizaciones.'
+            );
+
+            selector.innerHTML = '';
+
+            if (!Array.isArray(data) || data.length === 0) {
+                selector.innerHTML = '<option value="">Sin resultados disponibles</option>';
+                document.getElementById('total-centros').textContent = '0';
+                return;
+            }
+
+            data.forEach((resultado) => {
+                const option = document.createElement('option');
+                option.value = resultado.id;
+                option.textContent = `#${resultado.id} - ${resultado.escenario || 'Sin escenario'}`;
+                selector.appendChild(option);
+            });
+
+            await cargarResultado(data[0].id);
+        } catch (error) {
+            console.error('[resultados] Error cargando historial:', error);
+            selector.innerHTML = '<option value="">No disponible</option>';
+            mostrarError(error.message);
+        }
+    }
+
+    async function cargarResultado(id) {
+        if (!id || !mapaRes || !capaRes) return;
+
+        try {
+            const data = await obtenerJson(
+                `/api/resultados/${encodeURIComponent(id)}/`,
+                'No se pudo cargar el resultado seleccionado.'
+            );
+
+            document.getElementById('resumen-centros').textContent = data.centros?.length || 0;
+            document.getElementById('resumen-poblacion').textContent = data.poblacion_atendida || 0;
+            document.getElementById('resumen-cobertura').textContent = (data.porcentaje_cubierto || 0) + '%';
+            document.getElementById('resumen-distancia').textContent = data.distancia_total_km || 0;
+
+            capaRes.clearLayers();
+
+            const lista = document.getElementById('lista-centros');
+            lista.innerHTML = '';
+
+            const centros = Array.isArray(data.centros) ? data.centros : [];
+            document.getElementById('total-centros').textContent = centros.length;
+
+            centros.forEach((centro) => {
+                const lat = Number(centro.lat);
+                const lng = Number(centro.lng);
+
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+                const marker = L.marker([lat, lng]).bindPopup(
+                    escaparHtml(centro.nombre || 'Centro sin nombre')
+                );
+                marker.addTo(capaRes);
+
+                const item = document.createElement('div');
+                item.className = 'centro-item';
+                item.tabIndex = 0;
+                item.setAttribute('role', 'button');
+
+                const nombre = document.createElement('strong');
+                nombre.textContent = centro.nombre || 'Centro sin nombre';
+
+                const detalle = document.createElement('small');
+                detalle.textContent = `ID: ${centro.id ?? 'N/D'}`;
+
+                item.appendChild(nombre);
+                item.appendChild(document.createElement('br'));
+                item.appendChild(detalle);
+
+                const enfocar = () => mapaRes.flyTo([lat, lng], 13);
+                item.addEventListener('click', enfocar);
+                item.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        enfocar();
+                    }
+                });
+
+                lista.appendChild(item);
+            });
+
+            if (capaRes.getLayers().length) {
+                const bounds = capaRes.getBounds();
+                if (bounds.isValid()) {
+                    mapaRes.fitBounds(bounds.pad(0.2));
+                }
+            }
+
+            const tbody = document.getElementById('tbody-asignaciones');
+            tbody.innerHTML = '';
+
+            const asignaciones = data.asignaciones && typeof data.asignaciones === 'object'
+                ? Object.entries(data.asignaciones)
+                : [];
+
+            if (asignaciones.length) {
+                asignaciones.forEach(([demandaId, centroId], index) => {
+                    const fila = document.createElement('tr');
+                    [index + 1, `Punto ${demandaId}`, `Centro ${centroId}`].forEach((valor) => {
+                        const celda = document.createElement('td');
+                        celda.textContent = valor;
+                        fila.appendChild(celda);
+                    });
+
+                    const estado = document.createElement('td');
+                    estado.textContent = '✓';
+                    estado.setAttribute('aria-label', 'Asignado');
+                    fila.appendChild(estado);
+                    tbody.appendChild(fila);
+                });
+            } else {
+                const fila = document.createElement('tr');
+                const celda = document.createElement('td');
+                celda.colSpan = 4;
+                celda.textContent = 'Sin asignaciones';
+                fila.appendChild(celda);
+                tbody.appendChild(fila);
+            }
+        } catch (error) {
+            console.error('[resultados] Error cargando resultado:', error);
+            mostrarError(error.message);
+        }
+    }
+
+    window.cargarListaResultados = cargarListaResultados;
+    window.cargarResultado = cargarResultado;
+
+    window.exportarCSV = function () {
+        window.location.href = '/api/exportar-csv/';
+    };
+
+    window.exportarGeoJSON = function () {
+        window.location.href = '/api/exportar-geojson/';
+    };
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        if (!inicializarMapa()) return;
+
+        await cargarListaResultados();
+
+        setTimeout(() => {
+            if (mapaRes) mapaRes.invalidateSize();
+        }, 300);
+    });
+})();
+</script>
+
