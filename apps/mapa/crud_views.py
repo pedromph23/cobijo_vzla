@@ -13,8 +13,16 @@ from .permissions import (
     get_config, get_modelo_class, modelos_disponibles,
     obtener_permisos_usuario, tiene_permiso,
 )
+from .forms import PuntoDemandaForm, SitioCandidatoForm, RefugioExistenteForm, ZonaAfectadaForm
 
 logger = logging.getLogger(__name__)
+
+FORMULARIOS_PERSONALIZADOS = {
+    'core_puntodemanda': PuntoDemandaForm,
+    'core_sitiocandidato': SitioCandidatoForm,
+    'core_refugioexistente': RefugioExistenteForm,
+    'core_zonaafectada': ZonaAfectadaForm,
+}
 
 
 def _contexto_base(request, modelo_key, config):
@@ -29,9 +37,8 @@ def _contexto_base(request, modelo_key, config):
 
 
 def _form_class(modelo_key):
-    config = get_config(modelo_key)
     Model = get_modelo_class(modelo_key)
-    return modelform_factory(Model, fields='__all__')
+    return FORMULARIOS_PERSONALIZADOS.get(modelo_key) or modelform_factory(Model, fields='__all__')
 
 
 class CrudListView(View):
@@ -44,7 +51,6 @@ class CrudListView(View):
 
         Model = get_modelo_class(modelo_key)
         qs = Model.objects.all()
-
         q = request.GET.get('q', '').strip()
         if q:
             filtro = Q()
@@ -73,8 +79,7 @@ class CrudCreateView(View):
         FormClass = _form_class(modelo_key)
         return render(request, 'mapa/crud/crud_form.html', {
             **_contexto_base(request, modelo_key, config),
-            'form': FormClass(),
-            'modo': 'crear',
+            'form': FormClass(), 'modo': 'crear',
         })
 
     def post(self, request, modelo_key):
@@ -107,8 +112,7 @@ class CrudUpdateView(View):
         FormClass = _form_class(modelo_key)
         return render(request, 'mapa/crud/crud_form.html', {
             **_contexto_base(request, modelo_key, config),
-            'form': FormClass(instance=obj),
-            'objeto': obj, 'modo': 'editar',
+            'form': FormClass(instance=obj), 'objeto': obj, 'modo': 'editar',
         })
 
     def post(self, request, modelo_key, pk):
@@ -141,8 +145,7 @@ class CrudDeleteView(View):
         Model = get_modelo_class(modelo_key)
         obj = get_object_or_404(Model, pk=pk)
         return render(request, 'mapa/crud/crud_confirm_delete.html', {
-            **_contexto_base(request, modelo_key, config),
-            'objeto': obj,
+            **_contexto_base(request, modelo_key, config), 'objeto': obj,
         })
 
     def post(self, request, modelo_key, pk):
