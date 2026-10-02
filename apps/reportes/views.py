@@ -20,6 +20,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from apps.mapa.decorators import gestor_requerido
+from apps.core.audit import registrar_auditoria
 
 from .models import RegistroReporte
 
@@ -103,6 +104,22 @@ def _registrar_reporte(request, *, tipo, contenido, desde=None, hasta=None,
             detalle=detalle[:500],
             ip=_ip_cliente(request),
             user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+        )
+        registrar_auditoria(
+            request,
+            accion=f'reporte:{tipo}:{contenido}',
+            resultado='error' if resultado == 'error' else ('rechazado' if resultado == 'rechazado' else 'exitoso'),
+            detalle=detalle[:1000],
+            modelo='RegistroReporte',
+            objeto_id=archivo,
+            datos_nuevos={
+                'tipo': tipo,
+                'contenido': contenido,
+                'resultado': resultado,
+                'fecha_desde': desde.isoformat() if desde else None,
+                'fecha_hasta': hasta.isoformat() if hasta else None,
+                'archivo': archivo,
+            },
         )
     except Exception:
         logger.exception('No se pudo registrar la generación del reporte en la bitácora.')
