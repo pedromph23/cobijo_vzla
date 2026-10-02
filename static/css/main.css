@@ -2,23 +2,23 @@
    COBIJOVZLA · SISTEMA VISUAL GLOBAL
    ============================================================ */
 :root {
-    --color-primary: #0066cc;
-    --color-primary-dark: #0052a3;
-    --color-secondary: #ff6600;
-    --color-secondary-dark: #cc5200;
-    --color-accent: #00ffff;
-    --color-success: #28a745;
-    --color-info: #17a2b8;
-    --color-warning: #ffc107;
-    --color-danger: #dc3545;
-    --color-danger-dark: #b02a37;
-    --color-dark: #343a40;
-    --color-light: #f8f9fa;
+    --color-primary: #527b6b;
+    --color-primary-dark: #3f6657;
+    --color-secondary: #c76d5c;
+    --color-secondary-dark: #a95647;
+    --color-accent: #d7a66f;
+    --color-success: #5d9078;
+    --color-info: #6e9aa0;
+    --color-warning: #c99f58;
+    --color-danger: #b85f54;
+    --color-danger-dark: #94473f;
+    --color-dark: #37413c;
+    --color-light: #f7f4ee;
     --color-white: #ffffff;
-    --gray-100: #f8fafc;
-    --gray-200: #eef2f6;
-    --gray-300: #d9e0e7;
-    --gray-600: #64748b;
+    --gray-100: #f8f6f1;
+    --gray-200: #eef2ee;
+    --gray-300: #d9e0db;
+    --gray-600: #64706a;
     --primary: var(--color-primary);
     --primary-dark: var(--color-primary-dark);
     --secondary: var(--color-secondary);
@@ -30,21 +30,21 @@
     --dark: var(--color-dark);
     --light: var(--color-light);
     --white: var(--color-white);
-    --bg-body: #f4f6f8;
-    --bg-card: #ffffff;
-    --bg-hover: #e9eef3;
-    --bg-card-hover: #f5f8fb;
-    --bg-input: #ffffff;
-    --text-primary: #1f2937;
-    --text-secondary: #64748b;
-    --border-color: #dbe2e8;
-    --header-bg: #e9edf2;
-    --header-text: #1f2937;
-    --header-border: #d5dce4;
-    --shadow-sm: 0 2px 6px rgba(15, 23, 42, .07);
-    --shadow-md: 0 5px 14px rgba(15, 23, 42, .10);
-    --shadow-lg: 0 10px 28px rgba(15, 23, 42, .14);
-    --shadow-xl: 0 16px 40px rgba(15, 23, 42, .18);
+    --bg-body: #f4f2ed;
+    --bg-card: #fffdf9;
+    --bg-hover: #edf2ee;
+    --bg-card-hover: #f7f3ee;
+    --bg-input: #fffefa;
+    --text-primary: #28312d;
+    --text-secondary: #68736e;
+    --border-color: #d9e0db;
+    --header-bg: #edf0ec;
+    --header-text: #28312d;
+    --header-border: #d5ddd7;
+    --shadow-sm: 0 2px 6px rgba(58, 67, 62, .07);
+    --shadow-md: 0 5px 14px rgba(58, 67, 62, .10);
+    --shadow-lg: 0 10px 28px rgba(58, 67, 62, .14);
+    --shadow-xl: 0 16px 40px rgba(58, 67, 62, .18);
     --radius-sm: 6px;
     --radius-md: 9px;
     --radius-lg: 13px;
@@ -56,23 +56,32 @@
 }
 
 [data-theme="dark"] {
-    --color-primary: #5b9cff;
-    --color-primary-dark: #377fdc;
-    --color-secondary: #ff944d;
-    --bg-body: #0d1522;
-    --bg-card: #142033;
-    --bg-hover: #1b2b42;
-    --bg-card-hover: #182940;
-    --bg-input: #142033;
-    --text-primary: #e7edf5;
-    --text-secondary: #9aa9bc;
-    --border-color: #2b3b50;
-    --header-bg: #111c2b;
-    --header-text: #edf3fa;
-    --header-border: #26364a;
+    --color-primary: #91b5a2;
+    --color-primary-dark: #abc8b8;
+    --color-secondary: #e08a76;
+    --color-secondary-dark: #efaa98;
+    --color-accent: #d8b27d;
+    --color-success: #9fc5ad;
+    --color-info: #9dbdc0;
+    --color-warning: #dfc47e;
+    --color-danger: #df9385;
+    --color-danger-dark: #c9786a;
+    --color-dark: #171a1d;
+    --bg-body: #171a1d;
+    --bg-card: #252a27;
+    --bg-hover: #303630;
+    --bg-card-hover: #2b312d;
+    --bg-input: #292e2b;
+    --text-primary: #f0eee8;
+    --text-secondary: #b5b9b2;
+    --border-color: rgba(226, 231, 224, .13);
+    --header-bg: #252a27;
+    --header-text: #f0eee8;
+    --header-border: rgba(226, 231, 224, .13);
     --shadow-sm: 0 2px 7px rgba(0, 0, 0, .22);
     --shadow-md: 0 5px 16px rgba(0, 0, 0, .30);
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, .38);
+    --shadow-xl: 0 16px 40px rgba(0, 0, 0, .46);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -99,8 +108,6 @@ body {
 /* ============================================================
    HEADER · 3 ZONAS SIMETRICAS
    El logo queda matematicamente centrado en pantalla.
-   El distintivo blanco del logo mantiene visibles sus letras
-   negras y el corazon rojo incluso en modo oscuro.
    ============================================================ */
 .app-header {
     position: sticky;
@@ -197,11 +204,6 @@ body {
     white-space: nowrap;
 }
 
-/*
-   El logo original tiene fondo blanco y tipografia negra.
-   No se invierte ni se recolorea: se presenta sobre una
-   superficie blanca para conservar su identidad original.
-*/
 .logo-img {
     width: 58px;
     height: 58px;
@@ -237,9 +239,9 @@ body {
 }
 
 .nav-link.active {
-    color: var(--color-primary);
-    background: rgba(0, 102, 204, .09);
-    border-color: rgba(0, 102, 204, .14);
+    color: var(--color-primary-dark);
+    background: rgba(82, 123, 107, .10);
+    border-color: rgba(82, 123, 107, .16);
 }
 
 .theme-toggle { margin-left: .15rem; }
@@ -273,7 +275,7 @@ main {
 .form-control:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(0, 102, 204, .14);
+    box-shadow: 0 0 0 3px rgba(82, 123, 107, .14);
 }
 
 .btn-primary, .btn-secondary, .btn-danger {
