@@ -135,7 +135,20 @@ def api_generar_reporte(request):
     contenido = request.query_params.get('contenido', '').lower()
     desde, hasta, errores = _parsear_filtro_temporal(request)
     if errores:
-        return JsonResponse({'error': 'Filtros temporales inválidos', 'detalle': errores}, status=status.HTTP_400_BAD_REQUEST)
+        # Registrar como rechazado cuando el tipo/contenido es válido pero
+        # el intervalo temporal no cumple las reglas del módulo.
+        if (tipo, contenido) in TIPOS_VALIDOS:
+            _registrar_reporte(
+                request,
+                tipo=tipo,
+                contenido=contenido,
+                resultado='rechazado',
+                detalle='; '.join(errores),
+            )
+        return JsonResponse(
+            {'error': 'Filtros temporales inválidos', 'detalle': errores},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     generador = TIPOS_VALIDOS.get((tipo, contenido))
     if not generador:
