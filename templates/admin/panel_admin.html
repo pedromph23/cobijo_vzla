@@ -1,23 +1,309 @@
 {% extends 'base.html' %}
 {% load static %}
+
 {% block title %}Panel de Administración - CobijoVzla{% endblock %}
+
 {% block content %}
 <div class="panel-container">
-    <div class="panel-header"><div class="panel-header-left"><div class="panel-icon admin"><i class="fas fa-user-shield"></i></div><div><h2>Panel de Administración</h2><p>Control total del sistema</p></div></div><div class="panel-header-right"><span class="user-badge admin"><i class="fas fa-crown"></i> {{ user.username }}</span><button class="btn-refresh" onclick="location.reload()"><i class="fas fa-sync"></i></button></div></div>
-    <div class="panel-tabs"><button class="tab active" data-tab="mapa"><i class="fas fa-map"></i><span>Mapa</span></button><button class="tab" data-tab="datos"><i class="fas fa-database"></i><span>Datos</span></button><button class="tab" data-tab="reportes"><i class="fas fa-chart-bar"></i><span>Reportes</span></button></div>
+    <header class="panel-header">
+        <div class="panel-header-left">
+            <div class="panel-icon admin" aria-hidden="true">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div>
+                <h2>Panel de Administración</h2>
+                <p>Control total del sistema</p>
+            </div>
+        </div>
+
+        <div class="panel-header-right">
+            <span class="user-badge admin">
+                <i class="fas fa-crown" aria-hidden="true"></i>
+                {{ user.username }}
+            </span>
+            <button type="button" class="btn-refresh" onclick="location.reload()" aria-label="Actualizar panel" title="Actualizar panel">
+                <i class="fas fa-sync" aria-hidden="true"></i>
+            </button>
+        </div>
+    </header>
+
+    <nav class="panel-tabs" aria-label="Secciones del panel">
+        <button type="button" class="tab active" data-tab="mapa" aria-controls="tab-mapa" aria-selected="true">
+            <i class="fas fa-map" aria-hidden="true"></i>
+            <span>Mapa</span>
+        </button>
+        <button type="button" class="tab" data-tab="datos" aria-controls="tab-datos" aria-selected="false">
+            <i class="fas fa-database" aria-hidden="true"></i>
+            <span>Datos</span>
+        </button>
+        <button type="button" class="tab" data-tab="reportes" aria-controls="tab-reportes" aria-selected="false">
+            <i class="fas fa-chart-bar" aria-hidden="true"></i>
+            <span>Reportes</span>
+        </button>
+    </nav>
+
     <div class="panel-content">
-        <div id="tab-mapa" class="tab-content active"><div class="mapa-admin-wrapper"><div class="mapa-toolbar"><div class="toolbar-group"><span class="toolbar-label">Capas:</span><label class="checkbox-item"><input type="checkbox" id="chk-demandas" checked><span><i class="fas fa-users"></i> Demandas</span></label><label class="checkbox-item"><input type="checkbox" id="chk-candidatos" checked><span><i class="fas fa-building"></i> Candidatos</span></label><label class="checkbox-item"><input type="checkbox" id="chk-refugios" checked><span><i class="fas fa-home"></i> Refugios</span></label><label class="checkbox-item"><input type="checkbox" id="chk-zonas" checked><span><i class="fas fa-exclamation-triangle"></i> Zonas</span></label></div></div><div id="mapa-admin" class="mapa-admin"></div></div></div>
-        <div id="tab-datos" class="tab-content"><h3 class="section-title"><i class="fas fa-database"></i> Gestión de Datos</h3><p class="section-subtitle">Seleccione un modelo para gestionar sus registros</p><div class="crud-menu-grid">{% for m in menu_modelos %}<a href="{% url 'crud_list' m.key %}" class="crud-card"><i class="fas {{ m.icon }}"></i><h4>{{ m.verbose_name_plural }}</h4><p>{% if 'crear' in m.acciones %}<span class="badge-mini badge-create">Crear</span>{% endif %}{% if 'editar' in m.acciones %}<span class="badge-mini badge-edit">Editar</span>{% endif %}{% if 'borrar' in m.acciones %}<span class="badge-mini badge-delete">Borrar</span>{% endif %}</p></a>{% empty %}<div class="crud-empty"><i class="fas fa-inbox fa-3x"></i><p>No tiene acceso a ningún modelo.</p></div>{% endfor %}</div><div class="quick-actions"><h4>Acciones rápidas</h4><a href="/admin/" class="accion-item"><i class="fas fa-cog"></i><span>Admin Django (devs)</span><i class="fas fa-chevron-right"></i></a><a href="{% url 'carga_datos' %}" class="accion-item"><i class="fas fa-upload"></i><span>Cargar datos masivos</span><i class="fas fa-chevron-right"></i></a></div></div>
-        <div id="tab-reportes" class="tab-content"><div class="reportes-layout"><div class="reportes-tabla"><h3><i class="fas fa-history"></i> Historial de Optimizaciones</h3><div class="table-responsive"><table id="tabla-resultados" class="tabla-resultados"><thead><tr><th>ID</th><th>Fecha</th><th>Escenario</th><th>Distancia</th><th>Población</th><th>Cobertura</th></tr></thead><tbody></tbody></table></div></div><div class="reportes-acciones"><h3><i class="fas fa-download"></i> Reportes Estadísticos</h3><button class="btn-export" onclick="generarReporte('excel', 'zonas')"><i class="fas fa-file-excel" style="color:#28a745;"></i> Excel - Zonas Afectadas</button><button class="btn-export" onclick="generarReporte('pdf', 'zonas')"><i class="fas fa-file-pdf" style="color:#dc3545;"></i> PDF - Zonas Afectadas</button><button class="btn-export" onclick="generarReporte('excel', 'general')"><i class="fas fa-file-excel" style="color:#28a745;"></i> Excel - Estadísticas Generales</button><button class="btn-export" onclick="generarReporte('pdf', 'general')"><i class="fas fa-file-pdf" style="color:#dc3545;"></i> PDF - Estadísticas Generales</button><div id="mensaje-reporte" class="mensaje-reporte" style="display:none;"></div></div></div></div>
+        <section id="tab-mapa" class="tab-content active" role="tabpanel">
+            <div class="mapa-admin-wrapper">
+                <div class="mapa-toolbar">
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Capas:</span>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-demandas" checked>
+                            <span><i class="fas fa-users" aria-hidden="true"></i> Demandas</span>
+                        </label>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-candidatos" checked>
+                            <span><i class="fas fa-building" aria-hidden="true"></i> Candidatos</span>
+                        </label>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-refugios" checked>
+                            <span><i class="fas fa-home" aria-hidden="true"></i> Refugios</span>
+                        </label>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-zonas" checked>
+                            <span><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Zonas</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="mapa-admin" class="mapa-admin" aria-label="Mapa administrativo"></div>
+            </div>
+        </section>
+
+        <section id="tab-datos" class="tab-content" role="tabpanel" hidden>
+            <h3 class="section-title">
+                <i class="fas fa-database" aria-hidden="true"></i>
+                Gestión de Datos
+            </h3>
+            <p class="section-subtitle">Seleccione un modelo para gestionar sus registros</p>
+
+            <div class="crud-menu-grid">
+                {% for m in menu_modelos %}
+                    <a href="{% url 'crud_list' m.key %}" class="crud-card">
+                        <i class="fas {{ m.icon }}" aria-hidden="true"></i>
+                        <h4>{{ m.verbose_name_plural }}</h4>
+                        <p>
+                            {% if 'crear' in m.acciones %}
+                                <span class="badge-mini badge-create">Crear</span>
+                            {% endif %}
+                            {% if 'editar' in m.acciones %}
+                                <span class="badge-mini badge-edit">Editar</span>
+                            {% endif %}
+                            {% if 'borrar' in m.acciones %}
+                                <span class="badge-mini badge-delete">Borrar</span>
+                            {% endif %}
+                        </p>
+                    </a>
+                {% empty %}
+                    <div class="crud-empty">
+                        <i class="fas fa-inbox fa-3x" aria-hidden="true"></i>
+                        <p>No tiene acceso a ningún modelo.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="quick-actions">
+                <h4>Acciones rápidas</h4>
+                <a href="/admin/" class="accion-item">
+                    <i class="fas fa-cog" aria-hidden="true"></i>
+                    <span>Admin Django (devs)</span>
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </a>
+                <a href="{% url 'carga_datos' %}" class="accion-item">
+                    <i class="fas fa-upload" aria-hidden="true"></i>
+                    <span>Cargar datos masivos</span>
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </a>
+            </div>
+        </section>
+
+        <section id="tab-reportes" class="tab-content" role="tabpanel" hidden>
+            <div class="reportes-layout">
+                <div class="reportes-tabla">
+                    <h3>
+                        <i class="fas fa-history" aria-hidden="true"></i>
+                        Historial de Optimizaciones
+                    </h3>
+                    <div class="table-responsive">
+                        <table id="tabla-resultados" class="tabla-resultados">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Fecha</th>
+                                    <th>Escenario</th>
+                                    <th>Distancia</th>
+                                    <th>Población</th>
+                                    <th>Cobertura</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="reportes-acciones">
+                    <h3>
+                        <i class="fas fa-download" aria-hidden="true"></i>
+                        Reportes Estadísticos
+                    </h3>
+
+                    <button type="button" class="btn-export" onclick="generarReporte('excel', 'zonas')">
+                        <i class="fas fa-file-excel" aria-hidden="true"></i>
+                        Excel - Zonas Afectadas
+                    </button>
+                    <button type="button" class="btn-export" onclick="generarReporte('pdf', 'zonas')">
+                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                        PDF - Zonas Afectadas
+                    </button>
+                    <button type="button" class="btn-export" onclick="generarReporte('excel', 'general')">
+                        <i class="fas fa-file-excel" aria-hidden="true"></i>
+                        Excel - Estadísticas Generales
+                    </button>
+                    <button type="button" class="btn-export" onclick="generarReporte('pdf', 'general')">
+                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                        PDF - Estadísticas Generales
+                    </button>
+
+                    <div id="mensaje-reporte" class="mensaje-reporte" hidden></div>
+                </div>
+            </div>
+        </section>
     </div>
 </div>
 {% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=1"><link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">
+{% endblock %}
+
 {% block extra_js %}
 <script>
-document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',function(){document.querySelectorAll('.tab,.tab-content').forEach(el=>el.classList.remove('active'));this.classList.add('active');document.getElementById('tab-'+this.dataset.tab).classList.add('active');if(this.dataset.tab==='mapa'&&window.mapaAdmin)setTimeout(()=>window.mapaAdmin.invalidateSize(),300);if(this.dataset.tab==='reportes')cargarResultados();});});
-if(typeof L!=='undefined'){window.mapaAdmin=L.map('mapa-admin',{center:[10.0,-66.0],zoom:6});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',referrerPolicy:'strict-origin-when-cross-origin',maxZoom:19}).addTo(window.mapaAdmin);}
-window.cargarResultados=function(){fetch('/api/listar-resultados/').then(r=>r.json()).then(data=>{const tbody=document.querySelector('#tabla-resultados tbody');if(!tbody)return;tbody.innerHTML='';if(!data.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;">Sin actividad</td></tr>';return;}data.forEach(r=>{tbody.innerHTML+=`<tr><td>${r.id}</td><td>${(r.fecha||'').substring(0,10)}</td><td>${r.escenario}</td><td>${r.resumen?.distancia_total||0} km</td><td>${r.resumen?.poblacion_atendida||0}</td><td>${r.resumen?.porcentaje_cubierto||0}%</td></tr>`;});}).catch(()=>{});};
-window.generarReporte=function(tipo,contenido){const msg=document.getElementById('mensaje-reporte');msg.style.display='block';msg.className='mensaje-reporte loading';msg.innerHTML='<i class="fas fa-spinner fa-spin"></i> Generando...';fetch(`/api/reportes/generar/?tipo=${tipo}&contenido=${contenido}`).then(res=>res.json()).then(data=>{if(data.success){msg.className='mensaje-reporte success';msg.innerHTML=`<i class="fas fa-check-circle"></i> ${data.mensaje}`;window.location.href=`/api/reportes/descargar/${data.archivo}/`;}else{msg.className='mensaje-reporte error';msg.innerHTML=`<i class="fas fa-exclamation-circle"></i> ${data.error||'Error'}`;}});};
+(function () {
+    'use strict';
+
+    const tabs = document.querySelectorAll('.panel-tabs .tab');
+    const contents = document.querySelectorAll('.panel-content .tab-content');
+
+    function activarTab(tab) {
+        const tabName = tab.dataset.tab;
+
+        tabs.forEach((item) => {
+            const active = item === tab;
+            item.classList.toggle('active', active);
+            item.setAttribute('aria-selected', String(active));
+        });
+
+        contents.forEach((content) => {
+            const active = content.id === `tab-${tabName}`;
+            content.classList.toggle('active', active);
+            content.hidden = !active;
+        });
+
+        if (tabName === 'mapa' && window.mapaAdmin) {
+            setTimeout(() => window.mapaAdmin.invalidateSize(), 300);
+        }
+
+        if (tabName === 'reportes' && typeof window.cargarResultados === 'function') {
+            window.cargarResultados();
+        }
+    }
+
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', () => activarTab(tab));
+    });
+
+    if (typeof L !== 'undefined' && document.getElementById('mapa-admin')) {
+        window.mapaAdmin = L.map('mapa-admin', {
+            center: [10.0, -66.0],
+            zoom: 6
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            referrerPolicy: 'strict-origin-when-cross-origin',
+            maxZoom: 19
+        }).addTo(window.mapaAdmin);
+    }
+
+    window.cargarResultados = function () {
+        const tbody = document.querySelector('#tabla-resultados tbody');
+        if (!tbody) return;
+
+        fetch('/api/listar-resultados/')
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('No se pudo obtener el historial.');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                tbody.innerHTML = '';
+
+                if (!Array.isArray(data) || !data.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Sin actividad</td></tr>';
+                    return;
+                }
+
+                data.forEach((resultado) => {
+                    const fila = document.createElement('tr');
+                    const resumen = resultado.resumen || {};
+
+                    fila.innerHTML = `
+                        <td>${resultado.id ?? ''}</td>
+                        <td>${String(resultado.fecha || '').substring(0, 10)}</td>
+                        <td>${resultado.escenario ?? ''}</td>
+                        <td>${resumen.distancia_total ?? 0} km</td>
+                        <td>${resumen.poblacion_atendida ?? 0}</td>
+                        <td>${resumen.porcentaje_cubierto ?? 0}%</td>
+                    `;
+
+                    tbody.appendChild(fila);
+                });
+            })
+            .catch(() => {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No fue posible cargar el historial.</td></tr>';
+            });
+    };
+
+    window.generarReporte = function (tipo, contenido) {
+        const mensaje = document.getElementById('mensaje-reporte');
+        if (!mensaje) return;
+
+        mensaje.hidden = false;
+        mensaje.className = 'mensaje-reporte loading';
+        mensaje.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Generando...';
+
+        fetch(`/api/reportes/generar/?tipo=${encodeURIComponent(tipo)}&contenido=${encodeURIComponent(contenido)}`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('No fue posible generar el reporte.');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                if (data.success) {
+                    mensaje.className = 'mensaje-reporte success';
+                    mensaje.innerHTML = `<i class="fas fa-check-circle" aria-hidden="true"></i> ${data.mensaje}`;
+                    if (data.archivo) {
+                        window.location.href = `/api/reportes/descargar/${encodeURIComponent(data.archivo)}/`;
+                    }
+                    return;
+                }
+
+                mensaje.className = 'mensaje-reporte error';
+                mensaje.innerHTML = `<i class="fas fa-exclamation-circle" aria-hidden="true"></i> ${data.error || 'Error al generar el reporte.'}`;
+            })
+            .catch((error) => {
+                mensaje.className = 'mensaje-reporte error';
+                mensaje.innerHTML = `<i class="fas fa-exclamation-circle" aria-hidden="true"></i> ${error.message}`;
+            });
+    };
+})();
 </script>
 {% endblock %}
