@@ -502,3 +502,47 @@ class RegistroAuditoria(models.Model):
     def __str__(self):
         usuario = self.usuario.username if self.usuario else 'Sistema/Anónimo'
         return f'{self.fecha:%Y-%m-%d %H:%M:%S} · {usuario} · {self.accion}'
+
+
+# ============================================================
+# HISTORIAL DE VERSIONES
+# ============================================================
+
+class RegistroVersion(models.Model):
+    """Instantánea inmutable de entidades operativas para reconstrucción histórica."""
+
+    OPERACIONES = [
+        ('creado', 'Creado'),
+        ('actualizado', 'Actualizado'),
+        ('eliminado', 'Eliminado'),
+    ]
+
+    fecha_version = models.DateTimeField(auto_now_add=True, db_index=True)
+    usuario = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='versiones_registradas',
+    )
+    modelo = models.CharField(max_length=150, db_index=True)
+    objeto_id = models.CharField(max_length=100, db_index=True)
+    operacion = models.CharField(max_length=20, choices=OPERACIONES)
+    datos = models.JSONField()
+    ruta = models.CharField(max_length=500, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Versión histórica'
+        verbose_name_plural = 'Versiones históricas'
+        ordering = ['-fecha_version']
+        indexes = [
+            models.Index(fields=['modelo', 'objeto_id', '-fecha_version']),
+            models.Index(fields=['modelo', '-fecha_version']),
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.fecha_version:%Y-%m-%d %H:%M:%S} · '
+            f'{self.modelo} #{self.objeto_id} · {self.operacion}'
+        )
