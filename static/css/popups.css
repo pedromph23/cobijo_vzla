@@ -29,7 +29,6 @@
     color: var(--comfort-text, var(--text-primary));
 }
 
-/* Botón de cierre: área táctil cómoda y contraste estable en ambos temas. */
 .leaflet-popup-close-button {
     width: 34px !important;
     height: 34px !important;
@@ -138,6 +137,55 @@
     font-weight: 700;
 }
 
+/* Estados y niveles: reemplazan los estilos inline de popups.js. */
+.popup-status-dot {
+    font-size: .62rem;
+    margin-top: .38rem !important;
+}
+
+.popup-status-dot.is-operativo {
+    color: #3f8f68 !important;
+}
+
+.popup-status-dot.is-no-operativo {
+    color: #c96b61 !important;
+}
+
+.popup-alert-icon {
+    border-radius: 50%;
+}
+
+.popup-alert-alto {
+    color: #c65d55 !important;
+}
+
+.popup-alert-medio {
+    color: #b78332 !important;
+}
+
+.popup-alert-bajo {
+    color: #4f916e !important;
+}
+
+.popup-alert-desconocido {
+    color: var(--comfort-muted, var(--text-secondary)) !important;
+}
+
+.popup-service {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+    margin: .08rem .12rem .08rem 0;
+    padding: .12rem .3rem;
+    border: 1px solid var(--comfort-border, var(--border-color));
+    border-radius: 7px;
+    background: var(--comfort-soft, var(--bg-hover));
+    color: var(--comfort-green, var(--color-primary));
+    vertical-align: middle;
+}
+
 .popup-actions {
     display: flex;
     gap: .55rem;
@@ -169,13 +217,20 @@
     outline-offset: 2px;
 }
 
+.popup-btn:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+    transform: none;
+    box-shadow: none;
+}
+
 .popup-btn.como-llegar {
     background: linear-gradient(135deg, #527b6b, #6f9583);
     color: #fff;
     box-shadow: 0 7px 16px rgba(63, 102, 87, .16);
 }
 
-.popup-btn.como-llegar:hover {
+.popup-btn.como-llegar:hover:not(:disabled) {
     box-shadow: 0 9px 19px rgba(63, 102, 87, .21);
 }
 
@@ -193,6 +248,14 @@
 [data-theme="dark"] .popup-btn.como-llegar {
     background: linear-gradient(135deg, #78a28e, #91b7a2);
     color: #152019;
+}
+
+[data-theme="dark"] .popup-icon {
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .24);
+}
+
+[data-theme="dark"] .popup-service {
+    background: rgba(255, 255, 255, .055);
 }
 
 .popup-row span,
