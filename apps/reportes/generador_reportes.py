@@ -426,14 +426,20 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None, as_of=None) -> Op
 
         # Indicadores ejecutivos
         elementos.append(Paragraph('Indicadores clave', styles['subtitulo']))
-        personas = r.get('heridos', 0) + r.get('fallecidos', 0) + r.get('damnificados', 0)
+        personas = r.get('personas_afectadas', r.get('heridos', 0) + r.get('fallecidos', 0) + r.get('damnificados', 0))
         indicadores = [
             ['Indicador', 'Valor'],
             ['Personas afectadas', f"{personas:,}".replace(',', '.')],
-            ['Promedio afectados por zona', f"{(personas / r.get('zonas', 0)):.1f}" if r.get('zonas', 0) else '0'],
+            ['Promedio afectados por zona', str(r.get('promedio_afectados_por_zona', 0))],
             ['Refugios registrados', str(r.get('refugios', 0))],
+            ['Refugios operativos', str(r.get('refugios_operativos', 0))],
+            ['Capacidad disponible en refugios', str(r.get('capacidad_disponible_refugios', 0))],
+            ['Ocupación de refugios (%)', str(r.get('ocupacion_refugios_pct', 0))],
             ['Puntos de demanda', str(r.get('demandas', 0))],
+            ['Población en puntos de demanda', str(r.get('poblacion_demanda', 0))],
+            ['Vulnerabilidad media de demanda', str(r.get('vulnerabilidad_media_demanda', 0))],
             ['Eventos registrados', str(r.get('eventos', 0))],
+            ['Eventos activos', str(r.get('eventos_activos', 0))],
         ]
         tabla_ind = Table(indicadores, colWidths=[300, 150])
         tabla_ind.setStyle(TableStyle([
