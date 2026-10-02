@@ -217,3 +217,25 @@ class FiltrosYBitacoraAPITest(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json())
+
+    def test_filtro_temporal_invalido_registra_rechazo(self):
+        response = self.client.get(
+            '/api/reportes/generar/?tipo=pdf&contenido=zonas'
+            '&hora_desde=10:00'
+        )
+        self.assertEqual(response.status_code, 400)
+        registro = RegistroReporte.objects.get()
+        self.assertEqual(registro.resultado, 'rechazado')
+        self.assertEqual(registro.tipo, 'pdf')
+        self.assertEqual(registro.contenido, 'zonas')
+        self.assertIn('requiere una fecha', registro.detalle)
+
+    def test_filtro_invertido_registra_rechazo(self):
+        response = self.client.get(
+            '/api/reportes/generar/?tipo=pdf&contenido=zonas'
+            '&fecha_desde=2026-01-02&fecha_hasta=2026-01-01'
+        )
+        self.assertEqual(response.status_code, 400)
+        registro = RegistroReporte.objects.get()
+        self.assertEqual(registro.resultado, 'rechazado')
+        self.assertIn('posterior', registro.detalle)
