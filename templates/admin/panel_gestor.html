@@ -12,8 +12,77 @@
 </div></div>
 {% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=1"><link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">{% endblock %}
-{% block extra_js %}<script>
-document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',function(){document.querySelectorAll('.tab,.tab-content').forEach(el=>el.classList.remove('active'));this.classList.add('active');document.getElementById('tab-'+this.dataset.tab).classList.add('active');if(this.dataset.tab==='mapa'&&window.mapaAdmin)setTimeout(()=>window.mapaAdmin.invalidateSize(),300);});});
-if(typeof L!=='undefined'){window.mapaAdmin=L.map('mapa-admin',{center:[10.0,-66.0],zoom:6});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',referrerPolicy:'strict-origin-when-cross-origin',maxZoom:19}).addTo(window.mapaAdmin);}
-window.generarReporte=function(tipo,contenido){const msg=document.getElementById('mensaje-reporte');msg.style.display='block';msg.className='mensaje-reporte loading';msg.innerHTML='<i class="fas fa-spinner fa-spin"></i> Generando...';fetch(`/api/reportes/generar/?tipo=${tipo}&contenido=${contenido}`).then(res=>res.json()).then(data=>{if(data.success){msg.className='mensaje-reporte success';msg.innerHTML=`<i class="fas fa-check-circle"></i> ${data.mensaje}`;window.location.href=`/api/reportes/descargar/${data.archivo}/`;}else{msg.className='mensaje-reporte error';msg.innerHTML=`<i class="fas fa-exclamation-circle"></i> ${data.error||'Error'}`;}});};
-</script>{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    const tabs = document.querySelectorAll('.panel-tabs .tab');
+    const contents = document.querySelectorAll('.panel-content .tab-content');
+
+    function activarTab(tab) {
+        const nombre = tab.dataset.tab;
+        tabs.forEach((item) => {
+            const activo = item === tab;
+            item.classList.toggle('active', activo);
+            item.setAttribute('aria-selected', String(activo));
+        });
+        contents.forEach((content) => {
+            const activo = content.id === 'tab-' + nombre;
+            content.classList.toggle('active', activo);
+            content.hidden = !activo;
+        });
+        if (nombre === 'mapa' && window.mapaAdmin) {
+            setTimeout(() => window.mapaAdmin.invalidateSize(), 300);
+        }
+    }
+
+    tabs.forEach((tab) => tab.addEventListener('click', () => activarTab(tab)));
+
+    function mostrarMensaje(texto, tipo) {
+        const msg = document.getElementById('mensaje-reporte');
+        if (!msg) return;
+        msg.hidden = false;
+        msg.className = 'mensaje-reporte ' + tipo;
+        msg.textContent = texto;
+    }
+
+    function crearMapa() {
+        const contenedor = document.getElementById('mapa-admin');
+        if (!contenedor || typeof L === 'undefined') return null;
+        const mapa = L.map(contenedor, { center: [10.0, -66.0], zoom: 6 });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            referrerPolicy: 'strict-origin-when-cross-origin',
+            maxZoom: 19
+        }).addTo(mapa);
+        return mapa;
+    }
+
+    window.generarReporte = async function (tipo, contenido) {
+        mostrarMensaje('Generando reporte...', 'loading');
+        try {
+            const params = new URLSearchParams({ tipo: tipo, contenido: contenido });
+            const response = await fetch('/api/reportes/generar/?' + params.toString(), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            if (!response.ok) throw new Error('No fue posible generar el reporte.');
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || 'Error al generar el reporte.');
+            mostrarMensaje(data.mensaje || 'Reporte generado correctamente.', 'success');
+            if (data.archivo) {
+                window.location.href = '/api/reportes/descargar/' + encodeURIComponent(data.archivo) + '/';
+            }
+        } catch (error) {
+            console.error('[panel_gestor] Error generando reporte:', error);
+            mostrarMensaje(error.message, 'error');
+        }
+    };
+
+    const mapa = crearMapa();
+    if (mapa) window.mapaAdmin = mapa;
+})();
+</script>
+{% endblock %}
