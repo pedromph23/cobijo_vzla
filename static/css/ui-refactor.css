@@ -1,0 +1,161 @@
+/* CobijoVzla · UI refinement layer
+   Visual-only overrides. No application logic is changed.
+   Loaded after the existing styles so legacy selectors remain compatible.
+*/
+:root {
+  --ui-bg: #08111f;
+  --ui-surface: rgba(15, 29, 48, .92);
+  --ui-surface-2: rgba(21, 39, 62, .86);
+  --ui-border: rgba(148, 163, 184, .18);
+  --ui-text: #f8fafc;
+  --ui-muted: #a8b5c7;
+  --ui-primary: #38bdf8;
+  --ui-primary-strong: #0ea5e9;
+  --ui-success: #22c55e;
+  --ui-danger: #f87171;
+  --ui-radius: 14px;
+  --ui-shadow: 0 18px 45px rgba(0, 0, 0, .24);
+}
+
+body {
+  background: radial-gradient(circle at 20% 0%, #12243b 0, #08111f 45%, #050b14 100%) !important;
+  color: var(--ui-text) !important;
+}
+
+.app-header {
+  background: rgba(7, 17, 30, .86) !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,.18) !important;
+}
+
+.app-logo-optimized {
+  border-color: rgba(56, 189, 248, .22) !important;
+  background: rgba(255,255,255,.035) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
+}
+
+.nav-link {
+  border-color: transparent !important;
+  color: #dbeafe !important;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #e0f2fe !important;
+  background: rgba(56,189,248,.09) !important;
+  border-color: rgba(56,189,248,.2) !important;
+  text-shadow: none !important;
+}
+
+.btn-primary,
+.btn-action,
+.btn-submit,
+.btn-login,
+.btn-ejecutar,
+.btn-reporte {
+  box-shadow: none !important;
+}
+
+.form-control,
+.selector-control {
+  background: rgba(8,17,31,.72) !important;
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+}
+
+.form-control::placeholder { color: #7f8da1 !important; }
+
+.map-layout {
+  background: var(--ui-bg) !important;
+  border-color: var(--ui-border) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, rgba(13,27,45,.98), rgba(8,17,31,.98)) !important;
+  border-right-color: var(--ui-border) !important;
+  box-shadow: 12px 0 35px rgba(0,0,0,.18) !important;
+}
+
+.sidebar-header {
+  background: rgba(255,255,255,.018);
+  border-bottom-color: var(--ui-border) !important;
+}
+
+.sidebar-section {
+  padding-bottom: .15rem;
+}
+
+.sidebar-section h3 {
+  color: #cbd5e1 !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: .72rem !important;
+  letter-spacing: .1em !important;
+}
+
+.layer-toggle {
+  margin-bottom: .25rem;
+  border: 1px solid transparent;
+}
+
+.layer-toggle:hover {
+  background: rgba(56,189,248,.06) !important;
+  border-color: rgba(56,189,248,.12);
+}
+
+.layer-badge {
+  background: rgba(148,163,184,.11) !important;
+  color: #dbeafe !important;
+}
+
+.btn-location,
+.btn-reporte {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.15) !important;
+}
+
+.btn-location { background: #15803d !important; }
+.btn-reporte { background: #c2410c !important; }
+
+.info-card,
+.report-card,
+.data-card,
+.panel-content,
+.login-card,
+.resumen-card,
+.tab,
+.data-card-item {
+  border-color: var(--ui-border) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.map-action-btn,
+.btn-toolbar {
+  border-color: var(--ui-border) !important;
+  background: rgba(8,17,31,.86) !important;
+  backdrop-filter: blur(10px);
+}
+
+.map-action-btn:hover,
+.btn-toolbar:hover {
+  background: rgba(21,39,62,.95) !important;
+}
+
+@media (max-width: 768px) {
+  .map-layout {
+    min-height: 0 !important;
+    border-radius: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+  }
+  .sidebar {
+    box-shadow: 18px 0 45px rgba(0,0,0,.35) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-action-btn,
+  .nav-link,
+  .sidebar,
+  .info-card { transition: none !important; }
+}

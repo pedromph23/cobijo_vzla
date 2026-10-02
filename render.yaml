@@ -1,3 +1,15 @@
+# Render Blueprint
+#
+# Los previews se mantienen MANUALES porque la aplicación usa Supabase
+# y las variables sensibles marcadas como sync: false no se copian a previews.
+# Esto evita que un preview quede accidentalmente conectado a producción.
+#
+# Para crear un preview, configura primero en Render las variables de entorno
+# necesarias para el entorno de prueba y solicita el preview desde el PR.
+previews:
+  generation: manual
+  expireAfterDays: 3
+
 services:
   - type: web
     name: cobijo-vzla
