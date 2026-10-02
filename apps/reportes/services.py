@@ -7,11 +7,10 @@ para mantenerlo testeable y evitar N+1 queries.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List
+from typing import Dict
 
 import pandas as pd
 from django.db.models import Count, Sum, Avg
-from django.utils import timezone
 
 from apps.core.models import (
     Estado, Parroquia, RefugioExistente, PuntoDemanda, ZonaAfectada,
@@ -26,8 +25,8 @@ logger = logging.getLogger(__name__)
 # DATAFRAMES BASE
 # ============================================================
 
-def df_zonas_afectadas() -> pd.DataFrame:
-    """DataFrame de zonas afectadas (una fila por zona)."""
+def df_zonas_afectadas(desde=None, hasta=None) -> pd.DataFrame:
+    """DataFrame de zonas afectadas, opcionalmente filtrado por fecha/hora."""
     try:
         qs = (
             ZonaAfectada.objects
