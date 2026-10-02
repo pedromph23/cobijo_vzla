@@ -171,6 +171,8 @@ def api_generar_reporte(request):
     tipo = request.query_params.get('tipo', '').lower()
     contenido = request.query_params.get('contenido', '').lower()
     modo = request.query_params.get('modo', 'actual').lower()
+    if modo not in {'actual', 'historico'}:
+        return JsonResponse({'error': 'Modo de reporte inválido.'}, status=status.HTTP_400_BAD_REQUEST)
     fecha_referencia = None
     if modo == 'historico':
         fecha_referencia, errores = _parsear_filtro_historico(request)
