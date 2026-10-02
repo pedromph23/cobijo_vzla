@@ -52,7 +52,7 @@
     --transition-fast: .18s ease;
     --transition-normal: .28s ease;
     --transition-slow: .45s ease;
-    --header-height: 70px;
+    --header-height: 78px;
 }
 
 [data-theme="dark"] {
@@ -98,8 +98,9 @@ body {
 
 /* ============================================================
    HEADER · 3 ZONAS SIMETRICAS
-   El centro es independiente de los elementos laterales,
-   por lo que el logo queda matematicamente centrado en pantalla.
+   El logo queda matematicamente centrado en pantalla.
+   El distintivo blanco del logo mantiene visibles sus letras
+   negras y el corazon rojo incluso en modo oscuro.
    ============================================================ */
 .app-header {
     position: sticky;
@@ -190,17 +191,33 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: .55rem;
+    gap: .7rem;
     color: var(--header-text);
     text-decoration: none;
     white-space: nowrap;
 }
 
+/*
+   El logo original tiene fondo blanco y tipografia negra.
+   No se invierte ni se recolorea: se presenta sobre una
+   superficie blanca para conservar su identidad original.
+*/
 .logo-img {
-    width: 42px;
-    height: 42px;
+    width: 58px;
+    height: 58px;
+    padding: 5px;
     object-fit: contain;
     display: block;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, .10);
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, .14);
+    flex: 0 0 58px;
+}
+
+[data-theme="dark"] .logo-img {
+    border-color: rgba(255, 255, 255, .20);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .42);
 }
 
 .logo-text { display: inline-block; }
@@ -226,12 +243,8 @@ body {
 }
 
 .theme-toggle { margin-left: .15rem; }
-
 .form-logout { display: contents; }
 
-/* ============================================================
-   CONTENIDO GLOBAL
-   ============================================================ */
 main {
     flex: 1 1 auto;
     min-height: 0;
@@ -297,9 +310,6 @@ main {
     font-size: .85rem;
 }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
 @media (max-width: 900px) {
     .header-container { column-gap: .5rem; }
     .nav-label, .theme-label { display: none; }
@@ -308,16 +318,28 @@ main {
 }
 
 @media (max-width: 600px) {
-    :root { --header-height: 62px; }
+    :root { --header-height: 68px; }
     .app-header { padding: 0 .55rem; }
     .header-container { column-gap: .25rem; }
     .app-logo { font-size: .95rem; letter-spacing: .35px; }
-    .logo-img { width: 36px; height: 36px; }
+    .app-logo a { gap: .5rem; }
+    .logo-img {
+        width: 50px;
+        height: 50px;
+        padding: 4px;
+        border-radius: 10px;
+        flex-basis: 50px;
+    }
     .hamburger-btn, .nav-link, .theme-toggle { min-height: 38px; width: 38px; }
 }
 
 @media (max-width: 380px) {
     .logo-text { display: none; }
+    .logo-img {
+        width: 48px;
+        height: 48px;
+        flex-basis: 48px;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
