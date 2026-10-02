@@ -311,6 +311,51 @@ def df_eventos(desde=None, hasta=None, as_of=None) -> pd.DataFrame:
 
 
 # ============================================================
+# ESTADISTICAS VISUALES
+# ============================================================
+
+def estadisticas_zonas(df: pd.DataFrame) -> Dict:
+    """Indicadores coherentes para acompañar el detalle de zonas."""
+    if df is None or df.empty:
+        return {
+            'zonas': 0, 'heridos': 0, 'fallecidos': 0, 'damnificados': 0,
+            'personas_afectadas': 0, 'promedio_damnificados': 0,
+            'alertas': pd.DataFrame(), 'eventos': pd.DataFrame(),
+        }
+
+    zonas = len(df)
+    heridos = int(pd.to_numeric(df.get('Heridos', 0), errors='coerce').fillna(0).sum())
+    fallecidos = int(pd.to_numeric(df.get('Fallecidos', 0), errors='coerce').fillna(0).sum())
+    damnificados = int(pd.to_numeric(df.get('Damnificados', 0), errors='coerce').fillna(0).sum())
+
+    alertas = (
+        df.assign(**{'Nivel Alerta': df['Nivel Alerta'].fillna('SIN NIVEL').astype(str).str.upper()})
+        .groupby('Nivel Alerta', dropna=False)
+        .agg(**{'Total Zonas': ('ID', 'count'), 'Damnificados': ('Damnificados', 'sum')})
+        .reset_index()
+        .sort_values('Total Zonas', ascending=False)
+    )
+
+    eventos = (
+        df.assign(**{'Tipo Evento': df['Tipo Evento'].fillna('SIN TIPO').astype(str)})
+        .groupby('Tipo Evento', dropna=False)
+        .agg(**{'Total Zonas': ('ID', 'count'), 'Damnificados': ('Damnificados', 'sum')})
+        .reset_index()
+        .sort_values('Total Zonas', ascending=False)
+    )
+
+    return {
+        'zonas': zonas,
+        'heridos': heridos,
+        'fallecidos': fallecidos,
+        'damnificados': damnificados,
+        'personas_afectadas': heridos + fallecidos + damnificados,
+        'promedio_damnificados': round(damnificados / zonas, 1) if zonas else 0,
+        'alertas': alertas,
+        'eventos': eventos,
+    }
+
+# ============================================================
 # RESUMEN GENERAL
 # ============================================================
 
