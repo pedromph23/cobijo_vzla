@@ -1,6 +1,10 @@
 /* ============================================================
    COBIJOVZLA · MAPA (layout y toolbar)
-   ============================================================ */
+   ============================================================
+
+   Este archivo controla únicamente presentación y responsive.
+   No modifica IDs, endpoints ni contratos JavaScript.
+*/
 
 /* ------------------------------------------------------------
    LAYOUT
@@ -50,7 +54,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #e5e5e5;
+    background: var(--bg-soft, #e5e5e5);
 }
 
 .main-map {
@@ -62,7 +66,7 @@
 }
 
 /* ------------------------------------------------------------
-   TOOLBAR (si se usa)
+   TOOLBAR
    ------------------------------------------------------------ */
 .map-toolbar {
     display: flex;
@@ -82,11 +86,17 @@
     border-radius: var(--radius-sm);
     cursor: pointer;
     color: var(--text-primary);
-    transition: background var(--transition-fast);
+    transition: background var(--transition-fast), transform .15s ease;
 }
 
-.btn-toolbar:hover {
-    background: var(--gray-200);
+.btn-toolbar:hover { background: var(--gray-200); }
+.btn-toolbar:active { transform: scale(.97); }
+
+.btn-toolbar:focus-visible,
+.map-action-btn:focus-visible,
+.btn-minimap:focus-visible {
+    outline: 3px solid rgba(199, 109, 92, .45);
+    outline-offset: 2px;
 }
 
 .map-status {
@@ -97,25 +107,19 @@
 
 .pulse-dot {
     color: var(--color-success);
-    animation: pulse 2s infinite;
+    animation: pulse-map 2s infinite;
     font-size: 0.6rem;
 }
 
-@keyframes pulse {
+@keyframes pulse-map {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+    50% { opacity: .3; }
 }
 
 /* ------------------------------------------------------------
-   MODO OSCURO · LOS TILES CAMBIAN A CARTO DARK DESDE main.js
-   ------------------------------------------------------------
-   No se aplica filtro CSS al tile. El filtro anterior invertía
-   también colores del mapa y competía con la capa Carto Dark.
-*/
-
-.leaflet-tile {
-    transition: opacity var(--transition-normal);
-}
+   TILES / TEMA
+   ------------------------------------------------------------ */
+.leaflet-tile { transition: opacity var(--transition-normal); }
 
 /* ------------------------------------------------------------
    MINIMAPA
@@ -168,17 +172,8 @@
     height: calc(100% - 28px);
 }
 
-@media (max-width: 768px) {
-    .minimap-container {
-        width: 120px;
-        height: 90px;
-        bottom: 70px;
-        right: 10px;
-    }
-}
-
 /* ------------------------------------------------------------
-   CONTROLES FLOTANTES DEL MAPA
+   CONTROLES FLOTANTES
    ------------------------------------------------------------ */
 .map-floating-controls {
     position: absolute;
@@ -191,31 +186,81 @@
 }
 
 .map-action-btn {
-    background: var(--bg-card);
+    background: color-mix(in srgb, var(--bg-card) 94%, transparent);
     color: var(--text-primary);
-    border: 2px solid rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     box-shadow: var(--shadow-sm);
-    transition: background var(--transition-fast), transform 0.15s ease;
+    transition: background var(--transition-fast), transform .15s ease, box-shadow .15s ease;
     -webkit-tap-highlight-color: transparent;
+    backdrop-filter: blur(8px);
 }
 
 .map-action-btn:hover {
     background: var(--bg-hover);
+    box-shadow: var(--shadow-md, var(--shadow-sm));
 }
 
-.map-action-btn:active {
-    transform: scale(0.94);
+.map-action-btn:active { transform: scale(.94); }
+
+/* ------------------------------------------------------------
+   REDUCCIÓN DE MOVIMIENTO
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+    .map-layout,
+    .map-action-btn,
+    .btn-toolbar,
+    .leaflet-tile {
+        transition: none;
+    }
+
+    .pulse-dot { animation: none; }
 }
 
+/* ------------------------------------------------------------
+   RESPONSIVE
+   ------------------------------------------------------------ */
 @media (max-width: 768px) {
-    .desktop-only {
-        display: none;
+    .map-layout {
+        min-height: 0;
+        height: calc(100dvh - var(--header-height, 60px));
+    }
+
+    .map-floating-controls {
+        top: max(12px, env(safe-area-inset-top));
+        right: 12px;
+    }
+
+    .map-action-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    .desktop-only { display: none; }
+
+    .minimap-container {
+        width: 120px;
+        height: 90px;
+        bottom: 70px;
+        right: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .map-floating-controls {
+        top: 10px;
+        right: 10px;
+        gap: 6px;
+    }
+
+    .map-action-btn {
+        width: 40px;
+        height: 40px;
     }
 }
