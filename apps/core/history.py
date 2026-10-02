@@ -33,6 +33,7 @@ def _serializar_valor(valor):
 
 def serializar_instancia(obj):
     datos = model_to_dict(obj)
+    datos['id'] = obj.pk
     for nombre, valor in list(datos.items()):
         datos[nombre] = _serializar_valor(valor)
     return datos
