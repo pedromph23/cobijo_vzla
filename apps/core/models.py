@@ -517,7 +517,7 @@ class RegistroVersion(models.Model):
         ('eliminado', 'Eliminado'),
     ]
 
-    fecha_version = models.DateTimeField(auto_now_add=True, db_index=True)
+    fecha_version = models.DateTimeField(default=timezone.now, db_index=True)
     usuario = models.ForeignKey(
         'auth.User',
         on_delete=models.SET_NULL,
