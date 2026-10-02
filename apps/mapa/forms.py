@@ -9,7 +9,7 @@ from django.contrib.gis.geos import Point, GEOSGeometry
 
 from apps.core.models import PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada
 from apps.emergencias.models import Evento
-from apps.core.validators import validar_texto_sin_numeros_ni_especiales, validar_telefono
+from apps.core.validators import validar_telefono
 
 
 # ============================================================
@@ -39,16 +39,11 @@ class PuntoDemandaForm(forms.ModelForm):
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
             'parroquia': forms.Select(attrs={'class': 'form-select'}),
-            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'lng,lat'}),
-            'poblacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1}),
-            'vulnerabilidad': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': 0, 'max': 1}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'lng,lat', 'inputmode': 'decimal'}),
+            'poblacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
+            'vulnerabilidad': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': 0, 'max': 1, 'inputmode': 'decimal'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'maxlength': 2000}),
         }
-
-    def clean_nombre(self):
-        value = self.cleaned_data.get('nombre', '').strip()
-        validar_texto_sin_numeros_ni_especiales(value)
-        return value
 
     def clean_ubicacion(self):
         return _parsear_punto(self.cleaned_data.get('ubicacion'))
@@ -60,24 +55,13 @@ class SitioCandidatoForm(forms.ModelForm):
         fields = ['nombre', 'ubicacion', 'capacidad_maxima', 'costo_apertura', 'costo_operacion', 'tipo_terreno', 'disponible']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
-            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'lng,lat'}),
-            'capacidad_maxima': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'step': 1}),
-            'costo_apertura': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01'}),
-            'costo_operacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01'}),
+            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'lng,lat', 'inputmode': 'decimal'}),
+            'capacidad_maxima': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'step': 1, 'inputmode': 'numeric'}),
+            'costo_apertura': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal'}),
+            'costo_operacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal'}),
             'tipo_terreno': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 50}),
             'disponible': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-
-    def clean_nombre(self):
-        value = self.cleaned_data.get('nombre', '').strip()
-        validar_texto_sin_numeros_ni_especiales(value)
-        return value
-
-    def clean_tipo_terreno(self):
-        value = self.cleaned_data.get('tipo_terreno', '').strip()
-        if value:
-            validar_texto_sin_numeros_ni_especiales(value)
-        return value
 
     def clean_ubicacion(self):
         return _parsear_punto(self.cleaned_data.get('ubicacion'))
@@ -90,19 +74,14 @@ class RefugioExistenteForm(forms.ModelForm):
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
             'direccion': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 300}),
-            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'lng,lat'}),
-            'capacidad_total': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1}),
-            'capacidad_disponible': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1}),
-            'servicios': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'agua, comida, medicina'}),
+            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'lng,lat', 'inputmode': 'decimal'}),
+            'capacidad_total': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
+            'capacidad_disponible': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
+            'servicios': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'agua, comida, medicina', 'maxlength': 500}),
             'operativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'telefono': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'tel', 'autocomplete': 'tel'}),
             'horario': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 100}),
         }
-
-    def clean_nombre(self):
-        value = self.cleaned_data.get('nombre', '').strip()
-        validar_texto_sin_numeros_ni_especiales(value)
-        return value
 
     def clean_telefono(self):
         value = self.cleaned_data.get('telefono', '').strip()
@@ -136,20 +115,15 @@ class ZonaAfectadaForm(forms.ModelForm):
         widgets = {
             'evento': forms.Select(attrs={'class': 'form-select'}),
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'maxlength': 2000}),
             'geom': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'nivel_alerta': forms.Select(attrs={'class': 'form-select'}),
             'fecha_inicio': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'fecha_fin': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
-            'heridos': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1}),
-            'fallecidos': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1}),
-            'damnificados': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1}),
+            'heridos': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
+            'fallecidos': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
+            'damnificados': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
         }
-
-    def clean_nombre(self):
-        value = self.cleaned_data.get('nombre', '').strip()
-        validar_texto_sin_numeros_ni_especiales(value)
-        return value
 
     def clean_geom(self):
         valor = self.cleaned_data.get('geom')
