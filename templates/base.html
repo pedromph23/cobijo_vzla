@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta name="theme-color" content="#eef2f6" id="meta-theme-color">
+    <meta name="theme-color" content="#f2eee7" id="meta-theme-color">
     <title>{% block title %}CobijoVzla{% endblock %}</title>
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
 
@@ -24,12 +24,11 @@
     <link rel="stylesheet" href="{% static 'css/popups.css' %}?v=8">
     <link rel="stylesheet" href="{% static 'css/sidebar.css' %}?v=8">
     <link rel="stylesheet" href="{% static 'css/ui-refactor.css' %}?v=4">
+    <link rel="stylesheet" href="{% static 'css/ui-palette.css' %}?v=1">
 
     <script>
         (() => {
             try {
-                // La versión v2 fuerza el modo claro como valor inicial de esta nueva etapa visual.
-                // A partir de aquí la elección del usuario sí queda persistida.
                 const saved = localStorage.getItem('cobijo-theme-v2');
                 if (saved === 'light' || saved === 'dark') {
                     document.documentElement.setAttribute('data-theme', saved);
@@ -125,7 +124,7 @@
                     ? '<i class="fas fa-sun" aria-hidden="true"></i><span class="theme-label">Tema</span>'
                     : '<i class="fas fa-moon" aria-hidden="true"></i><span class="theme-label">Tema</span>';
             }
-            if (themeMeta) themeMeta.setAttribute('content', isDark ? '#08111f' : '#eef2f6');
+            if (themeMeta) themeMeta.setAttribute('content', isDark ? '#1b1e21' : '#f2eee7');
             try { localStorage.setItem('cobijo-theme-v2', theme); } catch (_) {}
             window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
         };
