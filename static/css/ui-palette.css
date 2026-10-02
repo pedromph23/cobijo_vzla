@@ -47,7 +47,6 @@ main {
   background: transparent !important;
 }
 
-/* Header: soft gradient rather than a flat block. */
 .app-header {
   background: var(--comfort-header) !important;
   color: var(--comfort-text) !important;
@@ -78,7 +77,6 @@ main {
   box-shadow: 0 4px 12px rgba(58,67,62,.08);
 }
 
-/* Keep the institutional logo unchanged and visible in both themes. */
 .app-logo-optimized .logo-mark,
 [data-theme="dark"] .app-logo-optimized .logo-mark {
   background: #fff !important;
@@ -91,7 +89,6 @@ main {
   box-shadow: 0 7px 20px rgba(0,0,0,.32) !important;
 }
 
-/* Surfaces use very subtle two-tone gradients. */
 .sidebar,
 .info-card,
 .report-card,
@@ -161,7 +158,6 @@ main {
   box-shadow: 0 8px 20px rgba(58,67,62,.12) !important;
 }
 
-/* Dark mode: graphite + sage + muted plum. */
 [data-theme="dark"] .main-nav {
   background: linear-gradient(135deg, rgba(35,42,38,.86), rgba(49,40,43,.84)) !important;
   border-color: var(--comfort-border) !important;
@@ -193,7 +189,6 @@ main {
   box-shadow: 0 0 0 3px rgba(145,181,162,.10) !important;
 }
 
-/* Focus remains visible without being visually aggressive. */
 :focus-visible {
   outline: 3px solid rgba(82,123,107,.30) !important;
   outline-offset: 2px;
@@ -211,5 +206,256 @@ main {
   .map-action-btn,
   .btn-toolbar {
     transition: none !important;
+  }
+}
+
+/* ================================================================
+   ADMIN / CRUD / AUTH VISUAL SYSTEM
+   Mantiene los selectores y la lógica existentes; solo normaliza la
+   presentación para que las pantallas internas pertenezcan al mismo
+   sistema visual de CobijoVzla.
+   ================================================================ */
+
+.panel-container,
+.crud-container,
+.login-container {
+  color: var(--comfort-text) !important;
+}
+
+.panel-container {
+  background: transparent !important;
+}
+
+.panel-header,
+.panel-content,
+.mapa-toolbar,
+.reportes-acciones,
+.optimizacion-form,
+.optimizacion-resultado,
+.crud-sidebar,
+.crud-main,
+.crud-table-wrapper,
+.login-card {
+  background: var(--comfort-surface) !important;
+  border-color: var(--comfort-border) !important;
+  box-shadow: var(--comfort-shadow-soft) !important;
+}
+
+.panel-header,
+.crud-main {
+  border-radius: 18px !important;
+}
+
+.panel-header,
+.panel-tabs,
+.crud-header {
+  gap: 1rem;
+}
+
+.panel-icon.admin,
+.user-badge.admin,
+.tab.active,
+.btn-ejecutar,
+.btn-primary,
+.crud-search button {
+  background: linear-gradient(135deg, var(--comfort-green-strong), var(--comfort-green)) !important;
+  color: #fff !important;
+}
+
+.panel-icon.gestor,
+.user-badge.gestor {
+  background: linear-gradient(135deg, var(--comfort-green-strong), var(--comfort-coral)) !important;
+  color: #fff !important;
+}
+
+.panel-icon.admin,
+.panel-icon.gestor {
+  box-shadow: 0 10px 24px rgba(58,67,62,.14) !important;
+}
+
+.tab,
+.crud-card,
+.accion-item,
+.btn-refresh,
+.btn-export,
+.btn-clear,
+.search-wrapper input,
+.form-control,
+.mapa-toolbar {
+  background: var(--comfort-surface) !important;
+  color: var(--comfort-text) !important;
+  border-color: var(--comfort-border) !important;
+}
+
+.tab:hover,
+.crud-card:hover,
+.accion-item:hover,
+.btn-refresh:hover,
+.btn-export:hover {
+  background: var(--comfort-soft) !important;
+  border-color: rgba(82,123,107,.28) !important;
+}
+
+.crud-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--comfort-shadow-soft) !important;
+}
+
+.crud-card i,
+.crud-header h1 i,
+.section-title i,
+.reportes-acciones h3 i,
+.optimizacion-form h3 i,
+.optimizacion-resultado h3 i {
+  color: var(--comfort-green) !important;
+}
+
+.crud-menu-item.active {
+  background: linear-gradient(135deg, var(--comfort-green-strong), var(--comfort-green)) !important;
+  color: #fff !important;
+}
+
+.crud-search button,
+.btn-primary,
+.btn-ejecutar,
+.btn-login {
+  border: 0 !important;
+  box-shadow: 0 8px 18px rgba(63,102,87,.18) !important;
+}
+
+.crud-search button:hover,
+.btn-primary:hover,
+.btn-ejecutar:hover,
+.btn-login:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.crud-table th {
+  background: var(--comfort-soft) !important;
+  color: var(--comfort-muted) !important;
+}
+
+.crud-table td {
+  border-top-color: var(--comfort-border) !important;
+  color: var(--comfort-text) !important;
+}
+
+.crud-table tr:hover td {
+  background: rgba(82,123,107,.06) !important;
+}
+
+.crud-pagination a,
+.btn-volver {
+  color: var(--comfort-green-strong) !important;
+}
+
+.crud-alert-success {
+  background: rgba(82,123,107,.13) !important;
+  color: var(--comfort-green-strong) !important;
+  border: 1px solid rgba(82,123,107,.20) !important;
+}
+
+.crud-alert-error,
+.alert-danger {
+  background: rgba(199,109,92,.12) !important;
+  color: #9b4e40 !important;
+  border-color: rgba(199,109,92,.24) !important;
+}
+
+.crud-alert-warning,
+.alert-warning {
+  background: rgba(210,170,91,.14) !important;
+  color: #7c6329 !important;
+  border-color: rgba(210,170,91,.24) !important;
+}
+
+[data-theme="dark"] .crud-alert-error,
+[data-theme="dark"] .alert-danger {
+  color: #f0b0a2 !important;
+}
+
+[data-theme="dark"] .crud-alert-warning,
+[data-theme="dark"] .alert-warning {
+  color: #e7cf8d !important;
+}
+
+[data-theme="dark"] .crud-table tr:hover td {
+  background: rgba(145,181,162,.07) !important;
+}
+
+[data-theme="dark"] .panel-header,
+[data-theme="dark"] .panel-content,
+[data-theme="dark"] .crud-sidebar,
+[data-theme="dark"] .crud-main,
+[data-theme="dark"] .login-card {
+  background: var(--comfort-surface) !important;
+}
+
+/* Login: reduce the old saturated blue and reuse the same green/coral identity. */
+.login-container {
+  background: transparent !important;
+}
+
+.login-header {
+  background: linear-gradient(135deg, var(--comfort-green-strong), var(--comfort-coral)) !important;
+}
+
+.login-icon {
+  background: rgba(255,255,255,.18) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.10);
+}
+
+.form-control:focus {
+  border-color: rgba(82,123,107,.45) !important;
+  box-shadow: 0 0 0 3px rgba(82,123,107,.11) !important;
+}
+
+.btn-toggle-password {
+  color: var(--comfort-muted) !important;
+}
+
+.login-footer {
+  background: var(--comfort-soft) !important;
+  border-top-color: var(--comfort-border) !important;
+}
+
+@media (max-width: 900px) {
+  .panel-container,
+  .crud-container {
+    padding: .85rem !important;
+  }
+
+  .panel-header {
+    padding: 1.1rem !important;
+  }
+
+  .panel-tabs .tab {
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 600px) {
+  .panel-header-left,
+  .panel-header-right {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .panel-header-left {
+    text-align: center;
+  }
+
+  .crud-main,
+  .tab-content {
+    padding: 1rem !important;
+  }
+
+  .crud-header {
+    align-items: stretch;
+  }
+
+  .crud-header .btn-crud {
+    justify-content: center;
   }
 }
