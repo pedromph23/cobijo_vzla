@@ -355,6 +355,57 @@ def estadisticas_zonas(df: pd.DataFrame) -> Dict:
         'eventos': eventos,
     }
 
+
+def estadisticas_generales(desde=None, hasta=None, as_of=None) -> Dict:
+    """Indicadores ejecutivos coherentes para el reporte general."""
+    r = resumen_general(desde=desde, hasta=hasta, as_of=as_of)
+    zonas = int(r.get('zonas', 0) or 0)
+    damnificados = int(r.get('damnificados', 0) or 0)
+    heridos = int(r.get('heridos', 0) or 0)
+    fallecidos = int(r.get('fallecidos', 0) or 0)
+    personas = heridos + fallecidos + damnificados
+
+    refugios_df = df_refugios(as_of=as_of)
+    demandas_df = df_demandas(as_of=as_of)
+    eventos_df = df_eventos(desde=desde, hasta=hasta, as_of=as_of)
+
+    capacidad_total = int(pd.to_numeric(
+        refugios_df.get('Capacidad Total', pd.Series(dtype=float)), errors='coerce'
+    ).fillna(0).sum()) if not refugios_df.empty else 0
+    capacidad_disponible = int(pd.to_numeric(
+        refugios_df.get('Capacidad Disponible', pd.Series(dtype=float)), errors='coerce'
+    ).fillna(0).sum()) if not refugios_df.empty else 0
+    capacidad_ocupada = max(capacidad_total - capacidad_disponible, 0)
+    ocupacion = round((capacidad_ocupada / capacidad_total) * 100, 1) if capacidad_total else 0
+
+    demanda_poblacion = int(pd.to_numeric(
+        demandas_df.get('Población', pd.Series(dtype=float)), errors='coerce'
+    ).fillna(0).sum()) if not demandas_df.empty else 0
+
+    vulnerabilidad_media = round(float(pd.to_numeric(
+        demandas_df.get('Vulnerabilidad', pd.Series(dtype=float)), errors='coerce'
+    ).fillna(0).mean()), 3) if not demandas_df.empty else 0
+
+    operativos = int((refugios_df.get('Operativo', pd.Series(dtype=str)) == 'Sí').sum()) if not refugios_df.empty else 0
+    llenos = int((pd.to_numeric(
+        refugios_df.get('Capacidad Disponible', pd.Series(dtype=float)), errors='coerce'
+    ).fillna(0) <= 0).sum()) if not refugios_df.empty else 0
+
+    return {
+        **r,
+        'personas_afectadas': personas,
+        'promedio_afectados_por_zona': round(personas / zonas, 1) if zonas else 0,
+        'capacidad_total_refugios': capacidad_total,
+        'capacidad_disponible_refugios': capacidad_disponible,
+        'capacidad_ocupada_refugios': capacidad_ocupada,
+        'ocupacion_refugios_pct': ocupacion,
+        'refugios_operativos': operativos,
+        'refugios_llenos': llenos,
+        'poblacion_demanda': demanda_poblacion,
+        'vulnerabilidad_media_demanda': vulnerabilidad_media,
+        'eventos_activos': int((eventos_df.get('Activo', pd.Series(dtype=str)) == 'Sí').sum()) if not eventos_df.empty else 0,
+    }
+
 # ============================================================
 # RESUMEN GENERAL
 # ============================================================
