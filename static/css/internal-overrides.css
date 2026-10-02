@@ -278,3 +278,66 @@
 @media (prefers-reduced-motion: reduce) {
     .checkbox-item, .centro-item, .crud-menu-item, .crud-table tbody tr, .btn-crud { transition: none; }
 }
+
+/* ============================================================
+   Reportes: filtros y salida profesional
+   ============================================================ */
+.reporte-filtros {
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    border: 1px solid var(--comfort-border);
+    border-radius: 16px;
+    background: var(--comfort-surface);
+    box-shadow: var(--comfort-shadow-soft);
+}
+.reporte-filtros-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.reporte-filtros-header h3 { margin: 0 0 .35rem; }
+.reporte-filtros-header p { margin: 0; opacity: .75; }
+.reporte-filtros-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: .9rem;
+}
+.reporte-filtros-grid label { display: grid; gap: .4rem; font-weight: 600; }
+.reporte-filtros-grid input {
+    width: 100%;
+    min-height: 42px;
+    padding: .55rem .7rem;
+    border: 1px solid var(--comfort-border);
+    border-radius: 10px;
+    background: var(--comfort-surface);
+    color: var(--comfort-text);
+}
+.reporte-periodo-ayuda {
+    margin-top: .9rem;
+    padding: .7rem .85rem;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--comfort-border) 35%, transparent);
+    font-size: .9rem;
+}
+.btn-filtro-limpiar {
+    border: 1px solid var(--comfort-border);
+    border-radius: 10px;
+    padding: .55rem .8rem;
+    background: transparent;
+    color: var(--comfort-text);
+    cursor: pointer;
+}
+.mensaje-resultado { margin-top: 1rem; padding: .85rem 1rem; border-radius: 10px; }
+.mensaje-resultado.loading { background: #eee8dc; }
+.mensaje-resultado.success { background: #e3f1e7; }
+.mensaje-resultado.error { background: #f7e3e3; }
+
+@media (max-width: 800px) {
+    .reporte-filtros-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+}
+@media (max-width: 520px) {
+    .reporte-filtros-header { flex-direction: column; }
+    .reporte-filtros-grid { grid-template-columns: 1fr; }
+}
