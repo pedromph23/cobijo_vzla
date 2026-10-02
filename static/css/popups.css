@@ -1,26 +1,24 @@
 /* ============================================================
    COBIJOVZLA · POPUPS DE LEAFLET
-   Capa visual: conserva clases existentes y no modifica la lógica.
+   ============================================================
+   Capa exclusivamente visual. Conserva clases existentes,
+   IDs, eventos y contratos JavaScript.
    ============================================================ */
 
 .leaflet-popup-content-wrapper {
     background: var(--comfort-surface, var(--bg-card));
     color: var(--comfort-text, var(--text-primary));
+    border: 1px solid var(--comfort-border, var(--border-color));
     border-radius: 18px;
     box-shadow: var(--comfort-shadow, var(--shadow-lg));
     padding: 0;
     overflow: hidden;
-    border: 1px solid var(--comfort-border, var(--border-color));
     backdrop-filter: blur(14px);
 }
 
 .leaflet-popup-tip {
-    background: #f4f6f1;
+    background: var(--comfort-surface, var(--bg-card));
     box-shadow: 1px 1px 0 var(--comfort-border, var(--border-color));
-}
-
-[data-theme="dark"] .leaflet-popup-tip {
-    background: #292d2a;
 }
 
 .leaflet-popup-content {
@@ -31,7 +29,7 @@
     color: var(--comfort-text, var(--text-primary));
 }
 
-/* Leaflet close button: larger hit area and softer visual weight. */
+/* Botón de cierre: área táctil cómoda y contraste estable en ambos temas. */
 .leaflet-popup-close-button {
     width: 34px !important;
     height: 34px !important;
@@ -40,28 +38,26 @@
     display: flex !important;
     align-items: center;
     justify-content: center;
+    border: 1px solid var(--comfort-border, var(--border-color)) !important;
     border-radius: 50%;
     color: var(--comfort-muted, var(--text-secondary)) !important;
-    background: rgba(255,255,255,.55) !important;
+    background: var(--comfort-soft, var(--bg-hover)) !important;
     font-size: 21px !important;
     line-height: 1 !important;
-    transition: background .18s ease, color .18s ease, transform .18s ease;
+    opacity: .95;
+    transition: background .18s ease, color .18s ease, border-color .18s ease, transform .18s ease;
 }
 
 .leaflet-popup-close-button:hover,
 .leaflet-popup-close-button:focus-visible {
     color: var(--comfort-text, var(--text-primary)) !important;
-    background: rgba(82,123,107,.12) !important;
+    background: var(--comfort-green-soft, var(--bg-card-hover)) !important;
+    border-color: var(--comfort-green, var(--color-primary)) !important;
     transform: scale(1.04);
 }
 
-[data-theme="dark"] .leaflet-popup-close-button {
-    background: rgba(255,255,255,.08) !important;
-    color: var(--comfort-muted) !important;
-}
-
 /* ------------------------------------------------------------
-   TARJETA DE POPUP
+   TARJETA DEL POPUP
    ------------------------------------------------------------ */
 .popup-card {
     padding: 1.05rem;
@@ -96,7 +92,7 @@
     color: #fff;
     font-size: .9rem;
     flex: 0 0 34px;
-    box-shadow: 0 7px 16px rgba(58,67,62,.13);
+    box-shadow: 0 7px 16px rgba(58, 67, 62, .13);
 }
 
 .popup-icon.refugio {
@@ -109,7 +105,6 @@
 
 .popup-icon.demanda {
     background: linear-gradient(135deg, #c59a50, #d7b875);
-    color: #fff;
 }
 
 .popup-body {
@@ -134,7 +129,7 @@
     width: 20px;
     margin-top: 1px;
     text-align: center;
-    color: var(--comfort-green, var(--text-secondary));
+    color: var(--comfort-green, var(--color-primary));
     flex: 0 0 20px;
 }
 
@@ -152,17 +147,17 @@
 }
 
 .popup-btn {
-    min-height: 38px;
+    min-height: 40px;
     flex: 1;
     padding: .55rem .7rem;
     border: 1px solid transparent;
     border-radius: 10px;
     cursor: pointer;
+    font-family: inherit;
     font-size: .79rem;
     line-height: 1.2;
     font-weight: 700;
     transition: transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
-    font-family: inherit;
 }
 
 .popup-btn:hover {
@@ -170,18 +165,18 @@
 }
 
 .popup-btn:focus-visible {
-    outline: 3px solid rgba(82,123,107,.22);
+    outline: 3px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
     outline-offset: 2px;
 }
 
 .popup-btn.como-llegar {
     background: linear-gradient(135deg, #527b6b, #6f9583);
     color: #fff;
-    box-shadow: 0 7px 16px rgba(63,102,87,.16);
+    box-shadow: 0 7px 16px rgba(63, 102, 87, .16);
 }
 
 .popup-btn.como-llegar:hover {
-    box-shadow: 0 9px 19px rgba(63,102,87,.21);
+    box-shadow: 0 9px 19px rgba(63, 102, 87, .21);
 }
 
 .popup-btn.mas-info {
@@ -191,26 +186,24 @@
 }
 
 .popup-btn.mas-info:hover {
-    border-color: rgba(82,123,107,.25);
-}
-
-[data-theme="dark"] .popup-btn.mas-info {
-    background: linear-gradient(135deg, rgba(71,91,80,.55), rgba(83,61,65,.45));
-    color: var(--comfort-text);
+    background: var(--comfort-green-soft, var(--bg-card-hover));
+    border-color: color-mix(in srgb, var(--comfort-green, var(--color-primary)) 30%, var(--border-color));
 }
 
 [data-theme="dark"] .popup-btn.como-llegar {
-    background: linear-gradient(135deg, #6f9985, #8db29e);
-    color: #17201b;
+    background: linear-gradient(135deg, #78a28e, #91b7a2);
+    color: #152019;
 }
 
-/* Keep long addresses/descriptions inside the popup. */
 .popup-row span,
 .popup-body p {
     min-width: 0;
     overflow-wrap: anywhere;
 }
 
+/* ------------------------------------------------------------
+   RESPONSIVE
+   ------------------------------------------------------------ */
 @media (max-width: 480px) {
     .leaflet-popup-content {
         width: min(280px, calc(100vw - 64px)) !important;
