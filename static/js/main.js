@@ -22,11 +22,13 @@
             return null;
         }
 
-        // Si otro módulo ya inicializó el contenedor, reutilizamos el mapa.
-        // Esto evita crear una segunda instancia Leaflet y no rompe al llamador.
+        // Si este módulo ya inicializó el contenedor, reutilizamos el mapa.
+        // Evita instancias Leaflet duplicadas al volver a ejecutar una vista.
         if (container._cobijoMap) {
             return container._cobijoMap;
         }
+
+        // Si otro módulo inicializó el mapa, no intentamos tomar control de él.
         if (container._leaflet_id) {
             console.warn(`[main.js] El elemento #${elementId} ya contiene un mapa ajeno a main.js`);
             return null;
@@ -61,7 +63,7 @@
 
         function aplicarCapaBase(tema) {
             const capa = tema === 'dark' ? capaOscura : capaEstandar;
-            const otraCapa = capa === capaOscura ? capaEstandar : capaOscura;
+            const otraCapa = tema === 'dark' ? capaEstandar : capaOscura;
 
             if (!map.hasLayer(capa)) capa.addTo(map);
             if (map.hasLayer(otraCapa)) map.removeLayer(otraCapa);
@@ -70,12 +72,12 @@
         aplicarCapaBase(document.documentElement.getAttribute('data-theme') || 'light');
 
         const onThemeChanged = function (event) {
-            aplicarCapaBase(event.detail && event.detail.theme);
+            const tema = event && event.detail ? event.detail.theme : 'light';
+            aplicarCapaBase(tema);
         };
         window.addEventListener('themeChanged', onThemeChanged);
 
-        // Guardamos referencias para que una página que destruya el mapa pueda
-        // limpiar correctamente el listener sin depender de variables globales.
+        // Referencias privadas para permitir destrucción limpia del mapa.
         map._capaEstandar = capaEstandar;
         map._capaOscura = capaOscura;
         map._cobijoThemeListener = onThemeChanged;
@@ -83,6 +85,30 @@
         container._cobijoMap = map;
 
         return map;
+    }
+
+    /**
+     * Destruye un mapa creado por initMap y libera su listener de tema.
+     * No intenta destruir mapas creados por otros módulos.
+     */
+    function destroyMap(map) {
+        if (!map || !map._cobijoMapContainer) return false;
+
+        const container = map._cobijoMapContainer;
+
+        if (map._cobijoThemeListener) {
+            window.removeEventListener('themeChanged', map._cobijoThemeListener);
+        }
+
+        if (typeof map.remove === 'function') {
+            map.remove();
+        }
+
+        if (container._cobijoMap === map) {
+            delete container._cobijoMap;
+        }
+
+        return true;
     }
 
     function addHeatLayer(map, data, options) {
@@ -201,17 +227,28 @@
         }
 
         let timer = null;
-        return function () {
+        const wait = Math.max(0, Number(delay) || 0);
+
+        function debounced() {
             const args = arguments;
             const ctx = this;
             clearTimeout(timer);
             timer = setTimeout(function () {
+                timer = null;
                 fn.apply(ctx, args);
-            }, Math.max(0, Number(delay) || 0));
+            }, wait);
+        }
+
+        debounced.cancel = function () {
+            clearTimeout(timer);
+            timer = null;
         };
+
+        return debounced;
     }
 
     window.initMap = initMap;
+    window.destroyMap = destroyMap;
     window.addHeatLayer = addHeatLayer;
     window.toggleHeatLayer = toggleHeatLayer;
     window.formatNumber = formatNumber;
