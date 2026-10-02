@@ -2,10 +2,14 @@
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point
-from django.core.exceptions import ValidationError
 
 from apps.core.models import PuntoDemanda, RefugioExistente
-from apps.mapa.forms import PuntoDemandaForm, SitioCandidatoForm, RefugioExistenteForm, ZonaAfectadaForm
+from apps.mapa.forms import (
+    PuntoDemandaForm,
+    SitioCandidatoForm,
+    RefugioExistenteForm,
+    ZonaAfectadaForm,
+)
 
 User = get_user_model()
 
@@ -34,8 +38,13 @@ class PermisosTest(TestCase):
 
 class ServiciosTest(TestCase):
     def setUp(self):
-        RefugioExistente.objects.create(nombre='Refugio Test', direccion='Calle 1', ubicacion=Point(-66.9, 10.5), capacidad_total=100, capacidad_disponible=40, operativo=True)
-        PuntoDemanda.objects.create(nombre='Punto Test', ubicacion=Point(-66.8, 10.4), poblacion=500)
+        RefugioExistente.objects.create(
+            nombre='Refugio Test', direccion='Calle 1', ubicacion=Point(-66.9, 10.5),
+            capacidad_total=100, capacidad_disponible=40, operativo=True,
+        )
+        PuntoDemanda.objects.create(
+            nombre='Punto Test', ubicacion=Point(-66.8, 10.4), poblacion=500,
+        )
 
     def test_estadisticas_estructura(self):
         from apps.mapa.services import obtener_estadisticas
@@ -55,7 +64,11 @@ class ServiciosTest(TestCase):
     def test_datos_mapa_respeta_limite(self):
         from apps.mapa.services import obtener_datos_mapa
         for i in range(20):
-            RefugioExistente.objects.create(nombre=f'Refugio {i}', direccion=f'Calle {i}', ubicacion=Point(-66.9 + i * 0.01, 10.5), capacidad_total=50, capacidad_disponible=25)
+            RefugioExistente.objects.create(
+                nombre=f'Refugio {i}', direccion=f'Calle {i}',
+                ubicacion=Point(-66.9 + i * 0.01, 10.5),
+                capacidad_total=50, capacidad_disponible=25,
+            )
         datos = obtener_datos_mapa(limite_por_capa=5)
         self.assertLessEqual(len(datos['refugios']), 5)
 
@@ -82,24 +95,120 @@ class FormsTest(TestCase):
         with self.assertRaises(Exception):
             _parsear_punto('abc')
 
-    def test_nombre_no_acepta_numeros(self):
-        form = PuntoDemandaForm(data={'nombre': 'Sector 23', 'ubicacion': '-66.9,10.5', 'poblacion': 10, 'vulnerabilidad': 0.5, 'descripcion': ''})
-        self.assertFalse(form.is_valid())
-        self.assertIn('nombre', form.errors)
+    def test_nombre_de_punto_acepta_numero_si_es_parte_del_nombre(self):
+        """Los topónimos pueden contener números: Sector 23, 5 de Julio, etc."""
+        form = PuntoDemandaForm(data={
+            'nombre': 'Sector 23',
+            'ubicacion': '-66.9,10.5',
+            'poblacion': 10,
+            'vulnerabilidad': 0.5,
+            'descripcion': '',
+        })
+        self.assertNotIn('nombre', form.errors)
 
     def test_nombre_acepta_acentos(self):
-        form = PuntoDemandaForm(data={'nombre': 'José Pérez', 'ubicacion': '-66.9,10.5', 'poblacion': 10, 'vulnerabilidad': 0.5, 'descripcion': ''})
+        form = PuntoDemandaForm(data={
+            'nombre': 'José Pérez',
+            'ubicacion': '-66.9,10.5',
+            'poblacion': 10,
+            'vulnerabilidad': 0.5,
+            'descripcion': '',
+        })
         self.assertNotIn('nombre', form.errors)
 
     def test_telefono_rechaza_letras(self):
-        form = RefugioExistenteForm(data={'nombre': 'Refugio Central', 'direccion': 'Calle Central', 'ubicacion': '-66.9,10.5', 'capacidad_total': 10, 'capacidad_disponible': 5, 'servicios': '', 'operativo': True, 'telefono': 'abc123', 'horario': ''})
+        form = RefugioExistenteForm(data={
+            'nombre': 'Refugio Central', 'direccion': 'Calle Central',
+            'ubicacion': '-66.9,10.5', 'capacidad_total': 10,
+            'capacidad_disponible': 5, 'servicios': '', 'operativo': True,
+            'telefono': 'abc123', 'horario': '',
+        })
         self.assertFalse(form.is_valid())
         self.assertIn('telefono', form.errors)
 
     def test_capacidad_disponible_no_supera_total(self):
-        form = RefugioExistenteForm(data={'nombre': 'Refugio Central', 'direccion': 'Calle Central', 'ubicacion': '-66.9,10.5', 'capacidad_total': 10, 'capacidad_disponible': 20, 'servicios': '', 'operativo': True, 'telefono': '', 'horario': ''})
+        form = RefugioExistenteForm(data={
+            'nombre': 'Refugio Central', 'direccion': 'Calle Central',
+            'ubicacion': '-66.9,10.5', 'capacidad_total': 10,
+            'capacidad_disponible': 20, 'servicios': '', 'operativo': True,
+            'telefono': '', 'horario': '',
+        })
         self.assertFalse(form.is_valid())
         self.assertIn('capacidad_disponible', form.errors)
+
+    def test_poblacion_no_acepta_valor_negativo(self):
+        form = PuntoDemandaForm(data={
+            'nombre': 'Sector Central', 'ubicacion': '-66.9,10.5',
+            'poblacion': -1, 'vulnerabilidad': 0.5, 'descripcion': '',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('poblacion', form.errors)
+
+    def test_vulnerabilidad_debe_estar_entre_cero_y_uno(self):
+        form = PuntoDemandaForm(data={
+            'nombre': 'Sector Central', 'ubicacion': '-66.9,10.5',
+            'poblacion': 10, 'vulnerabilidad': 1.5, 'descripcion': '',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('vulnerabilidad', form.errors)
+
+    def test_capacidad_total_no_acepta_valor_negativo(self):
+        form = RefugioExistenteForm(data={
+            'nombre': 'Refugio Central', 'direccion': 'Calle Central',
+            'ubicacion': '-66.9,10.5', 'capacidad_total': -1,
+            'capacidad_disponible': 0, 'servicios': '', 'operativo': True,
+            'telefono': '', 'horario': '',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('capacidad_total', form.errors)
+
+    def test_capacidad_disponible_no_acepta_valor_negativo(self):
+        form = RefugioExistenteForm(data={
+            'nombre': 'Refugio Central', 'direccion': 'Calle Central',
+            'ubicacion': '-66.9,10.5', 'capacidad_total': 10,
+            'capacidad_disponible': -1, 'servicios': '', 'operativo': True,
+            'telefono': '', 'horario': '',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('capacidad_disponible', form.errors)
+
+    def test_sitio_candidato_rechaza_capacidad_cero(self):
+        form = SitioCandidatoForm(data={
+            'nombre': 'Sitio 5 de Julio', 'ubicacion': '-66.9,10.5',
+            'capacidad_maxima': 0, 'costo_apertura': 0,
+            'costo_operacion': 0, 'tipo_terreno': 'Urbano', 'disponible': True,
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('capacidad_maxima', form.errors)
+
+    def test_sitio_candidato_rechaza_costos_negativos(self):
+        form = SitioCandidatoForm(data={
+            'nombre': 'Sitio Central', 'ubicacion': '-66.9,10.5',
+            'capacidad_maxima': 10, 'costo_apertura': -1,
+            'costo_operacion': -5, 'tipo_terreno': 'Urbano', 'disponible': True,
+        })
+        self.assertFalse(form.is_valid())
+        self.assertTrue({'costo_apertura', 'costo_operacion'} & set(form.errors))
+
+    def test_zona_afectada_rechaza_fecha_fin_anterior(self):
+        form = ZonaAfectadaForm(data={
+            'nombre': 'Zona 23', 'descripcion': '',
+            'geom': 'POINT (-66.9 10.5)', 'nivel_alerta': 'ALTA',
+            'fecha_inicio': '2026-10-02T12:00',
+            'fecha_fin': '2026-10-02T11:00',
+            'heridos': 0, 'fallecidos': 0, 'damnificados': 0,
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('fecha_fin', form.errors)
+
+    def test_zona_afectada_rechaza_geometria_invalida(self):
+        form = ZonaAfectadaForm(data={
+            'nombre': 'Zona Central', 'descripcion': '', 'geom': 'geometria-invalida',
+            'nivel_alerta': 'ALTA', 'fecha_inicio': '', 'fecha_fin': '',
+            'heridos': 0, 'fallecidos': 0, 'damnificados': 0,
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('geom', form.errors)
 
 
 class APITest(TestCase):
