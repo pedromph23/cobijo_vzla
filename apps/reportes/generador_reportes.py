@@ -226,6 +226,30 @@ def _formatear_excel(ruta: str, titulo: str, desde=None, hasta=None, as_of=None)
         ws.oddHeader.right.text = rango
     wb.save(ruta)
 
+
+def _crear_grafico_barras(df, categoria, valor, titulo, ruta_salida, max_items=8):
+    """Crea un gráfico PNG compacto para informes PDF."""
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        datos = df[[categoria, valor]].copy()
+        datos[valor] = pd.to_numeric(datos[valor], errors='coerce').fillna(0)
+        datos = datos.sort_values(valor, ascending=False).head(max_items)
+        if datos.empty:
+            return None
+        fig, ax = plt.subplots(figsize=(7.2, 3.1))
+        ax.barh(datos[categoria].astype(str).iloc[::-1], datos[valor].iloc[::-1])
+        ax.set_title(titulo, fontsize=11, pad=10)
+        ax.grid(axis='x', alpha=0.2)
+        fig.tight_layout()
+        fig.savefig(ruta_salida, dpi=150, bbox_inches='tight')
+        plt.close(fig)
+        return ruta_salida
+    except Exception as exc:
+        logger.warning('No se pudo crear gráfico del reporte: %s', exc)
+        return None
+
 # ============================================================
 # PDF
 # ============================================================
@@ -262,7 +286,7 @@ def generar_pdf_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optional[
     """Genera PDF de zonas afectadas en formato landscape."""
     from reportlab.lib.pagesizes import letter, landscape
     from reportlab.platypus import (
-        SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
+        SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image,
     )
 
     df = services.df_zonas_afectadas(desde=desde, hasta=hasta, as_of=as_of)
@@ -352,6 +376,11 @@ def generar_pdf_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optional[
         ]))
         elementos.append(tabla_res)
 
+        grafico = _crear_grafico_barras(stats['alertas'].rename(columns={'Nivel Alerta': 'Nivel', 'Total Zonas': 'Zonas'}), 'Nivel', 'Zonas', 'Zonas por nivel de alerta', os.path.join(_reportes_dir(), '_grafico_alertas.png'))
+        if grafico:
+            elementos.append(Spacer(1, 18))
+            elementos.append(Image(grafico, width=500, height=215))
+
         def _pie_pagina(canvas, doc):
             canvas.saveState()
             canvas.setFont('Helvetica', 7)
@@ -371,10 +400,10 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None, as_of=None) -> Op
     """Genera PDF con estadísticas generales."""
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import (
-        SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
+        SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image,
     )
 
-    r = services.resumen_general(desde=desde, hasta=hasta, as_of=as_of)
+    r = services.estadisticas_generales(desde=desde, hasta=hasta, as_of=as_of)
     if not r or not any(r.values()):
         logger.info("Sin datos para estadísticas generales")
         return None
@@ -475,6 +504,12 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None, as_of=None) -> Op
             ('FONTSIZE', (0, 0), (-1, -1), 8),
         ]))
         elementos.append(tabla_est)
+
+        if not df_estados.empty and 'Damnificados' in df_estados.columns:
+            grafico = _crear_grafico_barras(df_estados.rename(columns={'Estado': 'Territorio'}), 'Territorio', 'Damnificados', 'Damnificados por estado (principales 8)', os.path.join(_reportes_dir(), '_grafico_estados.png'))
+            if grafico:
+                elementos.append(Spacer(1, 20))
+                elementos.append(Image(grafico, width=500, height=215))
 
         def _pie_pagina(canvas, doc):
             canvas.saveState()
