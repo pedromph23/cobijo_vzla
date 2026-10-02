@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="{% static 'css/popups.css' %}?v=8">
     <link rel="stylesheet" href="{% static 'css/sidebar.css' %}?v=8">
     <link rel="stylesheet" href="{% static 'css/ui-refactor.css' %}?v=4">
-    <link rel="stylesheet" href="{% static 'css/ui-palette.css' %}?v=1">
+    <link rel="stylesheet" href="{% static 'css/ui-palette.css' %}?v=2">
 
     <script>
         (() => {
@@ -65,16 +65,22 @@
             </div>
 
             <nav class="main-nav" role="navigation" aria-label="Navegación principal">
-                <a href="{% url 'mapa_publico' %}" class="nav-link active" aria-current="page">
+                <a href="{% url 'mapa_publico' %}"
+                   class="nav-link{% if request.resolver_match.url_name == 'mapa_publico' %} active{% endif %}"
+                   {% if request.resolver_match.url_name == 'mapa_publico' %}aria-current="page"{% endif %}>
                     <i class="fas fa-map-marked-alt" aria-hidden="true"></i><span class="nav-label">Mapa</span>
                 </a>
                 {% if user.is_authenticated %}
                     {% if user.is_superuser or user.is_staff %}
-                        <a href="{% url 'panel_admin' %}" class="nav-link">
+                        <a href="{% url 'panel_admin' %}"
+                           class="nav-link{% if request.resolver_match.url_name == 'panel_admin' %} active{% endif %}"
+                           {% if request.resolver_match.url_name == 'panel_admin' %}aria-current="page"{% endif %}>
                             <i class="fas fa-user-shield" aria-hidden="true"></i><span class="nav-label">Admin</span>
                         </a>
                     {% else %}
-                        <a href="{% url 'panel_gestor' %}" class="nav-link">
+                        <a href="{% url 'panel_gestor' %}"
+                           class="nav-link{% if request.resolver_match.url_name == 'panel_gestor' %} active{% endif %}"
+                           {% if request.resolver_match.url_name == 'panel_gestor' %}aria-current="page"{% endif %}>
                             <i class="fas fa-user-tie" aria-hidden="true"></i><span class="nav-label">Panel</span>
                         </a>
                     {% endif %}
@@ -85,7 +91,9 @@
                         </button>
                     </form>
                 {% else %}
-                    <a href="{% url 'login' %}" class="nav-link">
+                    <a href="{% url 'login' %}"
+                       class="nav-link{% if request.resolver_match.url_name == 'login' %} active{% endif %}"
+                       {% if request.resolver_match.url_name == 'login' %}aria-current="page"{% endif %}>
                         <i class="fas fa-sign-in-alt" aria-hidden="true"></i><span class="nav-label">Entrar</span>
                     </a>
                 {% endif %}
@@ -105,7 +113,7 @@
     <script src="{% static 'js/leaflet.js' %}"></script>
     <script src="{% static 'js/leaflet.markercluster.js' %}"></script>
     <script src="{% static 'js/leaflet.heat.js' %}"></script>
-    <script src="{% static 'js/main.js' %}?v=8"></script>
+    <script src="{% static 'js/main.js' %}?v=9"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
