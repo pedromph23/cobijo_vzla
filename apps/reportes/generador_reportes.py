@@ -238,9 +238,9 @@ def _estilos_pdf():
 def _colores_pdf():
     from reportlab.lib import colors
     return {
-        'azul': colors.HexColor('#0066cc'),
-        'naranja': colors.HexColor('#ff6600'),
-        'verde': colors.HexColor('#28a745'),
+        'azul': colors.HexColor('#496A72'),
+        'naranja': colors.HexColor('#B9785C'),
+        'verde': colors.HexColor('#6E927A'),
         'gris': colors.grey,
         'beige': colors.beige,
         'blanco': colors.white,
@@ -270,6 +270,11 @@ def generar_pdf_zonas_afectadas(desde=None, hasta=None) -> Optional[str]:
             Paragraph('Reporte de Zonas Afectadas', styles['titulo']),
             Paragraph(
                 f'Generado: {timezone.localtime().strftime("%d/%m/%Y %H:%M")}',
+                styles['normal'],
+            ),
+            Paragraph(
+                'Período: ' + (timezone.localtime(desde).strftime('%d/%m/%Y %H:%M') if desde else 'inicio') +
+                ' → ' + (timezone.localtime(hasta).strftime('%d/%m/%Y %H:%M') if hasta else 'actualidad'),
                 styles['normal'],
             ),
             Spacer(1, 20),
@@ -359,7 +364,12 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None) -> Optional[str]:
         elementos = [
             Paragraph('Reporte Estadístico General', styles['titulo']),
             Paragraph(
-                f'Generado: {datetime.now().strftime("%Y-%m-%d %H:%M")}',
+                f'Generado: {timezone.localtime().strftime("%d/%m/%Y %H:%M")}',
+                styles['normal'],
+            ),
+            Paragraph(
+                'Período: ' + (timezone.localtime(desde).strftime('%d/%m/%Y %H:%M') if desde else 'inicio') +
+                ' → ' + (timezone.localtime(hasta).strftime('%d/%m/%Y %H:%M') if hasta else 'actualidad'),
                 styles['normal'],
             ),
             Spacer(1, 20),
