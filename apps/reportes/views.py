@@ -7,6 +7,7 @@ descarga segura.
 """
 import logging
 import os
+import time as time_module
 from datetime import datetime, time
 
 from django.conf import settings
@@ -19,6 +20,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from apps.mapa.decorators import gestor_requerido
+
+from .models import RegistroReporte
 
 from .generador_reportes import (
     EXTENSIONES_PERMITIDAS,
@@ -74,6 +77,32 @@ def _parsear_filtro_temporal(request):
         errores.append('El inicio del período no puede ser posterior al final.')
     return desde, hasta, errores
 
+
+
+def _ip_cliente(request):
+    """Obtiene la IP del cliente sin confiar en cabeceras no verificadas."""
+    return request.META.get('REMOTE_ADDR')
+
+
+def _registrar_reporte(request, *, tipo, contenido, desde=None, hasta=None,
+                       resultado, archivo='', detalle=''):
+    """Registra en la bitácora la ejecución de un reporte."""
+    try:
+        RegistroReporte.objects.create(
+            usuario=request.user if request.user.is_authenticated else None,
+            tipo=tipo,
+            contenido=contenido,
+            fecha_desde=desde,
+            fecha_hasta=hasta,
+            archivo=archivo,
+            resultado=resultado,
+            detalle=detalle[:500],
+            ip=_ip_cliente(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+        )
+    except Exception:
+        logger.exception('No se pudo registrar la generación del reporte en la bitácora.')
+
 # ============================================================
 # VISTAS DE PLANTILLAS
 # ============================================================
@@ -118,23 +147,31 @@ def api_generar_reporte(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    inicio = time_module.monotonic()
     try:
         # Limpiar reportes antiguos antes de generar uno nuevo
         limpiar_reportes_antiguos()
 
         ruta = generador(desde=desde, hasta=hasta)
         if not ruta:
+            _registrar_reporte(request, tipo=tipo, contenido=contenido, desde=desde, hasta=hasta,
+                               resultado='sin_datos', detalle='No hubo datos para el período solicitado.')
             return JsonResponse(
                 {'error': 'No hay datos para generar el reporte'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        _registrar_reporte(request, tipo=tipo, contenido=contenido, desde=desde, hasta=hasta,
+                           archivo=os.path.basename(ruta), resultado='exitoso',
+                           detalle=f'Duración: {time_module.monotonic() - inicio:.2f}s')
         return JsonResponse({
             'success': True,
             'mensaje': 'Reporte generado correctamente',
             'archivo': os.path.basename(ruta),
         })
     except Exception as e:
+        _registrar_reporte(request, tipo=tipo, contenido=contenido, desde=desde, hasta=hasta,
+                           resultado='error', detalle=str(e))
         logger.error(f"Error generando reporte {tipo}/{contenido}: {e}", exc_info=True)
         return JsonResponse(
             {'error': 'Error al generar el reporte'},
