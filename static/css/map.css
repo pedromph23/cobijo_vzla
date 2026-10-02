@@ -45,7 +45,7 @@
 
 .map-main-container {
     flex: 1;
-    min-width: 0; /* CRÍTICO: evita que Leaflet rompa flexbox */
+    min-width: 0;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -107,17 +107,14 @@
 }
 
 /* ------------------------------------------------------------
-   MODO OSCURO · TILES DE LEAFLET
-   ------------------------------------------------------------ */
-.mapa-tema-oscuro .leaflet-tile,
-[data-theme="dark"] .leaflet-tile {
-    filter: brightness(0.6) invert(1) contrast(3)
-            hue-rotate(200deg) saturate(0.3);
-    transition: filter var(--transition-normal);
-}
+   MODO OSCURO · LOS TILES CAMBIAN A CARTO DARK DESDE main.js
+   ------------------------------------------------------------
+   No se aplica filtro CSS al tile. El filtro anterior invertía
+   también colores del mapa y competía con la capa Carto Dark.
+*/
 
 .leaflet-tile {
-    transition: filter var(--transition-normal);
+    transition: opacity var(--transition-normal);
 }
 
 /* ------------------------------------------------------------
@@ -205,8 +202,7 @@
     justify-content: center;
     cursor: pointer;
     box-shadow: var(--shadow-sm);
-    transition: background var(--transition-fast),
-                transform 0.15s ease;
+    transition: background var(--transition-fast), transform 0.15s ease;
     -webkit-tap-highlight-color: transparent;
 }
 
