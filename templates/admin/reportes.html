@@ -12,8 +12,8 @@
     <section class="reporte-filtros" aria-labelledby="titulo-filtros">
         <div class="reporte-filtros-header">
             <div>
-                <h3 id="titulo-filtros"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Período del reporte</h3>
-                <p>Deja los campos vacíos para obtener toda la información disponible.</p>
+                <h3 id="titulo-filtros"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Momento o período del reporte</h3>
+                <p>Usa un período para consultar fechas de los registros o una fecha histórica para reconstruir cómo estaban los datos en ese momento.</p>
             </div>
             <div class="reporte-filtros-acciones">
                 <button type="button" class="btn-filtro-limpiar" id="limpiar-filtros">
@@ -25,7 +25,23 @@
             </div>
         </div>
 
-        <div class="reporte-filtros-grid">
+        <div class="reporte-modo" role="group" aria-label="Modo de consulta">
+            <label><input type="radio" name="modo-reporte" value="actual" checked> Datos actuales / por período</label>
+            <label><input type="radio" name="modo-reporte" value="historico"> Reconstruir estado histórico</label>
+        </div>
+
+        <div class="reporte-historico-grid" id="filtro-historico" hidden>
+            <label>
+                <span>Fecha histórica</span>
+                <input type="date" id="fecha-historica" name="fecha_historica">
+            </label>
+            <label>
+                <span>Hora histórica (opcional)</span>
+                <input type="time" id="hora-historica" name="hora_historica">
+            </label>
+        </div>
+
+        <div class="reporte-filtros-grid" id="filtros-periodo">
             <label>
                 <span>Fecha desde</span>
                 <input type="date" id="fecha-desde" name="fecha_desde">
@@ -95,6 +111,14 @@
 
     const mensaje = document.getElementById('mensaje-resultado');
     const resumen = document.getElementById('periodo-resumen');
+    const historico = {
+        fecha_historica: document.getElementById('fecha-historica'),
+        hora_historica: document.getElementById('hora-historica')
+    };
+    const modos = document.querySelectorAll('input[name="modo-reporte"]');
+    const filtroHistorico = document.getElementById('filtro-historico');
+    const filtrosPeriodo = document.getElementById('filtros-periodo');
+
     const filtros = {
         fecha_desde: document.getElementById('fecha-desde'),
         hora_desde: document.getElementById('hora-desde'),
@@ -102,9 +126,15 @@
         hora_hasta: document.getElementById('hora-hasta')
     };
 
+    function modoActual() {
+        return document.querySelector('input[name="modo-reporte"]:checked')?.value || 'actual';
+    }
+
     function obtenerParametros() {
         const params = new URLSearchParams();
-        Object.entries(filtros).forEach(([clave, campo]) => {
+        params.set('modo', modoActual());
+        const fuente = modoActual() === 'historico' ? historico : filtros;
+        Object.entries(fuente).forEach(([clave, campo]) => {
             if (campo && campo.value) params.set(clave, campo.value);
         });
         return params;
@@ -113,6 +143,11 @@
     function actualizarResumen() {
         const desde = [filtros.fecha_desde.value, filtros.hora_desde.value].filter(Boolean).join(' ');
         const hasta = [filtros.fecha_hasta.value, filtros.hora_hasta.value].filter(Boolean).join(' ');
+        if (modoActual() === 'historico') {
+            const fecha = [historico.fecha_historica.value, historico.hora_historica.value].filter(Boolean).join(' ');
+            resumen.textContent = fecha ? 'Estado histórico reconstruido a: ' + fecha : 'Indica la fecha que quieres reconstruir.';
+            return;
+        }
         if (!desde && !hasta) {
             resumen.textContent = 'Sin filtro temporal: se utilizará la información disponible.';
             return;
@@ -159,9 +194,21 @@
     });
 
     Object.values(filtros).forEach((campo) => campo.addEventListener('input', actualizarResumen));
+    Object.values(historico).forEach((campo) => campo.addEventListener('input', actualizarResumen));
+
+    modos.forEach((radio) => radio.addEventListener('change', () => {
+        const esHistorico = modoActual() === 'historico';
+        filtroHistorico.hidden = !esHistorico;
+        filtrosPeriodo.hidden = esHistorico;
+        actualizarResumen();
+    }));
 
     document.getElementById('limpiar-filtros').addEventListener('click', () => {
         Object.values(filtros).forEach((campo) => { campo.value = ''; });
+        Object.values(historico).forEach((campo) => { campo.value = ''; });
+        document.querySelector('input[name="modo-reporte"][value="actual"]').checked = true;
+        filtroHistorico.hidden = true;
+        filtrosPeriodo.hidden = false;
         actualizarResumen();
     });
 })();
