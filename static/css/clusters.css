@@ -1,16 +1,31 @@
 /* ============================================================
    COBIJOVZLA · CLUSTERS DE MARCADORES
    ============================================================
-   Complementa `MarkerCluster.Default.css`. Solo incluye los estilos
-   que ese archivo NO trae (centrado flex, tipografía).
+   Estilos complementarios a MarkerCluster.Default.css.
+   No reemplaza la lógica de Leaflet: solo mejora presentación,
+   contraste, legibilidad, interacción y adaptación al tema.
    ============================================================ */
 
 .marker-cluster {
     background-clip: padding-box;
-    border-radius: 20px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    transition:
+        transform var(--transition-fast, .18s ease),
+        filter var(--transition-fast, .18s ease);
+}
+
+.marker-cluster:hover {
+    transform: scale(1.07);
+    filter: brightness(1.04);
+}
+
+.marker-cluster:focus-visible {
+    outline: 3px solid var(--color-primary, #0066cc);
+    outline-offset: 3px;
 }
 
 .marker-cluster div {
@@ -19,14 +34,68 @@
     margin-left: 5px;
     margin-top: 5px;
     text-align: center;
-    border-radius: 15px;
-    font: 700 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
-    color: white;
+    border-radius: 50%;
+    font: 700 12px/1 "Montserrat", "Helvetica Neue", Arial, sans-serif;
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 2px 7px rgba(15, 23, 42, .18);
+    border: 1px solid rgba(255, 255, 255, .55);
 }
 
 .marker-cluster span {
-    line-height: 30px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.2em;
+    text-shadow: 0 1px 2px rgba(15, 23, 42, .28);
+}
+
+/* Refuerza la lectura de clusters grandes sin cambiar sus clases. */
+.marker-cluster-large div {
+    width: 34px;
+    height: 34px;
+    margin-left: 4px;
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.marker-cluster-large span {
+    min-width: 1.3em;
+}
+
+/* En modo oscuro evitamos halos demasiado blancos alrededor del cluster. */
+[data-theme="dark"] .marker-cluster div {
+    border-color: rgba(255, 255, 255, .28);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .36);
+}
+
+[data-theme="dark"] .marker-cluster:hover {
+    filter: brightness(1.08);
+}
+
+@media (max-width: 600px) {
+    .marker-cluster div {
+        width: 28px;
+        height: 28px;
+        margin-left: 4px;
+        margin-top: 4px;
+        font-size: 11px;
+    }
+
+    .marker-cluster-large div {
+        width: 32px;
+        height: 32px;
+        margin-left: 4px;
+        margin-top: 4px;
+        font-size: 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .marker-cluster {
+        transition: none;
+    }
 }
