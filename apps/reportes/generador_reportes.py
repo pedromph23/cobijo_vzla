@@ -260,7 +260,7 @@ def generar_pdf_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optional[
         SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
     )
 
-    df = services.df_zonas_afectadas(desde=desde, hasta=hasta)
+    df = services.df_zonas_afectadas(desde=desde, hasta=hasta, as_of=as_of)
     if df.empty:
         logger.info("Sin datos de zonas afectadas")
         return None
@@ -360,7 +360,7 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None, as_of=None) -> Op
         SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
     )
 
-    r = services.resumen_general(desde=desde, hasta=hasta)
+    r = services.resumen_general(desde=desde, hasta=hasta, as_of=as_of)
     if not r or not any(r.values()):
         logger.info("Sin datos para estadísticas generales")
         return None
