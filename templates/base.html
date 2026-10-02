@@ -27,17 +27,6 @@
     <link rel="stylesheet" href="{% static 'css/ui-refactor.css' %}?v=6">
     <link rel="stylesheet" href="{% static 'css/ui-palette.css' %}?v=4">
 
-    <script>
-        (() => {
-            try {
-                const saved = localStorage.getItem('cobijo-theme-v2');
-                document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
-            } catch (_) {
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
-        })();
-    </script>
-
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -81,53 +70,9 @@
     <script src="{% static 'js/leaflet.js' %}"></script>
     <script src="{% static 'js/leaflet.markercluster.js' %}"></script>
     <script src="{% static 'js/leaflet.heat.js' %}"></script>
-    <script src="{% static 'js/main.js' %}?v=10"></script>
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const root = document.documentElement;
-        const themeButton = document.getElementById('btn-theme-toggle');
-        const themeMeta = document.getElementById('meta-theme-color');
-        const syncTheme = (theme) => {
-            const isDark = theme === 'dark';
-            root.setAttribute('data-theme', theme);
-            themeButton?.setAttribute('aria-pressed', String(isDark));
-            themeButton?.setAttribute('aria-label', isDark ? 'Activar modo claro' : 'Activar modo oscuro');
-            themeButton?.setAttribute('title', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
-            if (themeButton) themeButton.innerHTML = isDark ? '<i class="fas fa-sun" aria-hidden="true"></i><span class="theme-label">Tema</span>' : '<i class="fas fa-moon" aria-hidden="true"></i><span class="theme-label">Tema</span>';
-            if (themeMeta) themeMeta.setAttribute('content', isDark ? '#1b1e21' : '#f2eee7');
-            try { localStorage.setItem('cobijo-theme-v2', theme); } catch (_) {}
-            window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
-        };
-        syncTheme(root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
-        themeButton?.addEventListener('click', () => syncTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
-
-        const btnSidebar = document.getElementById('btn-toggle-sidebar');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        const syncAria = () => {
-            if (!btnSidebar || !sidebar) return;
-            const isOpen = window.innerWidth > 768 ? !sidebar.classList.contains('collapsed') : sidebar.classList.contains('open');
-            btnSidebar.setAttribute('aria-expanded', String(isOpen));
-        };
-        btnSidebar?.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (!sidebar) return;
-            if (window.innerWidth > 768) sidebar.classList.toggle('collapsed');
-            else { sidebar.classList.toggle('open'); overlay?.classList.toggle('active'); }
-            syncAria();
-            setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
-        });
-        document.addEventListener('click', (e) => {
-            if (!sidebar || !overlay) return;
-            if (e.target.matches('#sidebar-overlay') || e.target.closest('#btn-close-sidebar')) { sidebar.classList.remove('open'); overlay.classList.remove('active'); syncAria(); }
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && sidebar?.classList.contains('open')) { sidebar.classList.remove('open'); overlay?.classList.remove('active'); syncAria(); }
-        });
-        window.addEventListener('resize', syncAria);
-        syncAria();
-    });
-    </script>
+    <script src="{% static 'js/theme.js' %}?v=1"></script>
+    <script src="{% static 'js/sidebar.js' %}?v=1"></script>
+    <script src="{% static 'js/main.js' %}?v=11"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
