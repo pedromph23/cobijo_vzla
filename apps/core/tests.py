@@ -13,6 +13,7 @@ from .models import (
     ZonaAfectada,
     PuntoDemanda,
     ParametrosModelo,
+    RegistroAuditoria,
 )
 from apps.emergencias.models import Evento
 
@@ -112,3 +113,23 @@ class KPIsAPITest(TestCase):
         self.assertIn('refugios', data)
         self.assertIn('zonas_activas', data)
         self.assertIn('territorio', data)
+
+class AuditoriaCentralTest(TestCase):
+    def test_accion_mutacion_queda_registrada(self):
+        response = self.client.post('/accounts/login/', {'username': 'no-existe', 'password': 'incorrecta'})
+        self.assertIn(response.status_code, (200, 302, 403))
+        self.assertTrue(RegistroAuditoria.objects.filter(accion='autenticacion').exists())
+
+    def test_datos_anteriores_y_nuevos_son_json(self):
+        from .audit import registrar_auditoria
+        request = self.client.get('/').wsgi_request
+        registro = registrar_auditoria(
+            request,
+            accion='test:auditoria',
+            datos_anteriores={'estado': 'anterior'},
+            datos_nuevos={'estado': 'nuevo'},
+        )
+        self.assertIsNotNone(registro)
+        registro.refresh_from_db()
+        self.assertEqual(registro.datos_anteriores['estado'], 'anterior')
+        self.assertEqual(registro.datos_nuevos['estado'], 'nuevo')
