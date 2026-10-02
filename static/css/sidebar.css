@@ -86,6 +86,7 @@
 /* ------------------------------------------------------------
    BÚSQUEDA Y SUGERENCIAS
    ------------------------------------------------------------ */
+.search-container { position: relative; }
 .search-input-wrapper { position: relative; }
 .search-input-wrapper .form-control {
     border-radius: var(--radius-md);
@@ -100,7 +101,7 @@
 }
 .search-input-wrapper .form-control:focus {
     border-color: color-mix(in srgb, var(--color-primary) 65%, var(--border-color));
-    box-shadow: 0 0 0 3px rgba(199, 109, 92, .13);
+    box-shadow: 0 0 0 3px rgba(82, 123, 107, .13);
     outline: none;
 }
 .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; }
@@ -110,16 +111,16 @@
 
 .sugerencias-lista {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     left: 0;
     right: 0;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    border-radius: var(--radius-md);
     max-height: 200px;
     overflow-y: auto;
     display: none;
-    z-index: 1000;
+    z-index: 1200;
     box-shadow: var(--shadow-md, 0 8px 20px rgba(31,41,55,.10));
 }
 .sugerencia-item { padding: 11px 12px; cursor: pointer; font-size: .85rem; border-bottom: 1px solid var(--border-color); transition: background var(--transition-fast), padding-left var(--transition-fast); }
@@ -146,8 +147,7 @@
 .layer-toggle input { width: 18px; height: 18px; accent-color: var(--color-primary); flex-shrink: 0; }
 
 .layer-icon { width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(31, 41, 55, .12); }
-/* Los colores inline del template se conservan como contrato; aquí se suavizan visualmente. */
-.layer-icon[style*="#0066cc"] { background: linear-gradient(135deg, #7ba7d8, #5e87bd) !important; }
+.layer-icon[style*="#0066cc"] { background: linear-gradient(135deg, #8fb0d3, #718faf) !important; }
 .layer-icon[style*="#dc3545"] { background: linear-gradient(135deg, #d88989, #bf666f) !important; }
 .layer-icon[style*="#ff6600"] { background: linear-gradient(135deg, #e6ad76, #d88b5b) !important; }
 .layer-text { flex: 1; min-width: 0; font-size: .9rem; }
@@ -214,9 +214,6 @@
     .sidebar, .layer-toggle, .btn-location, .btn-reporte, .info-card, .sugerencia-item, .btn-close-sidebar { transition: none; animation: none; }
 }
 
-/* ------------------------------------------------------------
-   RESPONSIVE
-   ------------------------------------------------------------ */
 @media (max-width: 768px) {
     .sidebar { position: absolute; left: 0; top: 0; bottom: 0; transform: translateX(-100%); z-index: 1050; width: 280px; max-width: 85vw; }
     .sidebar.open { transform: translateX(0); }
