@@ -19,6 +19,7 @@ from .models import (
     ZonaAfectada,
     ParametrosModelo,
     ResultadoOptimizacion,
+    RegistroAuditoria,
 )
 
 
@@ -448,3 +449,33 @@ class ResultadoOptimizacionAdmin(admin.ModelAdmin):
 admin.site.site_header = "CobijoVzla · Administración"
 admin.site.site_title = "CobijoVzla"
 admin.site.index_title = "Panel de gestión de datos"
+
+# ============================================================
+# BITÁCORA CENTRAL
+# ============================================================
+
+@admin.register(RegistroAuditoria)
+class RegistroAuditoriaAdmin(admin.ModelAdmin):
+    list_display = ('fecha', 'usuario', 'accion', 'metodo', 'modelo', 'resultado', 'ip')
+    list_filter = ('resultado', 'accion', 'metodo', 'fecha')
+    search_fields = ('usuario__username', 'accion', 'ruta', 'modelo', 'objeto_id', 'detalle', 'ip')
+    date_hierarchy = 'fecha'
+    list_select_related = ('usuario',)
+    list_per_page = 50
+    readonly_fields = (
+        'usuario', 'fecha', 'accion', 'metodo', 'ruta', 'modelo',
+        'objeto_id', 'resultado', 'detalle', 'datos_anteriores',
+        'datos_nuevos', 'ip', 'user_agent',
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_staff
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
