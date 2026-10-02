@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point, Polygon, MultiPolygon
 from django.conf import settings
 
-from apps.core.models import Estado, Parroquia, ZonaAfectada
+from apps.core.models import Estado, Parroquia, ZonaAfectada, RegistroVersion
 from apps.emergencias.models import Evento
 
 from . import services
@@ -239,3 +239,60 @@ class FiltrosYBitacoraAPITest(TestCase):
         registro = RegistroReporte.objects.get()
         self.assertEqual(registro.resultado, 'rechazado')
         self.assertIn('posterior', registro.detalle)
+
+
+class HistorialTemporalTest(TestCase):
+    def test_reconstruye_valor_anterior(self):
+        from .services import df_zonas_afectadas
+        evento = Evento.objects.create(
+            nombre='Evento Histórico', tipo='inundacion', fecha=_fecha(),
+        )
+        RegistroVersion.objects.create(
+            fecha_version=datetime(2026, 1, 1, 10, 0, tzinfo=dt_tz.utc),
+            modelo='emergencias.evento', objeto_id=str(evento.id),
+            operacion='creado',
+            datos={'id': evento.id, 'nombre': evento.nombre, 'tipo': evento.tipo},
+        )
+        RegistroVersion.objects.create(
+            fecha_version=datetime(2026, 1, 1, 10, 0, 1, tzinfo=dt_tz.utc),
+            modelo='core.zonaafectada', objeto_id='99',
+            operacion='creado',
+            datos={
+                'id': 99, 'evento': evento.id, 'nombre': 'Zona histórica',
+                'descripcion': '', 'nivel_alerta': 'alto',
+                'fecha_inicio': '2026-01-01T10:00:00+00:00',
+                'fecha_fin': None, 'heridos': 10, 'fallecidos': 1,
+                'damnificados': 500,
+            },
+        )
+        RegistroVersion.objects.create(
+            fecha_version=datetime(2026, 1, 1, 12, 0, tzinfo=dt_tz.utc),
+            modelo='core.zonaafectada', objeto_id='99',
+            operacion='actualizado',
+            datos={
+                'id': 99, 'evento': evento.id, 'nombre': 'Zona histórica',
+                'descripcion': '', 'nivel_alerta': 'alto',
+                'fecha_inicio': '2026-01-01T10:00:00+00:00',
+                'fecha_fin': None, 'heridos': 10, 'fallecidos': 1,
+                'damnificados': 700,
+            },
+        )
+
+        df = df_zonas_afectadas(
+            as_of=datetime(2026, 1, 1, 11, 0, tzinfo=dt_tz.utc)
+        )
+        self.assertEqual(len(df), 1)
+        self.assertEqual(df.iloc[0]['Damnificados'], 500)
+
+    def test_reporte_historico_queda_identificado(self):
+        self.client = Client()
+        user = User.objects.create_user(username='hist', password='pass', is_staff=True)
+        self.client.force_login(user)
+        response = self.client.get(
+            '/api/reportes/generar/?tipo=excel&contenido=zonas'
+            '&modo=historico&fecha_historica=2026-01-01&hora_historica=11:00'
+        )
+        self.assertIn(response.status_code, (200, 404))
+        registro = RegistroReporte.objects.latest('fecha_generacion')
+        self.assertEqual(registro.modo, 'historico')
+        self.assertIsNotNone(registro.fecha_referencia)
