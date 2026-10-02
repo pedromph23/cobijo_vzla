@@ -37,6 +37,8 @@ class RegistroReporte(models.Model):
     contenido = models.CharField(max_length=20, choices=CONTENIDOS)
     fecha_desde = models.DateTimeField(null=True, blank=True)
     fecha_hasta = models.DateTimeField(null=True, blank=True)
+    modo = models.CharField(max_length=20, default='actual')
+    fecha_referencia = models.DateTimeField(null=True, blank=True)
     archivo = models.CharField(max_length=255, blank=True)
     resultado = models.CharField(max_length=20, choices=RESULTADOS, db_index=True)
     detalle = models.CharField(max_length=500, blank=True)
