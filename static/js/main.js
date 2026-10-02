@@ -62,7 +62,9 @@
         const temaActual = document.documentElement.getAttribute('data-theme');
         (temaActual === 'dark' ? capaOscura : capaEstandar).addTo(map);
 
-        document.addEventListener('themeChanged', function (e) {
+        // base.html emite el evento en window; mantener el listener aquí
+        // evita que el helper quede desincronizado del selector global.
+        window.addEventListener('themeChanged', function (e) {
             const usarOscuro = e.detail && e.detail.theme === 'dark';
             map.eachLayer(function (layer) {
                 if (layer === capaEstandar || layer === capaOscura) {
