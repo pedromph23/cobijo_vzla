@@ -122,7 +122,7 @@ def generar_excel_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optiona
             )
             resumen_evento.to_excel(writer, sheet_name='Resumen por Evento')
 
-        _formatear_excel(ruta, 'Reporte de Zonas Afectadas', desde, hasta)
+        _formatear_excel(ruta, 'Reporte de Zonas Afectadas', desde, hasta, as_of)
         logger.info(f"Excel zonas generado: {ruta}")
         return ruta
     except Exception as e:
@@ -163,7 +163,7 @@ def generar_excel_estadisticas_generales(desde=None, hasta=None, as_of=None) -> 
             })
             resumen_df.to_excel(writer, sheet_name='Resumen General', index=False)
 
-        _formatear_excel(ruta, 'Reporte Estadístico General', desde, hasta)
+        _formatear_excel(ruta, 'Reporte Estadístico General', desde, hasta, as_of)
         logger.info(f"Excel general generado: {ruta}")
         return ruta
     except Exception as e:
@@ -175,7 +175,7 @@ def generar_excel_estadisticas_generales(desde=None, hasta=None, as_of=None) -> 
 # FORMATO EXCEL
 # ============================================================
 
-def _formatear_excel(ruta: str, titulo: str, desde=None, hasta=None) -> None:
+def _formatear_excel(ruta: str, titulo: str, desde=None, hasta=None, as_of=None) -> None:
     """Aplica formato profesional, impresión y metadatos a todas las hojas."""
     from openpyxl import load_workbook
     from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
@@ -279,7 +279,7 @@ def generar_pdf_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optional[
                 styles['normal'],
             ),
             Paragraph(
-                'Período: ' + (timezone.localtime(desde).strftime('%d/%m/%Y %H:%M') if desde else 'inicio') +
+                'Referencia histórica: ' + timezone.localtime(as_of).strftime('%d/%m/%Y %H:%M') if as_of else\n                'Período: ' + (timezone.localtime(desde).strftime('%d/%m/%Y %H:%M') if desde else 'inicio') +
                 ' → ' + (timezone.localtime(hasta).strftime('%d/%m/%Y %H:%M') if hasta else 'actualidad'),
                 styles['normal'],
             ),
