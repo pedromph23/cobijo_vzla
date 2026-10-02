@@ -1,25 +1,16 @@
 /**
  * Utilidades comunes para toda la aplicación CobijoVzla.
  *
- * Este archivo se carga en `base.html` para todas las páginas.
- * NO debe contener lógica de DOM que dependa de elementos específicos.
+ * Este archivo se carga desde `base.html` y no debe asumir que existen
+ * elementos de una página concreta.
  */
-
 (function (window) {
     'use strict';
 
-    // ============================================================
-    // MAPA
-    // ============================================================
+    const DEFAULT_CENTER = [10.0, -66.0];
+    const DEFAULT_ZOOM = 8;
 
-    /**
-     * Inicializa un mapa Leaflet con soporte para tema claro/oscuro.
-     * @param {string} elementId - ID del div contenedor
-     * @param {[number, number]} center - [lat, lng] del centro
-     * @param {number} zoom - Nivel de zoom inicial
-     * @returns {L.Map|null}
-     */
-    function initMap(elementId, center = [10.0, -66.0], zoom = 8) {
+    function initMap(elementId, center = DEFAULT_CENTER, zoom = DEFAULT_ZOOM) {
         if (typeof L === 'undefined') {
             console.error('[main.js] Leaflet no está cargado');
             return null;
@@ -31,15 +22,19 @@
             return null;
         }
 
-        // Evita inicializar dos veces el mismo contenedor.
+        // Si otro módulo ya inicializó el contenedor, reutilizamos el mapa.
+        // Esto evita crear una segunda instancia Leaflet y no rompe al llamador.
+        if (container._cobijoMap) {
+            return container._cobijoMap;
+        }
         if (container._leaflet_id) {
-            console.warn(`[main.js] El elemento #${elementId} ya contiene un mapa`);
+            console.warn(`[main.js] El elemento #${elementId} ya contiene un mapa ajeno a main.js`);
             return null;
         }
 
         const map = L.map(container, {
-            center: center,
-            zoom: zoom,
+            center,
+            zoom,
             zoomControl: true,
             fadeAnimation: true,
             zoomAnimation: true,
@@ -48,8 +43,7 @@
         const capaEstandar = L.tileLayer(
             'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 referrerPolicy: 'strict-origin-when-cross-origin',
                 maxZoom: 19,
             }
@@ -67,37 +61,30 @@
 
         function aplicarCapaBase(tema) {
             const capa = tema === 'dark' ? capaOscura : capaEstandar;
-
-            if (!map.hasLayer(capa)) {
-                capa.addTo(map);
-            }
-
             const otraCapa = capa === capaOscura ? capaEstandar : capaOscura;
-            if (map.hasLayer(otraCapa)) {
-                map.removeLayer(otraCapa);
-            }
+
+            if (!map.hasLayer(capa)) capa.addTo(map);
+            if (map.hasLayer(otraCapa)) map.removeLayer(otraCapa);
         }
 
-        aplicarCapaBase(document.documentElement.getAttribute('data-theme'));
+        aplicarCapaBase(document.documentElement.getAttribute('data-theme') || 'light');
 
-        // base.html emite el evento en window. Se mantiene un único listener
-        // para evitar duplicar cambios de capas cuando cambia el tema.
-        window.addEventListener('themeChanged', function (e) {
-            aplicarCapaBase(e.detail && e.detail.theme);
-        });
+        const onThemeChanged = function (event) {
+            aplicarCapaBase(event.detail && event.detail.theme);
+        };
+        window.addEventListener('themeChanged', onThemeChanged);
 
+        // Guardamos referencias para que una página que destruya el mapa pueda
+        // limpiar correctamente el listener sin depender de variables globales.
         map._capaEstandar = capaEstandar;
         map._capaOscura = capaOscura;
+        map._cobijoThemeListener = onThemeChanged;
+        map._cobijoMapContainer = container;
+        container._cobijoMap = map;
+
         return map;
     }
 
-    /**
-     * Agrega una capa de calor al mapa.
-     * @param {L.Map} map
-     * @param {Array<{lat:number,lng:number,intensidad?:number}>} data
-     * @param {object} [options]
-     * @returns {L.HeatLayer|null}
-     */
     function addHeatLayer(map, data, options) {
         if (!map || typeof L === 'undefined' || !L.heatLayer) {
             console.error('[main.js] Leaflet.heat no está disponible');
@@ -108,15 +95,14 @@
             return null;
         }
 
-        options = options || {};
-
+        const opts = options || {};
         const config = {
-            radius: options.radius !== undefined ? options.radius : 25,
-            blur: options.blur !== undefined ? options.blur : 15,
-            maxZoom: options.maxZoom !== undefined ? options.maxZoom : 10,
-            max: options.max !== undefined ? options.max : 1.0,
-            minOpacity: options.minOpacity !== undefined ? options.minOpacity : 0.1,
-            gradient: options.gradient || {
+            radius: opts.radius !== undefined ? opts.radius : 25,
+            blur: opts.blur !== undefined ? opts.blur : 15,
+            maxZoom: opts.maxZoom !== undefined ? opts.maxZoom : 10,
+            max: opts.max !== undefined ? opts.max : 1.0,
+            minOpacity: opts.minOpacity !== undefined ? opts.minOpacity : 0.1,
+            gradient: opts.gradient || {
                 0.2: '#00ff00',
                 0.4: '#ffff00',
                 0.6: '#ff9900',
@@ -130,12 +116,16 @@
                 return d && Number.isFinite(Number(d.lat)) && Number.isFinite(Number(d.lng));
             })
             .map(function (d) {
-                const intensidad =
-                    d.intensidad !== undefined ? d.intensidad : d.intensity !== undefined ? d.intensity : 0.5;
+                const intensidad = d.intensidad !== undefined
+                    ? d.intensidad
+                    : d.intensity !== undefined
+                        ? d.intensity
+                        : 0.5;
+
                 return [Number(d.lat), Number(d.lng), Number(intensidad) || 0.5];
             });
 
-        if (puntos.length === 0) {
+        if (!puntos.length) {
             console.warn('[main.js] No hay coordenadas válidas para la capa de calor');
             return null;
         }
@@ -145,9 +135,6 @@
         return heatLayer;
     }
 
-    /**
-     * Alterna la capa de calor (si existe, la quita; si no, la agrega).
-     */
     function toggleHeatLayer(map, heatLayer, data, options) {
         if (!map) return null;
 
@@ -159,24 +146,11 @@
         return addHeatLayer(map, data, options);
     }
 
-    // ============================================================
-    // UTILIDADES
-    // ============================================================
-
-    /**
-     * Formatea un número con separadores de miles venezolanos.
-     */
     function formatNumber(num) {
         const n = Number(num) || 0;
         return new Intl.NumberFormat('es-VE').format(n);
     }
 
-    /**
-     * Muestra un mensaje flotante en la esquina inferior derecha.
-     * @param {string} texto
-     * @param {'info'|'success'|'error'|'warning'} [tipo]
-     * @param {number} [duracion] - ms antes de ocultarlo (default: 5000)
-     */
     function mostrarMensaje(texto, tipo, duracion) {
         tipo = tipo || 'info';
         duracion = duracion === undefined ? 5000 : duracion;
@@ -188,18 +162,18 @@
             contenedor.setAttribute('role', 'status');
             contenedor.setAttribute('aria-live', 'polite');
             contenedor.style.cssText = [
-                'position: fixed',
-                'bottom: 20px',
-                'right: 20px',
-                'z-index: 9999',
-                'padding: 12px 20px',
-                'border-radius: 8px',
-                'box-shadow: 0 4px 12px rgba(0,0,0,0.2)',
-                'font-size: 0.9rem',
-                'transition: opacity 0.3s ease',
-                'max-width: 400px',
-                'color: white',
-                'pointer-events: none',
+                'position:fixed',
+                'bottom:20px',
+                'right:20px',
+                'z-index:9999',
+                'padding:12px 20px',
+                'border-radius:8px',
+                'box-shadow:0 4px 12px rgba(0,0,0,.2)',
+                'font-size:.9rem',
+                'transition:opacity .3s ease',
+                'max-width:400px',
+                'color:#fff',
+                'pointer-events:none',
             ].join(';');
             document.body.appendChild(contenedor);
         }
@@ -210,6 +184,7 @@
             warning: '#ffc107',
             info: '#0066cc',
         };
+
         contenedor.style.backgroundColor = colores[tipo] || colores.info;
         contenedor.textContent = texto == null ? '' : String(texto);
         contenedor.style.opacity = '1';
@@ -217,12 +192,9 @@
         clearTimeout(contenedor._timeout);
         contenedor._timeout = setTimeout(function () {
             contenedor.style.opacity = '0';
-        }, duracion);
+        }, Math.max(0, Number(duracion) || 0));
     }
 
-    /**
-     * Debounce genérico: retrasa la ejecución hasta que dejen de llamar.
-     */
     function debounce(fn, delay) {
         if (typeof fn !== 'function') {
             throw new TypeError('debounce requiere una función');
@@ -235,13 +207,9 @@
             clearTimeout(timer);
             timer = setTimeout(function () {
                 fn.apply(ctx, args);
-            }, delay);
+            }, Math.max(0, Number(delay) || 0));
         };
     }
-
-    // ============================================================
-    // EXPORTAR AL ÁMBITO GLOBAL
-    // ============================================================
 
     window.initMap = initMap;
     window.addHeatLayer = addHeatLayer;
