@@ -1,110 +1,19 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block title %}Panel Operativo - CobijoVzla{% endblock %}
-
 {% block content %}
 <div class="panel-container">
-    <div class="panel-header">
-        <div class="panel-header-left">
-            <div class="panel-icon gestor"><i class="fas fa-user-tie"></i></div>
-            <div><h2>Panel Operativo</h2><p>Gestión y consulta de datos</p></div>
-        </div>
-        <div class="panel-header-right">
-            <span class="user-badge gestor"><i class="fas fa-user-circle"></i> {{ user.username }}</span>
-            <button class="btn-refresh" onclick="location.reload()"><i class="fas fa-sync"></i></button>
-        </div>
-    </div>
-
-    <div class="panel-tabs">
-        <button class="tab active" data-tab="mapa"><i class="fas fa-map"></i><span>Mapa</span></button>
-        <button class="tab" data-tab="datos"><i class="fas fa-database"></i><span>Datos</span></button>
-        <button class="tab" data-tab="reportes"><i class="fas fa-chart-bar"></i><span>Reportes</span></button>
-    </div>
-
-    <div class="panel-content">
-        <div id="tab-mapa" class="tab-content active">
-            <div class="mapa-admin-wrapper">
-                <div class="mapa-toolbar">
-                    <div class="toolbar-group">
-                        <span class="toolbar-label">Capas:</span>
-                        <label class="checkbox-item"><input type="checkbox" id="chk-refugios" checked><span><i class="fas fa-home"></i> Refugios</span></label>
-                        <label class="checkbox-item"><input type="checkbox" id="chk-zonas" checked><span><i class="fas fa-exclamation-triangle"></i> Zonas</span></label>
-                    </div>
-                </div>
-                <div id="mapa-admin" class="mapa-admin"></div>
-            </div>
-        </div>
-
-        <div id="tab-datos" class="tab-content">
-            <h3 class="section-title"><i class="fas fa-database"></i> Gestión de Datos</h3>
-            <p class="section-subtitle">Modelos disponibles según sus permisos</p>
-            <div class="crud-menu-grid">
-                {% for m in menu_modelos %}
-                    <a href="{% url 'crud_list' m.key %}" class="crud-card">
-                        <i class="fas {{ m.icon }}"></i><h4>{{ m.verbose_name_plural }}</h4>
-                        <p>
-                            {% if 'crear' in m.acciones %}<span class="badge-mini badge-create">Crear</span>{% endif %}
-                            {% if 'editar' in m.acciones %}<span class="badge-mini badge-edit">Editar</span>{% endif %}
-                            {% if 'borrar' in m.acciones %}<span class="badge-mini badge-delete">Borrar</span>{% endif %}
-                        </p>
-                    </a>
-                {% empty %}
-                    <div class="crud-empty"><i class="fas fa-inbox fa-3x"></i><p>No tiene acceso a ningún modelo.</p></div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div id="tab-reportes" class="tab-content">
-            <div class="reportes-layout single">
-                <div class="reportes-acciones">
-                    <h3><i class="fas fa-download"></i> Reportes Disponibles</h3>
-                    <button class="btn-export" onclick="generarReporte('excel', 'zonas')"><i class="fas fa-file-excel" style="color:#28a745;"></i> Excel - Zonas Afectadas</button>
-                    <button class="btn-export" onclick="generarReporte('pdf', 'zonas')"><i class="fas fa-file-pdf" style="color:#dc3545;"></i> PDF - Zonas Afectadas</button>
-                    <button class="btn-export" onclick="generarReporte('excel', 'general')"><i class="fas fa-file-excel" style="color:#28a745;"></i> Excel - Estadísticas Generales</button>
-                    <button class="btn-export" onclick="generarReporte('pdf', 'general')"><i class="fas fa-file-pdf" style="color:#dc3545;"></i> PDF - Estadísticas Generales</button>
-                    <div id="mensaje-reporte" class="mensaje-reporte" style="display:none;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="panel-header"><div class="panel-header-left"><div class="panel-icon gestor"><i class="fas fa-user-tie"></i></div><div><h2>Panel Operativo</h2><p>Gestión y consulta de datos</p></div></div><div class="panel-header-right"><span class="user-badge gestor"><i class="fas fa-user-circle"></i> {{ user.username }}</span><button class="btn-refresh" onclick="location.reload()"><i class="fas fa-sync"></i></button></div></div>
+<div class="panel-tabs"><button class="tab active" data-tab="mapa"><i class="fas fa-map"></i><span>Mapa</span></button><button class="tab" data-tab="datos"><i class="fas fa-database"></i><span>Datos</span></button><button class="tab" data-tab="reportes"><i class="fas fa-chart-bar"></i><span>Reportes</span></button></div>
+<div class="panel-content">
+<div id="tab-mapa" class="tab-content active"><div class="mapa-admin-wrapper"><div class="mapa-toolbar"><div class="toolbar-group"><span class="toolbar-label">Capas:</span><label class="checkbox-item"><input type="checkbox" id="chk-refugios" checked><span><i class="fas fa-home"></i> Refugios</span></label><label class="checkbox-item"><input type="checkbox" id="chk-zonas" checked><span><i class="fas fa-exclamation-triangle"></i> Zonas</span></label></div></div><div id="mapa-admin" class="mapa-admin"></div></div></div>
+<div id="tab-datos" class="tab-content"><h3 class="section-title"><i class="fas fa-database"></i> Gestión de Datos</h3><p class="section-subtitle">Modelos disponibles según sus permisos</p><div class="crud-menu-grid">{% for m in menu_modelos %}<a href="{% url 'crud_list' m.key %}" class="crud-card"><i class="fas {{ m.icon }}"></i><h4>{{ m.verbose_name_plural }}</h4><p>{% if 'crear' in m.acciones %}<span class="badge-mini badge-create">Crear</span>{% endif %}{% if 'editar' in m.acciones %}<span class="badge-mini badge-edit">Editar</span>{% endif %}{% if 'borrar' in m.acciones %}<span class="badge-mini badge-delete">Borrar</span>{% endif %}</p></a>{% empty %}<div class="crud-empty"><i class="fas fa-inbox fa-3x"></i><p>No tiene acceso a ningún modelo.</p></div>{% endfor %}</div></div>
+<div id="tab-reportes" class="tab-content"><div class="reportes-layout single"><div class="reportes-acciones"><h3><i class="fas fa-download"></i> Reportes Disponibles</h3><button class="btn-export" onclick="generarReporte('excel','zonas')"><i class="fas fa-file-excel" style="color:#28a745;"></i> Excel - Zonas Afectadas</button><button class="btn-export" onclick="generarReporte('pdf','zonas')"><i class="fas fa-file-pdf" style="color:#dc3545;"></i> PDF - Zonas Afectadas</button><button class="btn-export" onclick="generarReporte('excel','general')"><i class="fas fa-file-excel" style="color:#28a745;"></i> Excel - Estadísticas Generales</button><button class="btn-export" onclick="generarReporte('pdf','general')"><i class="fas fa-file-pdf" style="color:#dc3545;"></i> PDF - Estadísticas Generales</button><div id="mensaje-reporte" class="mensaje-reporte" style="display:none;"></div></div></div></div>
+</div></div>
 {% endblock %}
-
-{% block extra_js %}
-<script>
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
-            this.classList.add('active');
-            document.getElementById('tab-' + this.dataset.tab).classList.add('active');
-            if (this.dataset.tab === 'mapa' && window.mapaAdmin) setTimeout(() => window.mapaAdmin.invalidateSize(), 300);
-        });
-    });
-
-    if (typeof L !== 'undefined') {
-        window.mapaAdmin = L.map('mapa-admin', { center: [10.0, -66.0], zoom: 6 });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
-            referrerPolicy: 'strict-origin-when-cross-origin', maxZoom: 19
-        }).addTo(window.mapaAdmin);
-    }
-
-    window.generarReporte = function(tipo, contenido) {
-        const msg = document.getElementById('mensaje-reporte');
-        msg.style.display = 'block'; msg.className = 'mensaje-reporte loading';
-        msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
-        fetch(`/api/reportes/generar/?tipo=${tipo}&contenido=${contenido}`)
-            .then(res => res.json()).then(data => {
-                if (data.success) {
-                    msg.className = 'mensaje-reporte success';
-                    msg.innerHTML = `<i class="fas fa-check-circle"></i> ${data.mensaje}`;
-                    window.location.href = `/api/reportes/descargar/${data.archivo}/`;
-                } else {
-                    msg.className = 'mensaje-reporte error';
-                    msg.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error || 'Error'}`;
-                }
-            });
-    };
-</script>
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=1"><link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">{% endblock %}
+{% block extra_js %}<script>
+document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',function(){document.querySelectorAll('.tab,.tab-content').forEach(el=>el.classList.remove('active'));this.classList.add('active');document.getElementById('tab-'+this.dataset.tab).classList.add('active');if(this.dataset.tab==='mapa'&&window.mapaAdmin)setTimeout(()=>window.mapaAdmin.invalidateSize(),300);});});
+if(typeof L!=='undefined'){window.mapaAdmin=L.map('mapa-admin',{center:[10.0,-66.0],zoom:6});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',referrerPolicy:'strict-origin-when-cross-origin',maxZoom:19}).addTo(window.mapaAdmin);}
+window.generarReporte=function(tipo,contenido){const msg=document.getElementById('mensaje-reporte');msg.style.display='block';msg.className='mensaje-reporte loading';msg.innerHTML='<i class="fas fa-spinner fa-spin"></i> Generando...';fetch(`/api/reportes/generar/?tipo=${tipo}&contenido=${contenido}`).then(res=>res.json()).then(data=>{if(data.success){msg.className='mensaje-reporte success';msg.innerHTML=`<i class="fas fa-check-circle"></i> ${data.mensaje}`;window.location.href=`/api/reportes/descargar/${data.archivo}/`;}else{msg.className='mensaje-reporte error';msg.innerHTML=`<i class="fas fa-exclamation-circle"></i> ${data.error||'Error'}`;}});};
+</script>{% endblock %}
