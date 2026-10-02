@@ -3,7 +3,9 @@ from django.db.models.signals import post_delete, post_save, pre_delete
 from django.dispatch import receiver
 
 from .history import registrar_version, serializar_instancia
-from apps.emergencias.models import Evento\n\nfrom .models import (
+from apps.emergencias.models import Evento
+
+from .models import (
     PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada,
     ParametrosModelo, RegistroVersion,
 )
