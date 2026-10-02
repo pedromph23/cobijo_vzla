@@ -1,9 +1,13 @@
 /**
  * Control del sidebar (menú lateral).
  *
- * ⚠️ ADVERTENCIA: `base.html` ya incluye esta lógica inline. Si cargas este
- * archivo Y `base.html`, el toggle se ejecutará DOS veces y parecerá no
- * funcionar. Usa uno u otro.
+ * Responsabilidades:
+ * - Gestionar apertura/cierre en móvil.
+ * - Gestionar colapso/expansión en escritorio.
+ * - Mantener aria-expanded sincronizado.
+ * - Cerrar el menú móvil mediante overlay o Escape.
+ *
+ * El ajuste global de breakpoints pertenece a responsive.js.
  */
 (function () {
     'use strict';
@@ -16,8 +20,10 @@
 
         if (!sidebar || !btnToggle) return;
 
+        const BREAKPOINT_MOVIL = 768;
+
         function esDesktop() {
-            return window.innerWidth > 768;
+            return window.innerWidth > BREAKPOINT_MOVIL;
         }
 
         function sincronizarAria() {
@@ -39,28 +45,37 @@
             sincronizarAria();
         }
 
-        btnToggle.addEventListener('click', function (e) {
-            e.preventDefault();
+        btnToggle.addEventListener('click', function (event) {
+            event.preventDefault();
+
             if (esDesktop()) {
                 sidebar.classList.toggle('collapsed');
+                sincronizarAria();
             } else {
                 sidebar.classList.contains('open') ? cerrarMobile() : abrirMobile();
             }
-            sincronizarAria();
-            // Forzar recalcular tamaño del mapa
-            setTimeout(function () {
+
+            // Permite a Leaflet recalcular el espacio disponible después de la animación.
+            window.setTimeout(function () {
                 window.dispatchEvent(new Event('resize'));
             }, 300);
         });
 
-        btnClose && btnClose.addEventListener('click', cerrarMobile);
-        overlay && overlay.addEventListener('click', cerrarMobile);
+        if (btnClose) {
+            btnClose.addEventListener('click', cerrarMobile);
+        }
 
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') cerrarMobile();
+        if (overlay) {
+            overlay.addEventListener('click', cerrarMobile);
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !esDesktop()) {
+                cerrarMobile();
+            }
         });
 
-        window.addEventListener('resize', sincronizarAria);
+        window.addEventListener('resize', sincronizarAria, { passive: true });
         sincronizarAria();
     });
 })();
