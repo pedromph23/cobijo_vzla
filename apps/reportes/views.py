@@ -48,6 +48,22 @@ TIPOS_VALIDOS = {
 
 
 
+def _parsear_filtro_historico(request):
+    fecha = request.query_params.get('fecha_historica', '').strip()
+    hora = request.query_params.get('hora_historica', '').strip()
+    if not fecha:
+        return None, ['La fecha histórica es obligatoria.']
+    d = parse_date(fecha)
+    h = parse_time(hora) if hora else time.max
+    errores = []
+    if not d:
+        errores.append('fecha_historica inválida; use AAAA-MM-DD.')
+    if hora and not h:
+        errores.append('hora_historica inválida; use HH:MM.')
+    if errores:
+        return None, errores
+    return timezone.make_aware(datetime.combine(d, h)), []
+
 def _parsear_filtro_temporal(request):
     """Convierte filtros de fecha/hora en un intervalo timezone-aware."""
     fecha = request.query_params.get('fecha', '').strip()
@@ -90,7 +106,7 @@ def _ip_cliente(request):
 
 
 def _registrar_reporte(request, *, tipo, contenido, desde=None, hasta=None,
-                       resultado, archivo='', detalle=''):
+                       resultado, archivo='', detalle='', modo='actual', fecha_referencia=None):
     """Registra en la bitácora la ejecución de un reporte."""
     try:
         RegistroReporte.objects.create(
@@ -99,6 +115,8 @@ def _registrar_reporte(request, *, tipo, contenido, desde=None, hasta=None,
             contenido=contenido,
             fecha_desde=desde,
             fecha_hasta=hasta,
+            modo=modo,
+            fecha_referencia=fecha_referencia,
             archivo=archivo,
             resultado=resultado,
             detalle=detalle[:500],
@@ -119,6 +137,8 @@ def _registrar_reporte(request, *, tipo, contenido, desde=None, hasta=None,
                 'fecha_desde': desde.isoformat() if desde else None,
                 'fecha_hasta': hasta.isoformat() if hasta else None,
                 'archivo': archivo,
+                'modo': modo,
+                'fecha_referencia': fecha_referencia.isoformat() if fecha_referencia else None,
             },
         )
     except Exception:
@@ -150,7 +170,13 @@ def api_generar_reporte(request):
     """
     tipo = request.query_params.get('tipo', '').lower()
     contenido = request.query_params.get('contenido', '').lower()
-    desde, hasta, errores = _parsear_filtro_temporal(request)
+    modo = request.query_params.get('modo', 'actual').lower()
+    fecha_referencia = None
+    if modo == 'historico':
+        fecha_referencia, errores = _parsear_filtro_historico(request)
+        desde, hasta = None, None
+    else:
+        desde, hasta, errores = _parsear_filtro_temporal(request)
     if errores:
         # Registrar como rechazado cuando el tipo/contenido es válido pero
         # el intervalo temporal no cumple las reglas del módulo.
@@ -161,6 +187,8 @@ def api_generar_reporte(request):
                 contenido=contenido,
                 resultado='rechazado',
                 detalle='; '.join(errores),
+                modo=modo,
+                fecha_referencia=fecha_referencia,
             )
         return JsonResponse(
             {'error': 'Filtros temporales inválidos', 'detalle': errores},
@@ -186,17 +214,17 @@ def api_generar_reporte(request):
         # Limpiar reportes antiguos antes de generar uno nuevo
         limpiar_reportes_antiguos()
 
-        ruta = generador(desde=desde, hasta=hasta)
+        ruta = generador(desde=desde, hasta=hasta, as_of=fecha_referencia)
         if not ruta:
             _registrar_reporte(request, tipo=tipo, contenido=contenido, desde=desde, hasta=hasta,
-                               resultado='sin_datos', detalle='No hubo datos para el período solicitado.')
+                               resultado='sin_datos', detalle='No hubo datos para la referencia solicitada.', modo=modo, fecha_referencia=fecha_referencia)
             return JsonResponse(
                 {'error': 'No hay datos para generar el reporte'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         _registrar_reporte(request, tipo=tipo, contenido=contenido, desde=desde, hasta=hasta,
-                           archivo=os.path.basename(ruta), resultado='exitoso',
+                           archivo=os.path.basename(ruta), resultado='exitoso', modo=modo, fecha_referencia=fecha_referencia,
                            detalle=f'Duración: {time_module.monotonic() - inicio:.2f}s')
         return JsonResponse({
             'success': True,
@@ -205,7 +233,7 @@ def api_generar_reporte(request):
         })
     except Exception as e:
         _registrar_reporte(request, tipo=tipo, contenido=contenido, desde=desde, hasta=hasta,
-                           resultado='error', detalle=str(e))
+                           resultado='error', detalle=str(e), modo=modo, fecha_referencia=fecha_referencia)
         logger.error(f"Error generando reporte {tipo}/{contenido}: {e}", exc_info=True)
         return JsonResponse(
             {'error': 'Error al generar el reporte'},
