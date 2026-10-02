@@ -219,7 +219,12 @@
                     if (data.length > 0) data.forEach(item => {
                         const div = document.createElement('div'); div.className = 'sugerencia-item'; let iconoTipo = 'fa-map-marker-alt';
                         if (item.tipo === 'estado') iconoTipo = 'fa-flag'; if (item.tipo === 'parroquia') iconoTipo = 'fa-city'; if (item.tipo === 'refugio') iconoTipo = 'fa-home';
-                        div.innerHTML = `<i class="fas ${iconoTipo}"></i> <strong>${item.nombre}</strong> <small>(${item.estado})</small>`;
+                        div.appendChild(Object.assign(document.createElement('i'), { className: 'fas ' + iconoTipo }));
+                        const strong = document.createElement('strong');
+                        strong.textContent = item.nombre || '';
+                        const small = document.createElement('small');
+                        small.textContent = ' (' + (item.estado || '') + ')';
+                        div.append(strong, small);
                         div.addEventListener('click', () => { inputBuscar.value = item.nombre; sugerencias.style.display = 'none'; if (btnLimpiar) btnLimpiar.style.display = 'block'; mapaPrincipal.flyTo([item.lat, item.lng], item.tipo === 'estado' ? 8 : 13, { duration: 1.5 }); });
                         sugerencias.appendChild(div);
                     });
@@ -257,7 +262,14 @@
     }
 
     function mostrarInfoCard(titulo, contenido, opcionesRuta = null) {
-        if (!infoCard) return; document.getElementById('info-card-title').innerHTML = titulo; const body = document.getElementById('info-card-body'); body.innerHTML = contenido;
+        if (!infoCard) return; document.getElementById('info-card-title').textContent = '';
+        const titleNode = document.getElementById('info-card-title');
+        if (titulo instanceof Node) titleNode.appendChild(titulo);
+        else titleNode.textContent = String(titulo ?? '');
+        const body = document.getElementById('info-card-body');
+        body.replaceChildren();
+        if (contenido instanceof Node) body.appendChild(contenido);
+        else body.textContent = String(contenido ?? '');
         if (opcionesRuta && opcionesRuta.lat && opcionesRuta.lng) { const btn = document.createElement('button'); btn.className = 'btn-como-llegar'; btn.innerHTML = '<i class="fas fa-route"></i> Cómo llegar'; btn.addEventListener('click', () => calcularRuta(opcionesRuta.lat, opcionesRuta.lng, opcionesRuta.nombre)); body.appendChild(btn); }
         infoCard.style.display = 'block';
     }
@@ -265,7 +277,25 @@
     function cargarDatos() {
         fetch('/api/publico/refugios/').then(r => r.json()).then(data => {
             const count = document.getElementById('count-refugios'); if (count) count.textContent = data.length;
-            data.forEach(ref => { if (ref.lat && ref.lng) { const icon = L.divIcon({ html: `<div style="background:${ref.operativo?'#0066cc':'#6c757d'};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-home" style="color:white;font-size:12px;"></i></div>`, className: 'marcador-refugio', iconSize: [30,30], iconAnchor: [15,15] }); const marker = L.marker([ref.lat, ref.lng], { icon }); marker.on('click', () => { const srv = Array.isArray(ref.servicios) ? ref.servicios.join(', ') : 'No info'; mostrarInfoCard(`<i class="fas fa-home"></i> ${ref.nombre}`, `<p><strong>Dirección:</strong> ${ref.direccion || 'N/A'}</p><p><strong>Capacidad:</strong> ${ref.capacidad_disponible}/${ref.capacidad_total}</p><p><strong>Servicios:</strong> ${srv}</p><p><strong>Estado:</strong> <span style="color:${ref.operativo?'#28a745':'#dc3545'};">${ref.operativo?'Operativo':'No operativo'}</span></p>`, { lat: ref.lat, lng: ref.lng, nombre: ref.nombre }); }); clusterRefugios.addLayer(marker); } });
+            data.forEach(ref => { if (ref.lat && ref.lng) { const icon = L.divIcon({ html: `<div style="background:${ref.operativo?'#0066cc':'#6c757d'};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-home" style="color:white;font-size:12px;"></i></div>`, className: 'marcador-refugio', iconSize: [30,30], iconAnchor: [15,15] }); const marker = L.marker([ref.lat, ref.lng], { icon }); marker.on('click', () => { const srv = Array.isArray(ref.servicios) ? ref.servicios.join(', ') : 'No info'; const titulo = document.createElement('span');
+                        const icono = document.createElement('i');
+                        icono.className = 'fas fa-home';
+                        titulo.append(icono, document.createTextNode(' ' + (ref.nombre || '')));
+                        const contenido = document.createElement('div');
+                        const filas = [
+                            ['Dirección', ref.direccion || 'N/A'],
+                            ['Capacidad', (ref.capacidad_disponible ?? 0) + '/' + (ref.capacidad_total ?? 0)],
+                            ['Servicios', srv],
+                            ['Estado', ref.operativo ? 'Operativo' : 'No operativo']
+                        ];
+                        filas.forEach(([etiqueta, valor]) => {
+                            const p = document.createElement('p');
+                            const strong = document.createElement('strong');
+                            strong.textContent = etiqueta + ': ';
+                            p.append(strong, document.createTextNode(String(valor)));
+                            contenido.appendChild(p);
+                        });
+                        mostrarInfoCard(titulo, contenido, { lat: ref.lat, lng: ref.lng, nombre: ref.nombre }); }); clusterRefugios.addLayer(marker); } });
         });
         fetch('/api/publico/zonas-afectadas/').then(r => r.json()).then(data => {
             const count = document.getElementById('count-zonas'); if (count) count.textContent = data.length;
@@ -285,7 +315,11 @@
         if (rutaControl) { mapaPrincipal.removeControl(rutaControl); rutaControl=null; }
         detenerNavegacion(); document.querySelector('.ruta-resumen')?.remove(); detenerVoz();
         if (!window.isSecureContext) { alert('La geolocalización requiere HTTPS o localhost.\n\nEstás en: '+window.location.origin); return; }
-        if (infoCard) { document.getElementById('info-card-title').innerHTML='<i class="fas fa-spinner fa-spin"></i> Calculando ruta...'; document.getElementById('info-card-body').innerHTML='<p>Obteniendo tu ubicación...</p>'; infoCard.style.display='block'; }
+        if (infoCard) { const title = document.getElementById('info-card-title');
+            const body = document.getElementById('info-card-body');
+            title.textContent = 'Calculando ruta...';
+            body.textContent = 'Obteniendo tu ubicación...';
+            infoCard.style.display='block'; }
         navigator.geolocation.getCurrentPosition((pos) => {
             const origenLat=pos.coords.latitude, origenLng=pos.coords.longitude;
             rutaControl=L.Routing.control({ waypoints:[L.latLng(origenLat,origenLng),L.latLng(destLat,destLng)], routeWhileDragging:false, addWaypoints:false, show:true, language:'es', router:L.Routing.osrmv1({serviceUrl:'https://router.project-osrm.org/route/v1',profile:'driving'}), lineOptions:{styles:[{color:'#00ffff',opacity:.9,weight:6},{color:'#0066cc',opacity:.4,weight:10}]}, createMarker:function(i,waypoint,n){ if(i===0)return L.marker(waypoint.latLng,{icon:L.divIcon({html:'<div style="background:#28a745;border-radius:50%;width:18px;height:18px;border:3px solid white;box-shadow:0 0 10px rgba(40,167,69,.8);"></div>',className:'ruta-origen-icon',iconSize:[24,24],iconAnchor:[12,12]})}); if(i===n-1)return L.marker(waypoint.latLng,{icon:L.divIcon({html:'<div style="background:#dc3545;border-radius:50%;width:24px;height:24px;border:3px solid white;box-shadow:0 0 10px rgba(220,53,69,.8);display:flex;align-items:center;justify-content:center;"><i class="fas fa-flag" style="color:white;font-size:11px;"></i></div>',className:'ruta-destino-icon',iconSize:[30,30],iconAnchor:[15,15]})}); return null; }}).addTo(mapaPrincipal);
