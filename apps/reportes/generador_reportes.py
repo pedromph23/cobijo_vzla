@@ -39,7 +39,9 @@ def _reportes_dir() -> str:
 
 def _nombre_archivo(prefijo: str, extension: str) -> str:
     """Genera un nombre único con timestamp."""
-    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    # Microsegundos evitan colisiones cuando se generan varios reportes
+    # del mismo tipo durante el mismo segundo.
+    ts = timezone.localtime().strftime('%Y%m%d_%H%M%S_%f')
     return f"{prefijo}_{ts}{extension}"
 
 
@@ -133,13 +135,17 @@ def generar_excel_estadisticas_generales(desde=None, hasta=None) -> Optional[str
     ruta = os.path.join(_reportes_dir(), _nombre_archivo('estadisticas', '.xlsx'))
 
     try:
+        r = services.resumen_general(desde=desde, hasta=hasta)
+        if not r or not any(r.values()):
+            logger.info("Sin datos para estadísticas generales")
+            return None
+
         with pd.ExcelWriter(ruta, engine='openpyxl') as writer:
             services.df_por_estado(desde=desde, hasta=hasta).to_excel(writer, sheet_name='Por Estado', index=False)
             services.df_refugios().to_excel(writer, sheet_name='Refugios', index=False)
             services.df_demandas().to_excel(writer, sheet_name='Puntos de Demanda', index=False)
             services.df_eventos(desde=desde, hasta=hasta).to_excel(writer, sheet_name='Eventos', index=False)
 
-            r = services.resumen_general(desde=desde, hasta=hasta)
             resumen_df = pd.DataFrame({
                 'Métrica': [
                     'Total Estados', 'Total Parroquias', 'Total Refugios',
@@ -354,6 +360,11 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None) -> Optional[str]:
         SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
     )
 
+    r = services.resumen_general(desde=desde, hasta=hasta)
+    if not r or not any(r.values()):
+        logger.info("Sin datos para estadísticas generales")
+        return None
+
     ruta = os.path.join(_reportes_dir(), _nombre_archivo('estadisticas', '.pdf'))
 
     try:
@@ -375,7 +386,6 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None) -> Optional[str]:
             Spacer(1, 20),
         ]
 
-        r = services.resumen_general(desde=desde, hasta=hasta)
         resumen = [
             ['Métrica', 'Valor'],
             ['Total Estados', str(r.get('estados', 0))],
@@ -425,7 +435,14 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None) -> Optional[str]:
         ]))
         elementos.append(tabla_est)
 
-        doc.build(elementos)
+        def _pie_pagina(canvas, doc):
+            canvas.saveState()
+            canvas.setFont('Helvetica', 7)
+            canvas.drawString(doc.leftMargin, 18, 'CobijoVzla · Reporte generado por el sistema')
+            canvas.drawRightString(doc.pagesize[0] - doc.rightMargin, 18, f'Página {doc.page}')
+            canvas.restoreState()
+
+        doc.build(elementos, onFirstPage=_pie_pagina, onLaterPages=_pie_pagina)
         logger.info(f"PDF general generado: {ruta}")
         return ruta
     except Exception as e:
