@@ -279,7 +279,8 @@ def generar_pdf_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optional[
                 styles['normal'],
             ),
             Paragraph(
-                'Referencia histórica: ' + timezone.localtime(as_of).strftime('%d/%m/%Y %H:%M') if as_of else\n                'Período: ' + (timezone.localtime(desde).strftime('%d/%m/%Y %H:%M') if desde else 'inicio') +
+                'Referencia histórica: ' + timezone.localtime(as_of).strftime('%d/%m/%Y %H:%M') if as_of else
+                'Período: ' + (timezone.localtime(desde).strftime('%d/%m/%Y %H:%M') if desde else 'inicio') +
                 ' → ' + (timezone.localtime(hasta).strftime('%d/%m/%Y %H:%M') if hasta else 'actualidad'),
                 styles['normal'],
             ),
@@ -412,7 +413,7 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None, as_of=None) -> Op
 
         # Tabla por estado
         elementos.append(Paragraph('Datos por Estado', styles['subtitulo']))
-        df_estados = services.df_por_estado(desde=desde, hasta=hasta)
+        df_estados = services.df_por_estado(desde=desde, hasta=hasta, as_of=as_of)
 
         filas = [['Estado', 'Parroquias', 'Población', 'Heridos', 'Fallecidos', 'Damnificados']]
         for _, row in df_estados.iterrows():
