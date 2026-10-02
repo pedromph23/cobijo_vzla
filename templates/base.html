@@ -1,29 +1,40 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="es" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta name="theme-color" content="#08111f">
+    <meta name="theme-color" content="#eef2f6" id="meta-theme-color">
     <title>{% block title %}CobijoVzla{% endblock %}</title>
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="{% static 'css/leaflet.css' %}">
     <link rel="stylesheet" href="{% static 'css/MarkerCluster.css' %}">
     <link rel="stylesheet" href="{% static 'css/MarkerCluster.Default.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=6">
-    <link rel="stylesheet" href="{% static 'css/map.css' %}?v=6">
-    <link rel="stylesheet" href="{% static 'css/clusters.css' %}?v=6">
-    <link rel="stylesheet" href="{% static 'css/popups.css' %}?v=6">
-    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}?v=6">
-    <link rel="stylesheet" href="{% static 'css/ui-refactor.css' %}?v=1">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'css/map.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'css/clusters.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'css/popups.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'css/ui-refactor.css' %}?v=2">
+
+    <script>
+        (() => {
+            try {
+                const saved = localStorage.getItem('cobijo-theme');
+                if (saved === 'light' || saved === 'dark') {
+                    document.documentElement.setAttribute('data-theme', saved);
+                }
+            } catch (_) {}
+        })();
+    </script>
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -37,7 +48,7 @@
 
             <h1 class="app-logo app-logo-optimized">
                 <a href="{% url 'mapa_publico' %}" aria-label="Ir al mapa principal de CobijoVzla">
-                    <img src="{% static 'img/logo.png' %}" alt="" class="logo-img" width="40" height="40" decoding="async">
+                    <img src="{% static 'img/logo.png' %}" alt="CobijoVzla" class="logo-img" width="40" height="40" decoding="async">
                     <span class="logo-text">CobijoVzla</span>
                 </a>
             </h1>
@@ -67,6 +78,11 @@
                         <i class="fas fa-sign-in-alt" aria-hidden="true"></i><span class="nav-label">Entrar</span>
                     </a>
                 {% endif %}
+                <button id="btn-theme-toggle" class="theme-toggle" type="button"
+                        aria-label="Activar modo oscuro" aria-pressed="false" title="Cambiar tema">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                    <span class="theme-label">Tema</span>
+                </button>
             </nav>
         </div>
     </header>
@@ -78,12 +94,35 @@
     <script src="{% static 'js/leaflet.js' %}"></script>
     <script src="{% static 'js/leaflet.markercluster.js' %}"></script>
     <script src="{% static 'js/leaflet.heat.js' %}"></script>
-    <script src="{% static 'js/main.js' %}?v=6"></script>
+    <script src="{% static 'js/main.js' %}?v=7"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: 'dark' } }));
+        const root = document.documentElement;
+        const themeButton = document.getElementById('btn-theme-toggle');
+        const themeMeta = document.getElementById('meta-theme-color');
+
+        const syncTheme = (theme) => {
+            const isDark = theme === 'dark';
+            root.setAttribute('data-theme', theme);
+            themeButton?.setAttribute('aria-pressed', String(isDark));
+            themeButton?.setAttribute('aria-label', isDark ? 'Activar modo claro' : 'Activar modo oscuro');
+            themeButton?.setAttribute('title', isDark ? 'Activar modo claro' : 'Activar modo oscuro');
+            if (themeButton) {
+                themeButton.innerHTML = isDark
+                    ? '<i class="fas fa-sun" aria-hidden="true"></i><span class="theme-label">Tema</span>'
+                    : '<i class="fas fa-moon" aria-hidden="true"></i><span class="theme-label">Tema</span>';
+            }
+            if (themeMeta) themeMeta.setAttribute('content', isDark ? '#08111f' : '#eef2f6');
+            try { localStorage.setItem('cobijo-theme', theme); } catch (_) {}
+            window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
+        };
+
+        const initialTheme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        syncTheme(initialTheme);
+        themeButton?.addEventListener('click', () => {
+            syncTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        });
 
         const btnSidebar = document.getElementById('btn-toggle-sidebar');
         const sidebar = document.getElementById('sidebar');
