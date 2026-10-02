@@ -10,6 +10,8 @@ from django.forms.models import model_to_dict
 from .models import RegistroVersion
 
 MODELOS_HISTORICOS = {
+    "apps.core.models.Estado",
+    "apps.core.models.Parroquia",
     "apps.core.models.PuntoDemanda",
     "apps.core.models.SitioCandidato",
     "apps.core.models.RefugioExistente",
