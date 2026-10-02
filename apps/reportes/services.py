@@ -72,9 +72,11 @@ def resumen_general_historico(as_of):
     eventos = _historicos('emergencias.evento', as_of)
     refugios = _historicos('core.refugioexistente', as_of)
     demandas = _historicos('core.puntodemanda', as_of)
+    estados = _historicos('core.estado', as_of)
+    parroquias = _historicos('core.parroquia', as_of)
     return {
-        'estados': Estado.objects.count(),
-        'parroquias': Parroquia.objects.count(),
+        'estados': len(estados),
+        'parroquias': len(parroquias),
         'refugios': len(refugios),
         'demandas': len(demandas),
         'zonas': len(zonas),
