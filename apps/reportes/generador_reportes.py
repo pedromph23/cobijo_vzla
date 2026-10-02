@@ -167,6 +167,11 @@ def generar_excel_estadisticas_generales(desde=None, hasta=None, as_of=None) -> 
                 ],
             })
             resumen_df.to_excel(writer, sheet_name='Resumen General', index=False)
+            indicadores = pd.DataFrame({
+                'Indicador': ['Personas afectadas', 'Promedio afectados por zona', 'Capacidad total refugios', 'Capacidad disponible', 'Ocupación refugios (%)', 'Refugios operativos', 'Refugios llenos', 'Población en demanda', 'Vulnerabilidad media', 'Eventos activos'],
+                'Valor': [r.get('personas_afectadas', 0), r.get('promedio_afectados_por_zona', 0), r.get('capacidad_total_refugios', 0), r.get('capacidad_disponible_refugios', 0), r.get('ocupacion_refugios_pct', 0), r.get('refugios_operativos', 0), r.get('refugios_llenos', 0), r.get('poblacion_demanda', 0), r.get('vulnerabilidad_media_demanda', 0), r.get('eventos_activos', 0)]
+            })
+            indicadores.to_excel(writer, sheet_name='Indicadores Ejecutivos', index=False)
 
         _formatear_excel(ruta, 'Reporte Estadístico General', desde, hasta, as_of)
         logger.info(f"Excel general generado: {ruta}")
