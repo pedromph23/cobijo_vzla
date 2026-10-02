@@ -69,6 +69,7 @@
                             <span><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Zonas</span>
                         </label>
                     </div>
+                    <span id="mapa-estado" class="mapa-estado" role="status" aria-live="polite">Cargando datos...</span>
                 </div>
 
                 <div id="mapa-admin" class="mapa-admin" aria-label="Mapa administrativo"></div>
@@ -178,7 +179,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=2">
 <link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">
 {% endblock %}
 
@@ -189,6 +190,7 @@
 
     const tabs = document.querySelectorAll('.panel-tabs .tab');
     const contents = document.querySelectorAll('.panel-content .tab-content');
+    const mapaEstado = document.getElementById('mapa-estado');
 
     function activarTab(tab) {
         const tabName = tab.dataset.tab;
@@ -218,6 +220,172 @@
         tab.addEventListener('click', () => activarTab(tab));
     });
 
+    function actualizarEstado(texto, tipo) {
+        if (!mapaEstado) return;
+        mapaEstado.textContent = texto;
+        mapaEstado.dataset.estado = tipo || '';
+    }
+
+    function escaparHtml(valor) {
+        const div = document.createElement('div');
+        div.textContent = valor == null ? '' : String(valor);
+        return div.innerHTML;
+    }
+
+    function popupPunto(item, extras) {
+        return `
+            <strong>${escaparHtml(item.nombre || 'Sin nombre')}</strong>
+            ${extras || ''}
+        `;
+    }
+
+    function crearCapasMapa(datos) {
+        const grupos = {
+            demandas: L.layerGroup(),
+            candidatos: L.layerGroup(),
+            refugios: L.layerGroup(),
+            zonas: L.layerGroup()
+        };
+
+        (datos.puntos_demanda || []).forEach((item) => {
+            if (item.lat == null || item.lng == null) return;
+
+            const marker = L.circleMarker([item.lat, item.lng], {
+                radius: 7,
+                weight: 2,
+                fillOpacity: 0.75
+            });
+
+            marker.bindPopup(popupPunto(item,
+                `<br>Población: ${escaparHtml(item.poblacion ?? 0)}` +
+                `<br>Vulnerabilidad: ${escaparHtml(item.vulnerabilidad ?? 'No especificada')}`
+            ));
+            grupos.demandas.addLayer(marker);
+        });
+
+        (datos.sitios_candidatos || []).forEach((item) => {
+            if (item.lat == null || item.lng == null) return;
+
+            const marker = L.marker([item.lat, item.lng]);
+            marker.bindPopup(popupPunto(item,
+                `<br>Capacidad máxima: ${escaparHtml(item.capacidad_maxima ?? 0)}`
+            ));
+            grupos.candidatos.addLayer(marker);
+        });
+
+        (datos.refugios || []).forEach((item) => {
+            if (item.lat == null || item.lng == null) return;
+
+            const marker = L.marker([item.lat, item.lng]);
+            marker.bindPopup(popupPunto(item,
+                `<br>Capacidad disponible: ${escaparHtml(item.capacidad_disponible ?? 0)}` +
+                `<br>Estado: ${item.operativo ? 'Operativo' : 'No operativo'}`
+            ));
+            grupos.refugios.addLayer(marker);
+        });
+
+        (datos.zonas_afectadas || []).forEach((item) => {
+            if (!item.geojson) return;
+
+            try {
+                const geojson = typeof item.geojson === 'string'
+                    ? JSON.parse(item.geojson)
+                    : item.geojson;
+
+                const capa = L.geoJSON(geojson, {
+                    weight: 2,
+                    fillOpacity: 0.25
+                });
+
+                capa.bindPopup(`
+                    <strong>${escaparHtml(item.nombre || 'Zona afectada')}</strong>
+                    <br>Nivel de alerta: ${escaparHtml(item.nivel_alerta ?? 'No especificado')}
+                    <br>Heridos: ${escaparHtml(item.heridos ?? 0)}
+                    <br>Fallecidos: ${escaparHtml(item.fallecidos ?? 0)}
+                    <br>Damnificados: ${escaparHtml(item.damnificados ?? 0)}
+                `);
+                grupos.zonas.addLayer(capa);
+            } catch (error) {
+                console.warn('Geometría de zona inválida:', item.id, error);
+            }
+        });
+
+        return grupos;
+    }
+
+    function configurarControlesCapas(grupos) {
+        const controles = [
+            ['chk-demandas', grupos.demandas],
+            ['chk-candidatos', grupos.candidatos],
+            ['chk-refugios', grupos.refugios],
+            ['chk-zonas', grupos.zonas]
+        ];
+
+        controles.forEach(([id, grupo]) => {
+            const checkbox = document.getElementById(id);
+            if (!checkbox) return;
+
+            if (checkbox.checked) grupo.addTo(window.mapaAdmin);
+
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    grupo.addTo(window.mapaAdmin);
+                } else {
+                    window.mapaAdmin.removeLayer(grupo);
+                }
+            });
+        });
+    }
+
+    function cargarDatosMapa() {
+        if (!window.mapaAdmin) return;
+
+        actualizarEstado('Cargando datos...', 'loading');
+
+        fetch('/api/datos-mapa/', {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`No se pudieron cargar las capas (${response.status}).`);
+                }
+                return response.json();
+            })
+            .then((datos) => {
+                const grupos = crearCapasMapa(datos);
+                configurarControlesCapas(grupos);
+
+                const todas = L.featureGroup([
+                    grupos.demandas,
+                    grupos.candidatos,
+                    grupos.refugios,
+                    grupos.zonas
+                ]);
+
+                if (todas.getLayers().length) {
+                    const bounds = todas.getBounds();
+                    if (bounds.isValid()) {
+                        window.mapaAdmin.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+                    }
+                }
+
+                const total = [
+                    datos.puntos_demanda,
+                    datos.sitios_candidatos,
+                    datos.refugios,
+                    datos.zonas_afectadas
+                ].reduce((sum, capa) => sum + (Array.isArray(capa) ? capa.length : 0), 0);
+
+                actualizarEstado(`${total} elementos cargados`, 'success');
+            })
+            .catch((error) => {
+                console.error('Error cargando mapa administrativo:', error);
+                actualizarEstado('No fue posible cargar las capas', 'error');
+            });
+    }
+
     if (typeof L !== 'undefined' && document.getElementById('mapa-admin')) {
         window.mapaAdmin = L.map('mapa-admin', {
             center: [10.0, -66.0],
@@ -229,6 +397,10 @@
             referrerPolicy: 'strict-origin-when-cross-origin',
             maxZoom: 19
         }).addTo(window.mapaAdmin);
+
+        cargarDatosMapa();
+    } else {
+        actualizarEstado('Mapa no disponible', 'error');
     }
 
     window.cargarResultados = function () {
