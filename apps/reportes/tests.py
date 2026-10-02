@@ -296,3 +296,23 @@ class HistorialTemporalTest(TestCase):
         registro = RegistroReporte.objects.latest('fecha_generacion')
         self.assertEqual(registro.modo, 'historico')
         self.assertIsNotNone(registro.fecha_referencia)
+
+
+class EstadisticasReportesTest(TestCase):
+    def test_indicadores_generales_son_coherentes(self):
+        from .services import estadisticas_generales
+        r = estadisticas_generales()
+        self.assertGreaterEqual(r['personas_afectadas'], r['damnificados'])
+        self.assertGreaterEqual(r['capacidad_total_refugios'], r['capacidad_disponible_refugios'])
+        self.assertGreaterEqual(r['ocupacion_refugios_pct'], 0)
+        self.assertLessEqual(r['ocupacion_refugios_pct'], 100 if r['capacidad_total_refugios'] else r['ocupacion_refugios_pct'])
+
+    def test_estadisticas_zonas_calculan_afectacion(self):
+        from .services import estadisticas_zonas
+        df = pd.DataFrame([{
+            'ID': 1, 'Heridos': 2, 'Fallecidos': 1, 'Damnificados': 10,
+            'Nivel Alerta': 'ALTO', 'Tipo Evento': 'Inundación'
+        }])
+        stats = estadisticas_zonas(df)
+        self.assertEqual(stats['personas_afectadas'], 13)
+        self.assertEqual(stats['promedio_damnificados'], 10)
