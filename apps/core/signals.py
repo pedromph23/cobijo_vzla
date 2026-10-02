@@ -3,12 +3,12 @@ from django.db.models.signals import post_delete, post_save, pre_delete
 from django.dispatch import receiver
 
 from .history import registrar_version, serializar_instancia
-from .models import (
+from apps.emergencias.models import Evento\n\nfrom .models import (
     PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada,
     ParametrosModelo, RegistroVersion,
 )
 
-MODELOS = (PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada, ParametrosModelo)
+MODELOS = (PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada, ParametrosModelo, Evento)
 
 def _request(instance):
     return getattr(instance, "_audit_request", None)
