@@ -455,3 +455,50 @@ class ResultadoOptimizacion(models.Model):
             f"{self.porcentaje_cubierto}% cobertura · "
             f"{self.poblacion_atendida:,} personas"
         ).replace(',', '.')
+
+# ============================================================
+# AUDITORÍA CENTRAL DEL SISTEMA
+# ============================================================
+
+class RegistroAuditoria(models.Model):
+    """Registro central de acciones relevantes realizadas en CobijoVzla."""
+
+    RESULTADOS = [
+        ('exitoso', 'Exitoso'),
+        ('error', 'Error'),
+        ('rechazado', 'Rechazado'),
+    ]
+
+    usuario = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='registros_auditoria',
+    )
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+    accion = models.CharField(max_length=80, db_index=True)
+    metodo = models.CharField(max_length=10)
+    ruta = models.CharField(max_length=500)
+    modelo = models.CharField(max_length=150, blank=True)
+    objeto_id = models.CharField(max_length=100, blank=True)
+    resultado = models.CharField(max_length=20, choices=RESULTADOS, default='exitoso', db_index=True)
+    detalle = models.TextField(blank=True)
+    datos_anteriores = models.JSONField(null=True, blank=True)
+    datos_nuevos = models.JSONField(null=True, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        verbose_name = 'Registro de auditoría'
+        verbose_name_plural = 'Bitácora del sistema'
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['usuario', '-fecha']),
+            models.Index(fields=['accion', '-fecha']),
+            models.Index(fields=['resultado', '-fecha']),
+        ]
+
+    def __str__(self):
+        usuario = self.usuario.username if self.usuario else 'Sistema/Anónimo'
+        return f'{self.fecha:%Y-%m-%d %H:%M:%S} · {usuario} · {self.accion}'
