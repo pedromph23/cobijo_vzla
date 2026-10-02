@@ -383,3 +383,38 @@
 @media (max-width: 520px) {
     .reporte-historico-grid { grid-template-columns: 1fr; }
 }
+
+
+.reporte-presets {
+    display: grid;
+    grid-template-columns: minmax(240px, 360px) 1fr;
+    align-items: end;
+    gap: 1rem;
+    margin: 1rem 0;
+    padding: .9rem 1rem;
+    border: 1px solid var(--comfort-border);
+    border-radius: 14px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--comfort-surface) 92%, #9bb8a5), color-mix(in srgb, var(--comfort-surface) 96%, #d8b9a7));
+}
+.reporte-presets label {
+    display: grid;
+    gap: .4rem;
+    font-weight: 700;
+}
+.reporte-presets select {
+    width: 100%;
+    min-height: 42px;
+    padding: .55rem .7rem;
+    border: 1px solid var(--comfort-border);
+    border-radius: 10px;
+    background: var(--comfort-surface);
+    color: var(--comfort-text);
+}
+.reporte-presets p {
+    margin: 0;
+    font-size: .9rem;
+    opacity: .82;
+}
+@media (max-width: 700px) {
+    .reporte-presets { grid-template-columns: 1fr; }
+}
