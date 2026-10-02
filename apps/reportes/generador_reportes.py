@@ -11,6 +11,8 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional
 
+from django.utils import timezone
+
 import pandas as pd
 from django.conf import settings
 
@@ -79,9 +81,9 @@ def limpiar_reportes_antiguos(dias: int = DIAS_RETENCION_REPORTES) -> int:
 # EXCEL
 # ============================================================
 
-def generar_excel_zonas_afectadas() -> Optional[str]:
-    """Genera Excel de zonas afectadas con hojas de resumen."""
-    df = services.df_zonas_afectadas()
+def generar_excel_zonas_afectadas(desde=None, hasta=None) -> Optional[str]:
+    """Genera Excel profesional de zonas afectadas, con filtro temporal."""
+    df = services.df_zonas_afectadas(desde=desde, hasta=hasta)
     if df.empty:
         logger.info("Sin datos de zonas afectadas")
         return None
@@ -118,6 +120,7 @@ def generar_excel_zonas_afectadas() -> Optional[str]:
             )
             resumen_evento.to_excel(writer, sheet_name='Resumen por Evento')
 
+        _formatear_excel(ruta, 'Reporte de Zonas Afectadas', desde, hasta)
         logger.info(f"Excel zonas generado: {ruta}")
         return ruta
     except Exception as e:
@@ -125,18 +128,18 @@ def generar_excel_zonas_afectadas() -> Optional[str]:
         return None
 
 
-def generar_excel_estadisticas_generales() -> Optional[str]:
-    """Genera Excel con estadísticas generales (multi-hoja)."""
+def generar_excel_estadisticas_generales(desde=None, hasta=None) -> Optional[str]:
+    """Genera Excel general profesional, con filtro temporal."""
     ruta = os.path.join(_reportes_dir(), _nombre_archivo('estadisticas', '.xlsx'))
 
     try:
         with pd.ExcelWriter(ruta, engine='openpyxl') as writer:
-            services.df_por_estado().to_excel(writer, sheet_name='Por Estado', index=False)
+            services.df_por_estado(desde=desde, hasta=hasta).to_excel(writer, sheet_name='Por Estado', index=False)
             services.df_refugios().to_excel(writer, sheet_name='Refugios', index=False)
             services.df_demandas().to_excel(writer, sheet_name='Puntos de Demanda', index=False)
-            services.df_eventos().to_excel(writer, sheet_name='Eventos', index=False)
+            services.df_eventos(desde=desde, hasta=hasta).to_excel(writer, sheet_name='Eventos', index=False)
 
-            r = services.resumen_general()
+            r = services.resumen_general(desde=desde, hasta=hasta)
             resumen_df = pd.DataFrame({
                 'Métrica': [
                     'Total Estados', 'Total Parroquias', 'Total Refugios',
@@ -154,12 +157,63 @@ def generar_excel_estadisticas_generales() -> Optional[str]:
             })
             resumen_df.to_excel(writer, sheet_name='Resumen General', index=False)
 
+        _formatear_excel(ruta, 'Reporte Estadístico General', desde, hasta)
         logger.info(f"Excel general generado: {ruta}")
         return ruta
     except Exception as e:
         logger.error(f"Error generando Excel general: {e}", exc_info=True)
         return None
 
+
+# ============================================================
+# FORMATO EXCEL
+# ============================================================
+
+def _formatear_excel(ruta: str, titulo: str, desde=None, hasta=None) -> None:
+    """Aplica formato profesional, impresión y metadatos a todas las hojas."""
+    from openpyxl import load_workbook
+    from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    from openpyxl.worksheet.page import PageMargins
+
+    wb = load_workbook(ruta)
+    azul = '496A72'
+    borde = Side(style='thin', color='D8D1C7')
+    rango = ' / '.join(
+        x for x in (
+            f"Desde {timezone.localtime(desde).strftime('%d/%m/%Y %H:%M')}" if desde else None,
+            f"Hasta {timezone.localtime(hasta).strftime('%d/%m/%Y %H:%M')}" if hasta else None,
+        ) if x
+    ) or 'Sin filtro temporal'
+    for ws in wb.worksheets:
+        ws.freeze_panes = 'A2'
+        ws.auto_filter.ref = ws.dimensions
+        ws.sheet_view.showGridLines = False
+        ws.oddFooter.center.text = 'CobijoVzla · &P de &N'
+        ws.oddFooter.right.text = '&D &T'
+        ws.page_setup.orientation = 'landscape'
+        ws.page_setup.fitToWidth = 1
+        ws.page_setup.fitToHeight = 0
+        ws.sheet_properties.pageSetUpPr.fitToPage = True
+        ws.page_margins = PageMargins(left=0.3, right=0.3, top=0.6, bottom=0.6, header=0.3, footer=0.3)
+        for cell in ws[1]:
+            cell.font = Font(bold=True, color='FFFFFF')
+            cell.fill = PatternFill('solid', fgColor=azul)
+            cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            cell.border = Border(bottom=borde)
+        for row in ws.iter_rows(min_row=2):
+            for cell in row:
+                cell.alignment = Alignment(vertical='top', wrap_text=True)
+                cell.border = Border(bottom=borde)
+        for col in range(1, ws.max_column + 1):
+            letter = get_column_letter(col)
+            max_len = min(max(len(str(ws.cell(row=r, column=col).value or '')) for r in range(1, min(ws.max_row, 100) + 1)) + 2, 45)
+            ws.column_dimensions[letter].width = max(10, max_len)
+        ws.row_dimensions[1].height = 28
+        ws.print_title_rows = '1:1'
+        ws.oddHeader.left.text = f'&B{titulo}&B'
+        ws.oddHeader.right.text = rango
+    wb.save(ruta)
 
 # ============================================================
 # PDF
@@ -193,14 +247,14 @@ def _colores_pdf():
     }
 
 
-def generar_pdf_zonas_afectadas() -> Optional[str]:
+def generar_pdf_zonas_afectadas(desde=None, hasta=None) -> Optional[str]:
     """Genera PDF de zonas afectadas en formato landscape."""
     from reportlab.lib.pagesizes import letter, landscape
     from reportlab.platypus import (
         SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
     )
 
-    df = services.df_zonas_afectadas()
+    df = services.df_zonas_afectadas(desde=desde, hasta=hasta)
     if df.empty:
         logger.info("Sin datos de zonas afectadas")
         return None
@@ -211,11 +265,11 @@ def generar_pdf_zonas_afectadas() -> Optional[str]:
         styles = _estilos_pdf()
         c = _colores_pdf()
 
-        doc = SimpleDocTemplate(ruta, pagesize=landscape(letter))
+        doc = SimpleDocTemplate(ruta, pagesize=landscape(letter), leftMargin=24, rightMargin=24, topMargin=42, bottomMargin=36)
         elementos = [
             Paragraph('Reporte de Zonas Afectadas', styles['titulo']),
             Paragraph(
-                f'Generado: {datetime.now().strftime("%Y-%m-%d %H:%M")}',
+                f'Generado: {timezone.localtime().strftime("%d/%m/%Y %H:%M")}',
                 styles['normal'],
             ),
             Spacer(1, 20),
@@ -273,7 +327,14 @@ def generar_pdf_zonas_afectadas() -> Optional[str]:
         ]))
         elementos.append(tabla_res)
 
-        doc.build(elementos)
+        def _pie_pagina(canvas, doc):
+            canvas.saveState()
+            canvas.setFont('Helvetica', 7)
+            canvas.drawString(doc.leftMargin, 18, 'CobijoVzla · Reporte generado por el sistema')
+            canvas.drawRightString(doc.pagesize[0] - doc.rightMargin, 18, f'Página {doc.page}')
+            canvas.restoreState()
+
+        doc.build(elementos, onFirstPage=_pie_pagina, onLaterPages=_pie_pagina)
         logger.info(f"PDF zonas generado: {ruta}")
         return ruta
     except Exception as e:
@@ -281,7 +342,7 @@ def generar_pdf_zonas_afectadas() -> Optional[str]:
         return None
 
 
-def generar_pdf_estadisticas_generales() -> Optional[str]:
+def generar_pdf_estadisticas_generales(desde=None, hasta=None) -> Optional[str]:
     """Genera PDF con estadísticas generales."""
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import (
@@ -294,7 +355,7 @@ def generar_pdf_estadisticas_generales() -> Optional[str]:
         styles = _estilos_pdf()
         c = _colores_pdf()
 
-        doc = SimpleDocTemplate(ruta, pagesize=letter)
+        doc = SimpleDocTemplate(ruta, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=42, bottomMargin=36)
         elementos = [
             Paragraph('Reporte Estadístico General', styles['titulo']),
             Paragraph(
@@ -304,7 +365,7 @@ def generar_pdf_estadisticas_generales() -> Optional[str]:
             Spacer(1, 20),
         ]
 
-        r = services.resumen_general()
+        r = services.resumen_general(desde=desde, hasta=hasta)
         resumen = [
             ['Métrica', 'Valor'],
             ['Total Estados', str(r.get('estados', 0))],
@@ -331,7 +392,7 @@ def generar_pdf_estadisticas_generales() -> Optional[str]:
 
         # Tabla por estado
         elementos.append(Paragraph('Datos por Estado', styles['subtitulo']))
-        df_estados = services.df_por_estado()
+        df_estados = services.df_por_estado(desde=desde, hasta=hasta)
 
         filas = [['Estado', 'Parroquias', 'Población', 'Heridos', 'Fallecidos', 'Damnificados']]
         for _, row in df_estados.iterrows():
