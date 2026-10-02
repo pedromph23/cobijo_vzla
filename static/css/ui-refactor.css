@@ -18,17 +18,17 @@
 }
 
 [data-theme="dark"] {
-  --ui-bg: #08111f;
-  --ui-surface: rgba(15, 29, 48, .96);
-  --ui-surface-2: rgba(21, 39, 62, .92);
-  --ui-border: rgba(148, 163, 184, .18);
-  --ui-text: #f8fafc;
-  --ui-muted: #a8b5c7;
-  --ui-primary: #38bdf8;
-  --ui-primary-strong: #0ea5e9;
-  --ui-success: #22c55e;
-  --ui-danger: #f87171;
-  --ui-shadow: 0 18px 45px rgba(0, 0, 0, .24);
+  --ui-bg: #171a1d;
+  --ui-surface: rgba(37,42,39,.96);
+  --ui-surface-2: rgba(45,40,43,.94);
+  --ui-border: rgba(226,231,224,.13);
+  --ui-text: #f0eee8;
+  --ui-muted: #b5b9b2;
+  --ui-primary: #91b5a2;
+  --ui-primary-strong: #abc8b8;
+  --ui-success: #9fc5ad;
+  --ui-danger: #e08a76;
+  --ui-shadow: 0 18px 45px rgba(0, 0, 0, .30);
 }
 
 body {
@@ -154,40 +154,40 @@ body {
 }
 
 /* ============================================================
-   DARK MODE · SOLO SE ACTIVA POR ELECCIÓN DEL USUARIO
+   DARK MODE · GRAFITO / SALVIA / CIRUELA
    ============================================================ */
 [data-theme="dark"] .app-header {
-  background: rgba(7,17,30,.96) !important;
-  color: #f8fafc !important;
-  border-bottom-color: var(--ui-border) !important;
+  background: var(--comfort-header) !important;
+  color: var(--comfort-text) !important;
+  border-bottom-color: var(--comfort-border) !important;
 }
 
 [data-theme="dark"] .hamburger-btn,
 [data-theme="dark"] .app-logo-optimized a,
 [data-theme="dark"] .nav-link,
 [data-theme="dark"] .theme-toggle {
-  color: #dbeafe !important;
+  color: var(--comfort-text) !important;
 }
 
 [data-theme="dark"] .main-nav {
-  background: rgba(15,29,48,.78);
-  border-color: var(--ui-border);
+  background: linear-gradient(135deg, rgba(35,42,38,.86), rgba(49,40,43,.84));
+  border-color: var(--comfort-border);
 }
 
 /* El logo institucional es blanco con letras negras y corazón rojo.
    No se invierte ni se recolorea en modo oscuro. */
 [data-theme="dark"] .app-logo-optimized .logo-mark {
   background: #ffffff;
-  border-color: rgba(255,255,255,.2);
+  border-color: rgba(255,255,255,.20);
   box-shadow: 0 5px 18px rgba(0,0,0,.30);
 }
 
 [data-theme="dark"] .nav-link:hover,
 [data-theme="dark"] .nav-link.active,
 [data-theme="dark"] .theme-toggle:hover {
-  color: #e0f2fe !important;
-  background: rgba(56,189,248,.09) !important;
-  border-color: rgba(56,189,248,.2) !important;
+  color: #dce9df !important;
+  background: linear-gradient(135deg, rgba(82,110,95,.30), rgba(103,76,81,.30)) !important;
+  border-color: rgba(145,181,162,.20) !important;
   box-shadow: none;
 }
 
@@ -232,8 +232,8 @@ body {
 }
 
 .layer-toggle:hover {
-  background: rgba(23,105,170,.06) !important;
-  border-color: rgba(23,105,170,.12);
+  background: rgba(82,123,107,.06) !important;
+  border-color: rgba(82,123,107,.12);
 }
 
 .layer-badge {
