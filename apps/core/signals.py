@@ -6,11 +6,11 @@ from .history import registrar_version, serializar_instancia
 from apps.emergencias.models import Evento
 
 from .models import (
-    PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada,
+    Estado, Parroquia, PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada,
     ParametrosModelo, RegistroVersion,
 )
 
-MODELOS = (PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada, ParametrosModelo, Evento)
+MODELOS = (Estado, Parroquia, PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada, ParametrosModelo, Evento)
 
 def _request(instance):
     return getattr(instance, "_audit_request", None)
