@@ -39,6 +39,10 @@ def df_zonas_afectadas() -> pd.DataFrame:
                 'evento__nombre', 'evento__tipo',
             )
         )
+        if desde is not None:
+            qs = qs.filter(fecha_inicio__gte=desde)
+        if hasta is not None:
+            qs = qs.filter(fecha_inicio__lte=hasta)
         data = [
             {
                 'ID': z.id,
@@ -67,13 +71,15 @@ def df_zonas_afectadas() -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def df_por_estado() -> pd.DataFrame:
+def df_por_estado(desde=None, hasta=None) -> pd.DataFrame:
     """
     DataFrame agregado por estado.
 
     Optimizado: usa anotaciones en vez de N+1 queries.
     """
     try:
+        # El filtro temporal afecta la información de zonas; el resto del estado
+        # representa una fotografía territorial vigente.
         # Query principal: parroquias agregadas por estado
         estados_agg = (
             Estado.objects
@@ -90,7 +96,12 @@ def df_por_estado() -> pd.DataFrame:
 
         # Mapa de estado_id → {zonas: [...], heridos, fallecidos, damnificados}
         zonas_por_estado: Dict[int, Dict[str, int]] = {}
-        for z in ZonaAfectada.objects.only(
+        zonas_qs = ZonaAfectada.objects
+        if desde is not None:
+            zonas_qs = zonas_qs.filter(fecha_inicio__gte=desde)
+        if hasta is not None:
+            zonas_qs = zonas_qs.filter(fecha_inicio__lte=hasta)
+        for z in zonas_qs.only(
             'id', 'heridos', 'fallecidos', 'damnificados', 'geom'
         ).iterator(chunk_size=500):
             if not z.geom:
@@ -195,13 +206,17 @@ def df_demandas() -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def df_eventos() -> pd.DataFrame:
+def df_eventos(desde=None, hasta=None) -> pd.DataFrame:
     """DataFrame de eventos."""
     try:
         qs = Evento.objects.only(
             'id', 'nombre', 'tipo', 'fecha', 'magnitud',
             'descripcion', 'activo',
         )
+        if desde is not None:
+            qs = qs.filter(fecha__gte=desde)
+        if hasta is not None:
+            qs = qs.filter(fecha__lte=hasta)
         data = [
             {
                 'ID': e.id,
@@ -224,24 +239,32 @@ def df_eventos() -> pd.DataFrame:
 # RESUMEN GENERAL
 # ============================================================
 
-def resumen_general() -> Dict[str, int]:
+def resumen_general(desde=None, hasta=None) -> Dict[str, int]:
     """Métricas globales para el reporte general."""
     try:
+        zonas_qs = ZonaAfectada.objects.all()
+        eventos_qs = Evento.objects.all()
+        if desde is not None:
+            zonas_qs = zonas_qs.filter(fecha_inicio__gte=desde)
+            eventos_qs = eventos_qs.filter(fecha__gte=desde)
+        if hasta is not None:
+            zonas_qs = zonas_qs.filter(fecha_inicio__lte=hasta)
+            eventos_qs = eventos_qs.filter(fecha__lte=hasta)
         return {
             'estados': Estado.objects.count(),
             'parroquias': Parroquia.objects.count(),
             'refugios': RefugioExistente.objects.count(),
             'demandas': PuntoDemanda.objects.count(),
-            'zonas': ZonaAfectada.objects.count(),
-            'eventos': Evento.objects.count(),
+            'zonas': zonas_qs.count(),
+            'eventos': eventos_qs.count(),
             'heridos': (
-                ZonaAfectada.objects.aggregate(t=Sum('heridos'))['t'] or 0
+                zonas_qs.aggregate(t=Sum('heridos'))['t'] or 0
             ),
             'fallecidos': (
-                ZonaAfectada.objects.aggregate(t=Sum('fallecidos'))['t'] or 0
+                zonas_qs.aggregate(t=Sum('fallecidos'))['t'] or 0
             ),
             'damnificados': (
-                ZonaAfectada.objects.aggregate(t=Sum('damnificados'))['t'] or 0
+                zonas_qs.aggregate(t=Sum('damnificados'))['t'] or 0
             ),
         }
     except Exception as e:
