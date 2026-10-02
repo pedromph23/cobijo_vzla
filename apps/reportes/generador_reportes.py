@@ -140,7 +140,7 @@ def generar_excel_estadisticas_generales(desde=None, hasta=None, as_of=None) -> 
     ruta = os.path.join(_reportes_dir(), _nombre_archivo('estadisticas', '.xlsx'))
 
     try:
-        r = services.resumen_general(desde=desde, hasta=hasta, as_of=as_of)
+        r = services.estadisticas_generales(desde=desde, hasta=hasta, as_of=as_of)
         if not r or not any(r.values()):
             logger.info("Sin datos para estadísticas generales")
             return None
