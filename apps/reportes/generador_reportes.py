@@ -93,7 +93,10 @@ def generar_excel_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optiona
     ruta = os.path.join(_reportes_dir(), _nombre_archivo('zonas_afectadas', '.xlsx'))
 
     try:
+        stats = services.estadisticas_zonas(df)
         with pd.ExcelWriter(ruta, engine='openpyxl') as writer:
+            resumen_df = pd.DataFrame({'Indicador': ['Zonas', 'Heridos', 'Fallecidos', 'Damnificados', 'Personas afectadas', 'Promedio damnificados/zona'], 'Valor': [stats['zonas'], stats['heridos'], stats['fallecidos'], stats['damnificados'], stats['personas_afectadas'], stats['promedio_damnificados']]})
+            resumen_df.to_excel(writer, sheet_name='Indicadores', index=False)
             df.to_excel(writer, sheet_name='Zonas Afectadas', index=False)
 
             # Resumen por alerta
@@ -121,6 +124,8 @@ def generar_excel_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optiona
                 .rename(columns={'ID': 'Total Zonas'})
             )
             resumen_evento.to_excel(writer, sheet_name='Resumen por Evento')
+            stats['alertas'].to_excel(writer, sheet_name='Alertas Estadísticas', index=False)
+            stats['eventos'].to_excel(writer, sheet_name='Eventos Estadísticas', index=False)
 
         _formatear_excel(ruta, 'Reporte de Zonas Afectadas', desde, hasta, as_of)
         logger.info(f"Excel zonas generado: {ruta}")
@@ -316,6 +321,14 @@ def generar_pdf_zonas_afectadas(desde=None, hasta=None, as_of=None) -> Optional[
 
         # Resumen por alerta
         elementos.append(Paragraph('Resumen por Nivel de Alerta', styles['subtitulo']))
+        stats = services.estadisticas_zonas(df)
+        elementos.append(Paragraph('Indicadores clave', styles['subtitulo']))
+        indicadores = [['Indicador', 'Valor'], ['Zonas', str(stats['zonas'])], ['Heridos', str(stats['heridos'])], ['Fallecidos', str(stats['fallecidos'])], ['Damnificados', str(stats['damnificados'])], ['Personas afectadas', str(stats['personas_afectadas'])], ['Promedio damnificados por zona', str(stats['promedio_damnificados'])]]
+        tabla_ind = Table(indicadores, colWidths=[300, 150])
+        tabla_ind.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), c['verde']), ('TEXTCOLOR', (0, 0), (-1, 0), c['blanco']), ('GRID', (0, 0), (-1, -1), 0.5, c['gris']), ('PADDING', (0, 0), (-1, -1), 6)]))
+        elementos.append(tabla_ind)
+        elementos.append(Spacer(1, 20))
+
         resumen = (
             df.groupby('Nivel Alerta')
             .agg({'Heridos': 'sum', 'Fallecidos': 'sum', 'Damnificados': 'sum'})
