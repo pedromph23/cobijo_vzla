@@ -422,7 +422,28 @@ def generar_pdf_estadisticas_generales(desde=None, hasta=None, as_of=None) -> Op
             ('PADDING', (0, 0), (-1, -1), 8),
         ]))
         elementos.append(tabla)
-        elementos.append(Spacer(1, 30))
+        elementos.append(Spacer(1, 24))
+
+        # Indicadores ejecutivos
+        elementos.append(Paragraph('Indicadores clave', styles['subtitulo']))
+        personas = r.get('heridos', 0) + r.get('fallecidos', 0) + r.get('damnificados', 0)
+        indicadores = [
+            ['Indicador', 'Valor'],
+            ['Personas afectadas', f"{personas:,}".replace(',', '.')],
+            ['Promedio afectados por zona', f"{(personas / r.get('zonas', 0)):.1f}" if r.get('zonas', 0) else '0'],
+            ['Refugios registrados', str(r.get('refugios', 0))],
+            ['Puntos de demanda', str(r.get('demandas', 0))],
+            ['Eventos registrados', str(r.get('eventos', 0))],
+        ]
+        tabla_ind = Table(indicadores, colWidths=[300, 150])
+        tabla_ind.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), c['verde']),
+            ('TEXTCOLOR', (0, 0), (-1, 0), c['blanco']),
+            ('GRID', (0, 0), (-1, -1), 0.5, c['gris']),
+            ('PADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elementos.append(tabla_ind)
+        elementos.append(Spacer(1, 24))
 
         # Tabla por estado
         elementos.append(Paragraph('Datos por Estado', styles['subtitulo']))
