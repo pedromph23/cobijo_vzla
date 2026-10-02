@@ -36,28 +36,37 @@ body {
   color: var(--ui-text) !important;
 }
 
+/* ============================================================
+   HEADER · CLARO POR DEFECTO
+   ============================================================ */
 .app-header {
-  background: #e7ebef !important;
+  background: #e9edf1 !important;
   color: #17202a !important;
-  border-bottom: 1px solid #cfd6dd !important;
+  border-bottom: 1px solid #cbd3dc !important;
   box-shadow: 0 5px 20px rgba(15, 23, 42, .10) !important;
 }
 
 .header-container {
   position: relative;
-  min-height: 64px;
-  padding: .35rem .75rem;
+  min-height: 76px;
+  padding: .35rem .9rem;
 }
 
 .hamburger-btn {
   color: #334155 !important;
 }
 
+/* ============================================================
+   BRANDING · LOGO CENTRAL
+   El conjunto completo queda centrado en el header.
+   El logo conserva siempre su diseño original.
+   ============================================================ */
 .app-logo-optimized {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+  margin: 0 !important;
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -65,22 +74,53 @@ body {
 }
 
 .app-logo-optimized a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: .7rem !important;
   color: #17202a !important;
   text-shadow: none !important;
+  white-space: nowrap;
+}
+
+.app-logo-optimized .logo-mark {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, .12);
+  border-radius: 12px;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, .13);
+  overflow: hidden;
 }
 
 .app-logo-optimized .logo-img {
-  width: 42px;
-  height: 42px;
+  display: block;
+  width: 60px;
+  height: 60px;
+  max-width: none;
   object-fit: contain;
 }
 
+.app-logo-optimized .logo-text {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em;
+  line-height: 1;
+}
+
+/* ============================================================
+   NAVEGACIÓN
+   ============================================================ */
 .main-nav {
   margin-left: auto;
   margin-right: 0;
-  padding: .2rem;
+  padding: .22rem;
   border-radius: 12px;
-  background: rgba(255,255,255,.58);
+  background: rgba(255,255,255,.62);
   border: 1px solid rgba(148,163,184,.28);
 }
 
@@ -113,8 +153,11 @@ body {
   font-weight: 500;
 }
 
+/* ============================================================
+   DARK MODE · SOLO SE ACTIVA POR ELECCIÓN DEL USUARIO
+   ============================================================ */
 [data-theme="dark"] .app-header {
-  background: rgba(7,17,30,.94) !important;
+  background: rgba(7,17,30,.96) !important;
   color: #f8fafc !important;
   border-bottom-color: var(--ui-border) !important;
 }
@@ -127,8 +170,16 @@ body {
 }
 
 [data-theme="dark"] .main-nav {
-  background: rgba(15,29,48,.75);
+  background: rgba(15,29,48,.78);
   border-color: var(--ui-border);
+}
+
+/* El logo institucional es blanco con letras negras y corazón rojo.
+   No se invierte ni se recolorea en modo oscuro. */
+[data-theme="dark"] .app-logo-optimized .logo-mark {
+  background: #ffffff;
+  border-color: rgba(255,255,255,.2);
+  box-shadow: 0 5px 18px rgba(0,0,0,.30);
 }
 
 [data-theme="dark"] .nav-link:hover,
@@ -219,9 +270,28 @@ body {
 .map-action-btn:hover,
 .btn-toolbar:hover { background: var(--ui-surface-2) !important; }
 
+@media (max-width: 900px) {
+  .header-container { min-height: 68px; }
+  .app-logo-optimized .logo-mark {
+    width: 56px;
+    height: 56px;
+    flex-basis: 56px;
+  }
+  .app-logo-optimized .logo-img { width: 52px; height: 52px; }
+  .app-logo-optimized .logo-text { font-size: 1.1rem !important; }
+}
+
 @media (max-width: 768px) {
-  .header-container { min-height: 58px; }
-  .app-logo-optimized .logo-img { width: 38px; height: 38px; }
+  .header-container { min-height: 62px; }
+  .app-logo-optimized a { gap: .5rem !important; }
+  .app-logo-optimized .logo-mark {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    border-radius: 10px;
+  }
+  .app-logo-optimized .logo-img { width: 45px; height: 45px; }
+  .app-logo-optimized .logo-text { font-size: 1rem !important; }
   .theme-label { display: none; }
   .map-layout {
     min-height: 0 !important;
@@ -230,6 +300,17 @@ body {
     border-right: 0 !important;
   }
   .sidebar { box-shadow: 18px 0 45px rgba(15,23,42,.20) !important; }
+}
+
+@media (max-width: 520px) {
+  .header-container { padding-left: .55rem; padding-right: .55rem; }
+  .app-logo-optimized .logo-text { display: none; }
+  .app-logo-optimized .logo-mark {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+  }
+  .app-logo-optimized .logo-img { width: 43px; height: 43px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
