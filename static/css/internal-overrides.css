@@ -1,8 +1,6 @@
 /* CobijoVzla · compatibility and screen-specific refinements */
 .reportes-layout.single { display: block; max-width: 600px; margin: 0 auto; }
 .reportes-layout.single .reportes-acciones { width: 100%; }
-
-/* Standalone reports */
 .reportes-container { max-width: 1000px; margin: 0 auto; padding: 1.5rem; min-height: calc(100vh - 60px); }
 .reportes-header { text-align: center; margin-bottom: 2rem; color: var(--comfort-text); }
 .reportes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
@@ -14,7 +12,6 @@
 .btn-pdf { background: linear-gradient(135deg, #c76d5c, #d98a73); }
 .mensaje-resultado { margin-top: 2rem; padding: 1rem; border-radius: 10px; text-align: center; background: var(--comfort-soft); color: var(--comfort-text); font-weight: 700; }
 
-/* Optimization results */
 .resultados-container { padding: 1rem; min-height: 100vh; color: var(--comfort-text); }
 .resultados-header, .selector-section, .resumen-card, .mapa-resultados, .centros-lista, .detalle-section { background: var(--comfort-surface); border: 1px solid var(--comfort-border); border-radius: 16px; padding: 1rem; margin-bottom: 1rem; box-shadow: var(--comfort-shadow-soft); }
 .resultados-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
@@ -46,6 +43,65 @@
 .tabla-asignaciones td { padding: .75rem; border-bottom: 1px solid var(--comfort-border); }
 .badge { background: var(--comfort-green); color: #fff; padding: .2rem .5rem; border-radius: 12px; font-size: .8rem; }
 
+/* Mapa administrativo: refinamiento visual sin modificar contratos JS */
+.mapa-toolbar {
+    background: linear-gradient(135deg, var(--comfort-soft), var(--comfort-surface));
+    box-shadow: var(--comfort-shadow-soft);
+}
+.mapa-toolbar .toolbar-group { justify-content: flex-start; }
+.checkbox-item {
+    min-height: 38px;
+    padding: .45rem .7rem;
+    border: 1px solid var(--comfort-border);
+    border-radius: 10px;
+    background: var(--comfort-surface);
+    color: var(--comfort-text);
+    transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.checkbox-item:hover {
+    background: var(--comfort-soft);
+    border-color: rgba(82,123,107,.3);
+    transform: translateY(-1px);
+}
+.checkbox-item input { accent-color: var(--comfort-green-strong); }
+.mapa-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    min-height: 28px;
+    margin-left: auto;
+    padding: .35rem .7rem;
+    border-radius: 999px;
+    background: var(--comfort-surface);
+    border: 1px solid var(--comfort-border);
+    color: var(--comfort-muted);
+    font-size: .78rem;
+    font-weight: 700;
+}
+.mapa-estado[data-estado="loading"] { color: var(--comfort-green-strong); }
+.mapa-estado[data-estado="error"] { color: #9b4e40; background: rgba(199,109,92,.10); }
+.mapa-estado[data-estado="success"] { color: var(--comfort-green-strong); }
+.mapa-admin, .mapa-resultados-container {
+    overflow: hidden;
+    border: 1px solid var(--comfort-border);
+    box-shadow: var(--comfort-shadow-soft);
+}
+.leaflet-container { font-family: inherit; }
+.leaflet-control-zoom a,
+.leaflet-control-layers,
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+    background: var(--comfort-surface);
+    color: var(--comfort-text);
+}
+.leaflet-control-zoom a,
+.leaflet-control-layers { border-color: var(--comfort-border) !important; }
+.leaflet-popup-content { color: var(--comfort-text); }
+
+@media (max-width: 900px) {
+    .resultados-layout { grid-template-columns: 1fr; }
+    .mapa-resultados-container { height: 360px; }
+}
 @media (max-width: 768px) {
     .reportes-container { padding: 1rem; }
     .reporte-card { padding: 1.5rem 1rem; }
@@ -55,5 +111,14 @@
     .lista-centros { max-height: 250px; }
     .header-actions { width: 100%; }
     .btn-action { flex: 1; justify-content: center; }
+    .mapa-toolbar .toolbar-group { gap: .5rem; }
+    .checkbox-item { flex: 1 1 145px; }
+    .mapa-estado { width: 100%; margin-left: 0; justify-content: center; }
 }
-@media (max-width: 600px) { .reportes-layout.single { max-width: none; } }
+@media (max-width: 600px) {
+    .reportes-layout.single { max-width: none; }
+    .mapa-admin { min-height: 360px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .checkbox-item, .centro-item { transition: none; }
+}
