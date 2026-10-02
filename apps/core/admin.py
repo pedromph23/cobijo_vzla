@@ -20,6 +20,7 @@ from .models import (
     ParametrosModelo,
     ResultadoOptimizacion,
     RegistroAuditoria,
+    RegistroVersion,
 )
 
 
@@ -466,6 +467,32 @@ class RegistroAuditoriaAdmin(admin.ModelAdmin):
         'usuario', 'fecha', 'accion', 'metodo', 'ruta', 'modelo',
         'objeto_id', 'resultado', 'detalle', 'datos_anteriores',
         'datos_nuevos', 'ip', 'user_agent',
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_staff
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
+@admin.register(RegistroVersion)
+class RegistroVersionAdmin(admin.ModelAdmin):
+    list_display = ('fecha_version', 'modelo', 'objeto_id', 'operacion', 'usuario', 'ip')
+    list_filter = ('modelo', 'operacion', 'fecha_version')
+    search_fields = ('modelo', 'objeto_id', 'ruta', 'ip', 'usuario__username')
+    date_hierarchy = 'fecha_version'
+    list_select_related = ('usuario',)
+    list_per_page = 50
+    readonly_fields = (
+        'fecha_version', 'usuario', 'modelo', 'objeto_id', 'operacion',
+        'datos', 'ruta', 'ip',
     )
 
     def has_add_permission(self, request):
