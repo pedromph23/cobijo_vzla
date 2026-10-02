@@ -1,0 +1,215 @@
+/* CobijoVzla · Soft palette layer
+   Visual-only overrides. Light mode is intentionally calm and warm.
+   Dark mode uses graphite, sage and muted plum instead of dashboard blue.
+*/
+:root {
+  --comfort-page: linear-gradient(135deg, #f5f2ec 0%, #edf3ee 52%, #f7ebe6 100%);
+  --comfort-surface: linear-gradient(135deg, rgba(255,253,248,.97) 0%, rgba(239,245,240,.96) 100%);
+  --comfort-soft: linear-gradient(135deg, #edf3ef 0%, #f8ece7 100%);
+  --comfort-header: linear-gradient(110deg, #f2eee7 0%, #e8f0eb 52%, #f4e9e4 100%);
+  --comfort-text: #28312d;
+  --comfort-muted: #68736e;
+  --comfort-border: rgba(74,86,79,.16);
+  --comfort-green: #527b6b;
+  --comfort-green-strong: #3f6657;
+  --comfort-coral: #c76d5c;
+  --comfort-shadow: 0 12px 30px rgba(58,67,62,.10);
+  --comfort-shadow-soft: 0 5px 18px rgba(58,67,62,.07);
+}
+
+[data-theme="dark"] {
+  --comfort-page: linear-gradient(135deg, #171a1d 0%, #202521 50%, #252024 100%);
+  --comfort-surface: linear-gradient(135deg, rgba(37,42,39,.97) 0%, rgba(45,40,43,.96) 100%);
+  --comfort-soft: linear-gradient(135deg, #242b27 0%, #30282a 100%);
+  --comfort-header: linear-gradient(110deg, #1b1e21 0%, #252a27 52%, #2a2326 100%);
+  --comfort-text: #f0eee8;
+  --comfort-muted: #b5b9b2;
+  --comfort-border: rgba(226,231,224,.13);
+  --comfort-green: #91b5a2;
+  --comfort-green-strong: #abc8b8;
+  --comfort-coral: #e08a76;
+  --comfort-shadow: 0 18px 45px rgba(0,0,0,.30);
+  --comfort-shadow-soft: 0 8px 24px rgba(0,0,0,.22);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--comfort-page) !important;
+  background-attachment: fixed;
+  color: var(--comfort-text) !important;
+}
+
+main {
+  background: transparent !important;
+}
+
+/* Header: soft gradient rather than a flat block. */
+.app-header {
+  background: var(--comfort-header) !important;
+  color: var(--comfort-text) !important;
+  border-bottom-color: var(--comfort-border) !important;
+  box-shadow: 0 6px 22px rgba(58,67,62,.10) !important;
+}
+
+.hamburger-btn,
+.app-logo-optimized a,
+.nav-link,
+.theme-toggle {
+  color: var(--comfort-text) !important;
+}
+
+.main-nav {
+  background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(238,244,239,.70)) !important;
+  border-color: var(--comfort-border) !important;
+  box-shadow: var(--comfort-shadow-soft);
+  backdrop-filter: blur(12px);
+}
+
+.nav-link:hover,
+.nav-link.active,
+.theme-toggle:hover {
+  color: var(--comfort-green-strong) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.90), rgba(238,245,240,.92)) !important;
+  border-color: rgba(82,123,107,.18) !important;
+  box-shadow: 0 4px 12px rgba(58,67,62,.08);
+}
+
+/* Keep the institutional logo unchanged and visible in both themes. */
+.app-logo-optimized .logo-mark,
+[data-theme="dark"] .app-logo-optimized .logo-mark {
+  background: #fff !important;
+  border-color: rgba(56,65,60,.13) !important;
+  box-shadow: 0 7px 20px rgba(58,67,62,.14) !important;
+}
+
+[data-theme="dark"] .app-logo-optimized .logo-mark {
+  border-color: rgba(255,255,255,.20) !important;
+  box-shadow: 0 7px 20px rgba(0,0,0,.32) !important;
+}
+
+/* Surfaces use very subtle two-tone gradients. */
+.sidebar,
+.info-card,
+.report-card,
+.data-card,
+.panel-content,
+.login-card,
+.resumen-card,
+.tab,
+.data-card-item {
+  background: var(--comfort-surface) !important;
+  border-color: var(--comfort-border) !important;
+  box-shadow: var(--comfort-shadow) !important;
+}
+
+.sidebar-header,
+.layer-toggle:hover,
+.map-action-btn:hover,
+.btn-toolbar:hover {
+  background: var(--comfort-soft) !important;
+}
+
+.sidebar-section h3,
+.layer-badge,
+.form-control,
+.selector-control,
+.map-action-btn,
+.btn-toolbar {
+  color: var(--comfort-text) !important;
+}
+
+.layer-badge,
+.form-control,
+.selector-control,
+.map-action-btn,
+.btn-toolbar {
+  background: var(--comfort-surface) !important;
+  border-color: var(--comfort-border) !important;
+}
+
+.form-control::placeholder {
+  color: var(--comfort-muted) !important;
+}
+
+.form-control:focus,
+.selector-control:focus {
+  border-color: rgba(82,123,107,.42) !important;
+  box-shadow: 0 0 0 3px rgba(82,123,107,.10) !important;
+}
+
+.layer-toggle {
+  border-radius: 12px;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.layer-toggle:hover {
+  border-color: rgba(82,123,107,.13);
+  transform: translateX(2px);
+}
+
+.btn-location {
+  background: linear-gradient(135deg, #5d9078, #789b88) !important;
+  box-shadow: 0 8px 20px rgba(58,67,62,.12) !important;
+}
+
+.btn-reporte {
+  background: linear-gradient(135deg, #c87563, #d98a73) !important;
+  box-shadow: 0 8px 20px rgba(58,67,62,.12) !important;
+}
+
+/* Dark mode: graphite + sage + muted plum. */
+[data-theme="dark"] .main-nav {
+  background: linear-gradient(135deg, rgba(35,42,38,.86), rgba(49,40,43,.84)) !important;
+  border-color: var(--comfort-border) !important;
+  box-shadow: var(--comfort-shadow-soft);
+}
+
+[data-theme="dark"] .nav-link:hover,
+[data-theme="dark"] .nav-link.active,
+[data-theme="dark"] .theme-toggle:hover {
+  color: #dce9df !important;
+  background: linear-gradient(135deg, rgba(82,110,95,.30), rgba(103,76,81,.30)) !important;
+  border-color: rgba(145,181,162,.20) !important;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .layer-toggle:hover {
+  background: linear-gradient(135deg, rgba(71,91,80,.35), rgba(83,61,65,.32)) !important;
+  border-color: rgba(145,181,162,.14);
+}
+
+[data-theme="dark"] .map-action-btn,
+[data-theme="dark"] .btn-toolbar {
+  background: linear-gradient(135deg, rgba(40,47,43,.92), rgba(48,40,43,.92)) !important;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .selector-control:focus {
+  border-color: rgba(145,181,162,.42) !important;
+  box-shadow: 0 0 0 3px rgba(145,181,162,.10) !important;
+}
+
+/* Focus remains visible without being visually aggressive. */
+:focus-visible {
+  outline: 3px solid rgba(82,123,107,.30) !important;
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] :focus-visible {
+  outline-color: rgba(145,181,162,.42) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link,
+  .theme-toggle,
+  .layer-toggle,
+  .hamburger-btn,
+  .map-action-btn,
+  .btn-toolbar {
+    transition: none !important;
+  }
+}
