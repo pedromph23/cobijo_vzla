@@ -228,7 +228,7 @@ def _formatear_excel(ruta: str, titulo: str, desde=None, hasta=None, as_of=None)
         ws.row_dimensions[1].height = 28
         ws.print_title_rows = '1:1'
         ws.oddHeader.left.text = f'&B{titulo}&B'
-        ws.oddHeader.right.text = rango
+        ws.oddHeader.right.text = (f'Referencia histórica: {timezone.localtime(as_of).strftime("%d/%m/%Y %H:%M")}' if as_of else rango)
     wb.save(ruta)
 
 
