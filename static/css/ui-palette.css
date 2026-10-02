@@ -33,9 +33,7 @@
 }
 
 html,
-body {
-  min-height: 100%;
-}
+body { min-height: 100%; }
 
 body {
   background: var(--comfort-page) !important;
@@ -43,9 +41,7 @@ body {
   color: var(--comfort-text) !important;
 }
 
-main {
-  background: transparent !important;
-}
+main { background: transparent !important; }
 
 .app-header {
   background: var(--comfort-header) !important;
@@ -57,9 +53,7 @@ main {
 .hamburger-btn,
 .app-logo-optimized a,
 .nav-link,
-.theme-toggle {
-  color: var(--comfort-text) !important;
-}
+.theme-toggle { color: var(--comfort-text) !important; }
 
 .main-nav {
   background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(238,244,239,.70)) !important;
@@ -106,18 +100,14 @@ main {
 .sidebar-header,
 .layer-toggle:hover,
 .map-action-btn:hover,
-.btn-toolbar:hover {
-  background: var(--comfort-soft) !important;
-}
+.btn-toolbar:hover { background: var(--comfort-soft) !important; }
 
 .sidebar-section h3,
 .layer-badge,
 .form-control,
 .selector-control,
 .map-action-btn,
-.btn-toolbar {
-  color: var(--comfort-text) !important;
-}
+.btn-toolbar { color: var(--comfort-text) !important; }
 
 .layer-badge,
 .form-control,
@@ -128,9 +118,7 @@ main {
   border-color: var(--comfort-border) !important;
 }
 
-.form-control::placeholder {
-  color: var(--comfort-muted) !important;
-}
+.form-control::placeholder { color: var(--comfort-muted) !important; }
 
 .form-control:focus,
 .selector-control:focus {
@@ -156,6 +144,19 @@ main {
 .btn-reporte {
   background: linear-gradient(135deg, #c87563, #d98a73) !important;
   box-shadow: 0 8px 20px rgba(58,67,62,.12) !important;
+}
+
+/* Leaflet visual elements generated with inline styles by the existing map JS. */
+.cluster-personalizado > div {
+  background: linear-gradient(135deg, var(--comfort-green), var(--comfort-green-strong)) !important;
+  border-color: rgba(255,255,255,.92) !important;
+  box-shadow: 0 5px 16px rgba(58,67,62,.20) !important;
+}
+
+.marcador-ubicacion > div {
+  background: var(--comfort-coral) !important;
+  border-color: #fff !important;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--comfort-coral) 58%, transparent) !important;
 }
 
 [data-theme="dark"] .main-nav {
@@ -194,9 +195,7 @@ main {
   outline-offset: 2px;
 }
 
-[data-theme="dark"] :focus-visible {
-  outline-color: rgba(145,181,162,.42) !important;
-}
+[data-theme="dark"] :focus-visible { outline-color: rgba(145,181,162,.42) !important; }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-link,
@@ -204,9 +203,7 @@ main {
   .layer-toggle,
   .hamburger-btn,
   .map-action-btn,
-  .btn-toolbar {
-    transition: none !important;
-  }
+  .btn-toolbar { transition: none !important; }
 }
 
 /* ================================================================
@@ -218,13 +215,8 @@ main {
 
 .panel-container,
 .crud-container,
-.login-container {
-  color: var(--comfort-text) !important;
-}
-
-.panel-container {
-  background: transparent !important;
-}
+.login-container { color: var(--comfort-text) !important; }
+.panel-container { background: transparent !important; }
 
 .panel-header,
 .panel-content,
@@ -242,15 +234,10 @@ main {
 }
 
 .panel-header,
-.crud-main {
-  border-radius: 18px !important;
-}
-
+.crud-main { border-radius: 18px !important; }
 .panel-header,
 .panel-tabs,
-.crud-header {
-  gap: 1rem;
-}
+.crud-header { gap: 1rem; }
 
 .panel-icon.admin,
 .user-badge.admin,
@@ -269,9 +256,7 @@ main {
 }
 
 .panel-icon.admin,
-.panel-icon.gestor {
-  box-shadow: 0 10px 24px rgba(58,67,62,.14) !important;
-}
+.panel-icon.gestor { box-shadow: 0 10px 24px rgba(58,67,62,.14) !important; }
 
 .tab,
 .crud-card,
@@ -296,19 +281,14 @@ main {
   border-color: rgba(82,123,107,.28) !important;
 }
 
-.crud-card:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: var(--comfort-shadow-soft) !important;
-}
+.crud-card:hover { transform: translateY(-2px) !important; box-shadow: var(--comfort-shadow-soft) !important; }
 
 .crud-card i,
 .crud-header h1 i,
 .section-title i,
 .reportes-acciones h3 i,
 .optimizacion-form h3 i,
-.optimizacion-resultado h3 i {
-  color: var(--comfort-green) !important;
-}
+.optimizacion-resultado h3 i { color: var(--comfort-green) !important; }
 
 .crud-menu-item.active {
   background: linear-gradient(135deg, var(--comfort-green-strong), var(--comfort-green)) !important;
@@ -326,29 +306,13 @@ main {
 .crud-search button:hover,
 .btn-primary:hover,
 .btn-ejecutar:hover,
-.btn-login:hover {
-  filter: brightness(1.04);
-  transform: translateY(-1px);
-}
+.btn-login:hover { filter: brightness(1.04); transform: translateY(-1px); }
 
-.crud-table th {
-  background: var(--comfort-soft) !important;
-  color: var(--comfort-muted) !important;
-}
-
-.crud-table td {
-  border-top-color: var(--comfort-border) !important;
-  color: var(--comfort-text) !important;
-}
-
-.crud-table tr:hover td {
-  background: rgba(82,123,107,.06) !important;
-}
-
+.crud-table th { background: var(--comfort-soft) !important; color: var(--comfort-muted) !important; }
+.crud-table td { border-top-color: var(--comfort-border) !important; color: var(--comfort-text) !important; }
+.crud-table tr:hover td { background: rgba(82,123,107,.06) !important; }
 .crud-pagination a,
-.btn-volver {
-  color: var(--comfort-green-strong) !important;
-}
+.btn-volver { color: var(--comfort-green-strong) !important; }
 
 .crud-alert-success {
   background: rgba(82,123,107,.13) !important;
@@ -371,91 +335,37 @@ main {
 }
 
 [data-theme="dark"] .crud-alert-error,
-[data-theme="dark"] .alert-danger {
-  color: #f0b0a2 !important;
-}
-
+[data-theme="dark"] .alert-danger { color: #f0b0a2 !important; }
 [data-theme="dark"] .crud-alert-warning,
-[data-theme="dark"] .alert-warning {
-  color: #e7cf8d !important;
-}
-
-[data-theme="dark"] .crud-table tr:hover td {
-  background: rgba(145,181,162,.07) !important;
-}
+[data-theme="dark"] .alert-warning { color: #e7cf8d !important; }
+[data-theme="dark"] .crud-table tr:hover td { background: rgba(145,181,162,.07) !important; }
 
 [data-theme="dark"] .panel-header,
 [data-theme="dark"] .panel-content,
 [data-theme="dark"] .crud-sidebar,
 [data-theme="dark"] .crud-main,
-[data-theme="dark"] .login-card {
-  background: var(--comfort-surface) !important;
-}
+[data-theme="dark"] .login-card { background: var(--comfort-surface) !important; }
 
-/* Login: reduce the old saturated blue and reuse the same green/coral identity. */
-.login-container {
-  background: transparent !important;
-}
-
-.login-header {
-  background: linear-gradient(135deg, var(--comfort-green-strong), var(--comfort-coral)) !important;
-}
-
-.login-icon {
-  background: rgba(255,255,255,.18) !important;
-  box-shadow: 0 8px 20px rgba(0,0,0,.10);
-}
-
-.form-control:focus {
-  border-color: rgba(82,123,107,.45) !important;
-  box-shadow: 0 0 0 3px rgba(82,123,107,.11) !important;
-}
-
-.btn-toggle-password {
-  color: var(--comfort-muted) !important;
-}
-
-.login-footer {
-  background: var(--comfort-soft) !important;
-  border-top-color: var(--comfort-border) !important;
-}
+.login-container { background: transparent !important; }
+.login-header { background: linear-gradient(135deg, var(--comfort-green-strong), var(--comfort-coral)) !important; }
+.login-icon { background: rgba(255,255,255,.18) !important; box-shadow: 0 8px 20px rgba(0,0,0,.10); }
+.form-control:focus { border-color: rgba(82,123,107,.45) !important; box-shadow: 0 0 0 3px rgba(82,123,107,.11) !important; }
+.btn-toggle-password { color: var(--comfort-muted) !important; }
+.login-footer { background: var(--comfort-soft) !important; border-top-color: var(--comfort-border) !important; }
 
 @media (max-width: 900px) {
   .panel-container,
-  .crud-container {
-    padding: .85rem !important;
-  }
-
-  .panel-header {
-    padding: 1.1rem !important;
-  }
-
-  .panel-tabs .tab {
-    min-width: 120px;
-  }
+  .crud-container { padding: .85rem !important; }
+  .panel-header { padding: 1.1rem !important; }
+  .panel-tabs .tab { min-width: 120px; }
 }
 
 @media (max-width: 600px) {
   .panel-header-left,
-  .panel-header-right {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .panel-header-left {
-    text-align: center;
-  }
-
+  .panel-header-right { width: 100%; justify-content: center; }
+  .panel-header-left { text-align: center; }
   .crud-main,
-  .tab-content {
-    padding: 1rem !important;
-  }
-
-  .crud-header {
-    align-items: stretch;
-  }
-
-  .crud-header .btn-crud {
-    justify-content: center;
-  }
+  .tab-content { padding: 1rem !important; }
+  .crud-header { align-items: stretch; }
+  .crud-header .btn-crud { justify-content: center; }
 }
