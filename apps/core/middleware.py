@@ -20,7 +20,11 @@ class AuditoriaMiddleware(MiddlewareMixin):
         es_auth = ruta.startswith('/accounts/login') or ruta.startswith('/accounts/logout')
         es_mutacion = metodo in self.METODOS_MUTACION
 
-        if es_api or es_auth or es_mutacion:
+        # La generación de reportes registra un evento enriquecido desde
+        # apps.reportes; evitamos duplicarlo aquí.
+        es_reporte_generacion = ruta == '/api/reportes/generar/'
+
+        if (es_api or es_auth or es_mutacion) and not es_reporte_generacion:
             if response.status_code >= 500:
                 resultado = 'error'
             elif response.status_code >= 400:
