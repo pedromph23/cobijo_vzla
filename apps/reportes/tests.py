@@ -15,6 +15,7 @@ from apps.core.models import Estado, Parroquia, ZonaAfectada
 from apps.emergencias.models import Evento
 
 from . import services
+from .models import RegistroReporte
 from .generador_reportes import (
     generar_excel_zonas_afectadas,
     generar_pdf_zonas_afectadas,
@@ -81,6 +82,13 @@ class ServicesTest(TestCase):
         df = services.df_eventos()
         self.assertEqual(len(df), 1)
         self.assertEqual(df.iloc[0]['Nombre'], 'Sismo Test')
+
+    def test_filtro_temporal_zonas(self):
+        df = services.df_zonas_afectadas(
+            desde=_fecha(),
+            hasta=_fecha().replace(hour=23, minute=59),
+        )
+        self.assertEqual(len(df), 1)
 
     def test_resumen_general(self):
         r = services.resumen_general()
@@ -166,6 +174,46 @@ class SeguridadDescargaTest(TestCase):
     def test_parametros_invalidos(self):
         response = self.client.get(
             '/api/reportes/generar/?tipo=foo&contenido=bar'
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.json())
+
+class FiltrosYBitacoraAPITest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='reportes', password='pass', is_staff=True,
+        )
+        self.client.force_login(self.user)
+        evento = Evento.objects.create(
+            nombre='Evento API', tipo='terremoto', fecha=_fecha(),
+        )
+        ZonaAfectada.objects.create(
+            evento=evento,
+            nombre='Zona API',
+            geom=Polygon([(0, 0), (0, 1), (1, 1), (1, 0), (0, 0)]),
+            nivel_alerta='alto',
+            fecha_inicio=_fecha(),
+            damnificados=20,
+        )
+
+    def test_generacion_con_filtro_registra_bitacora(self):
+        response = self.client.get(
+            '/api/reportes/generar/?tipo=excel&contenido=zonas'
+            '&fecha_desde=2026-01-01&fecha_hasta=2026-01-01'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        registro = RegistroReporte.objects.get()
+        self.assertEqual(registro.resultado, 'exitoso')
+        self.assertEqual(registro.tipo, 'excel')
+        self.assertEqual(registro.usuario, self.user)
+        self.assertEqual(registro.fecha_desde.date(), _fecha().date())
+
+    def test_filtro_temporal_invalido(self):
+        response = self.client.get(
+            '/api/reportes/generar/?tipo=pdf&contenido=zonas'
+            '&fecha_desde=fecha-invalida'
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json())
