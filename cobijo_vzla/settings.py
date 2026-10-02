@@ -95,12 +95,7 @@ if DATABASE_URL:
             conn_health_checks=True,
         )
     }
-    # --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-    # Forzamos el uso del backend de PostGIS, ya que la URL
-    # empieza con 'postgresql://' y dj_database_url no lo detecta.
     DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
-    
-    # search_path necesario para que PostGIS encuentre el esquema 'gis'
     DATABASES['default']['OPTIONS'] = {
         'options': '-c search_path=public,gis'
     }
@@ -183,30 +178,44 @@ LOGOUT_REDIRECT_URL = '/'
 # ==========================================
 # EMAIL
 # ==========================================
+# Desarrollo: consola por defecto.
+# Producción: configurar un backend SMTP mediante variables de entorno.
 EMAIL_BACKEND = os.getenv(
     'EMAIL_BACKEND',
     'django.core.mail.backends.console.EmailBackend'
 )
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv(
+    'DEFAULT_FROM_EMAIL',
+    'Cobijo VZLA <no-reply@localhost>'
+)
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '10'))
+
+if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    raise ValueError('EMAIL_USE_TLS y EMAIL_USE_SSL no pueden estar activos simultáneamente.')
+
 
 # ==========================================
 # GEODJANGO - Rutas a librerías nativas
 # ==========================================
-# En Windows, GDAL y GEOS se instalan vía OSGeo4W y hay que apuntar
-# a las DLLs. En Linux/Mac se instalan por el sistema y no hace falta.
 if os.name == 'nt':
     GDAL_LIBRARY_PATH = os.getenv('GDAL_LIBRARY_PATH')
     GEOS_LIBRARY_PATH = os.getenv('GEOS_LIBRARY_PATH')
 
-    # ==========================================
+
+# ==========================================
 # CACHÉ
 # ==========================================
-# Cache basado en archivos: comparte datos entre procesos
-# (útil con gunicorn multi-worker y entre comandos manage.py)
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
         'LOCATION': BASE_DIR / '.cache',
-        'TIMEOUT': 1800,  # 30 minutos por defecto
+        'TIMEOUT': 1800,
         'OPTIONS': {
             'MAX_ENTRIES': 1000,
             'CULL_FREQUENCY': 3,
@@ -214,5 +223,4 @@ CACHES = {
     }
 }
 
-# Crear el directorio si no existe
 os.makedirs(BASE_DIR / '.cache', exist_ok=True)
