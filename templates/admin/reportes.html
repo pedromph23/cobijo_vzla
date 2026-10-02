@@ -1,10 +1,164 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Reportes - CobijoVzla{% endblock %}
+
 {% block content %}
-<div class="reportes-container"><div class="reportes-header"><h2><i class="fas fa-file-alt"></i> Generar Reportes</h2><p>Genera reportes estadísticos detallados en tu dispositivo</p></div><div class="reportes-grid"><div class="reporte-card"><div class="reporte-icon" style="background:#dc3545;"><i class="fas fa-exclamation-triangle"></i></div><h3>Zonas Afectadas</h3><p>Reporte de zonas afectadas, heridos y damnificados.</p><div class="btn-group"><button class="btn-excel" onclick="generarReporte('excel','zonas')"><i class="fas fa-file-excel"></i> Excel</button><button class="btn-pdf" onclick="generarReporte('pdf','zonas')"><i class="fas fa-file-pdf"></i> PDF</button></div></div><div class="reporte-card"><div class="reporte-icon" style="background:#0066cc;"><i class="fas fa-chart-bar"></i></div><h3>Estadísticas Generales</h3><p>Reporte completo por estado, refugios y eventos.</p><div class="btn-group"><button class="btn-excel" onclick="generarReporte('excel','general')"><i class="fas fa-file-excel"></i> Excel</button><button class="btn-pdf" onclick="generarReporte('pdf','general')"><i class="fas fa-file-pdf"></i> PDF</button></div></div></div><div id="mensaje-resultado" class="mensaje-resultado" style="display:none;"></div></div>
+<div class="reportes-container">
+    <div class="reportes-header">
+        <h2><i class="fas fa-file-alt" aria-hidden="true"></i> Generar reportes</h2>
+        <p>Consulta información por período y genera documentos listos para revisar, compartir o imprimir.</p>
+    </div>
+
+    <section class="reporte-filtros" aria-labelledby="titulo-filtros">
+        <div class="reporte-filtros-header">
+            <div>
+                <h3 id="titulo-filtros"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Período del reporte</h3>
+                <p>Deja los campos vacíos para obtener toda la información disponible.</p>
+            </div>
+            <button type="button" class="btn-filtro-limpiar" id="limpiar-filtros">
+                <i class="fas fa-eraser" aria-hidden="true"></i> Limpiar
+            </button>
+        </div>
+
+        <div class="reporte-filtros-grid">
+            <label>
+                <span>Fecha desde</span>
+                <input type="date" id="fecha-desde" name="fecha_desde">
+            </label>
+            <label>
+                <span>Hora desde</span>
+                <input type="time" id="hora-desde" name="hora_desde">
+            </label>
+            <label>
+                <span>Fecha hasta</span>
+                <input type="date" id="fecha-hasta" name="fecha_hasta">
+            </label>
+            <label>
+                <span>Hora hasta</span>
+                <input type="time" id="hora-hasta" name="hora_hasta">
+            </label>
+        </div>
+
+        <div class="reporte-periodo-ayuda" id="periodo-resumen" aria-live="polite">
+            Sin filtro temporal: se utilizará la información disponible.
+        </div>
+    </section>
+
+    <div class="reportes-grid">
+        <article class="reporte-card">
+            <div class="reporte-icon" aria-hidden="true"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3>Zonas afectadas</h3>
+            <p>Heridos, fallecidos, damnificados, eventos y niveles de alerta.</p>
+            <div class="btn-group">
+                <button type="button" class="btn-excel" data-tipo="excel" data-contenido="zonas">
+                    <i class="fas fa-file-excel" aria-hidden="true"></i> Excel
+                </button>
+                <button type="button" class="btn-pdf" data-tipo="pdf" data-contenido="zonas">
+                    <i class="fas fa-file-pdf" aria-hidden="true"></i> PDF
+                </button>
+            </div>
+        </article>
+
+        <article class="reporte-card">
+            <div class="reporte-icon" aria-hidden="true"><i class="fas fa-chart-bar"></i></div>
+            <h3>Estadísticas generales</h3>
+            <p>Resumen territorial, refugios, demandas, eventos y afectaciones.</p>
+            <div class="btn-group">
+                <button type="button" class="btn-excel" data-tipo="excel" data-contenido="general">
+                    <i class="fas fa-file-excel" aria-hidden="true"></i> Excel
+                </button>
+                <button type="button" class="btn-pdf" data-tipo="pdf" data-contenido="general">
+                    <i class="fas fa-file-pdf" aria-hidden="true"></i> PDF
+                </button>
+            </div>
+        </article>
+    </div>
+
+    <div id="mensaje-resultado" class="mensaje-resultado" hidden aria-live="polite"></div>
+</div>
 {% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=1"><link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">{% endblock %}
-{% block extra_js %}<script>
-function generarReporte(tipo,contenido){const msg=document.getElementById('mensaje-resultado');msg.style.display='block';msg.innerHTML='<i class="fas fa-spinner fa-spin"></i> Generando...';fetch(`/api/reportes/generar/?tipo=${tipo}&contenido=${contenido}`).then(res=>res.json()).then(data=>{if(data.success){msg.innerHTML=`<i class="fas fa-check-circle"></i> ${data.mensaje}`;window.location.href=`/api/reportes/descargar/${data.archivo}/`;}else{msg.innerHTML=`<i class="fas fa-exclamation-circle"></i> ${data.error}`;}});}
-</script>{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=3">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+    'use strict';
+
+    const mensaje = document.getElementById('mensaje-resultado');
+    const resumen = document.getElementById('periodo-resumen');
+    const filtros = {
+        fecha_desde: document.getElementById('fecha-desde'),
+        hora_desde: document.getElementById('hora-desde'),
+        fecha_hasta: document.getElementById('fecha-hasta'),
+        hora_hasta: document.getElementById('hora-hasta')
+    };
+
+    function obtenerParametros() {
+        const params = new URLSearchParams();
+        Object.entries(filtros).forEach(([clave, campo]) => {
+            if (campo && campo.value) params.set(clave, campo.value);
+        });
+        return params;
+    }
+
+    function actualizarResumen() {
+        const desde = [filtros.fecha_desde.value, filtros.hora_desde.value].filter(Boolean).join(' ');
+        const hasta = [filtros.fecha_hasta.value, filtros.hora_hasta.value].filter(Boolean).join(' ');
+        if (!desde && !hasta) {
+            resumen.textContent = 'Sin filtro temporal: se utilizará la información disponible.';
+            return;
+        }
+        resumen.textContent = 'Período seleccionado: ' + (desde || 'inicio') + ' → ' + (hasta || 'actualidad');
+    }
+
+    function mostrarMensaje(texto, tipo) {
+        mensaje.hidden = false;
+        mensaje.className = 'mensaje-resultado ' + tipo;
+        mensaje.textContent = texto;
+    }
+
+    async function generarReporte(tipo, contenido) {
+        const params = obtenerParametros();
+        params.set('tipo', tipo);
+        params.set('contenido', contenido);
+        mostrarMensaje('Generando reporte…', 'loading');
+
+        try {
+            const response = await fetch('/api/reportes/generar/?' + params.toString(), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No fue posible generar el reporte.');
+            }
+
+            mostrarMensaje(data.mensaje || 'Reporte generado correctamente.', 'success');
+
+            if (data.archivo) {
+                window.location.href = '/api/reportes/descargar/' + encodeURIComponent(data.archivo) + '/';
+            }
+        } catch (error) {
+            console.error('[reportes] Error generando reporte:', error);
+            mostrarMensaje(error.message || 'Ocurrió un error al generar el reporte.', 'error');
+        }
+    }
+
+    document.querySelectorAll('[data-tipo][data-contenido]').forEach((boton) => {
+        boton.addEventListener('click', () => generarReporte(boton.dataset.tipo, boton.dataset.contenido));
+    });
+
+    Object.values(filtros).forEach((campo) => campo.addEventListener('input', actualizarResumen));
+
+    document.getElementById('limpiar-filtros').addEventListener('click', () => {
+        Object.values(filtros).forEach((campo) => { campo.value = ''; });
+        actualizarResumen();
+    });
+})();
+</script>
+{% endblock %}
