@@ -1,14 +1,10 @@
 /* ============================================================
-   COBIJOVZLA · MAPA (layout y toolbar)
+   COBIJOVZLA · MAPA
    ============================================================
+   Presentación, controles y responsive.
+   NO modifica IDs, endpoints, clases funcionales ni contratos JS.
+   ============================================================ */
 
-   Este archivo controla únicamente presentación y responsive.
-   No modifica IDs, endpoints ni contratos JavaScript.
-*/
-
-/* ------------------------------------------------------------
-   LAYOUT
-   ------------------------------------------------------------ */
 .map-layout {
     display: flex;
     flex-direction: row;
@@ -19,12 +15,12 @@
     position: relative;
     background: var(--bg-card);
     overflow: hidden;
-    transition: all var(--transition-normal);
+    transition: background-color var(--transition-normal), box-shadow var(--transition-normal);
 }
 
 @media (min-width: 769px) {
     .map-layout {
-        height: calc(100vh - var(--header-height, 72px) - 40px);
+        height: calc(100vh - var(--header-height, 78px) - 40px);
         margin: 20px auto;
         max-width: 1400px;
         border-radius: var(--radius-lg);
@@ -35,8 +31,7 @@
 
 .map-layout.map-fullscreen {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
     height: 100vh;
     height: 100dvh;
@@ -54,14 +49,14 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--bg-soft, #e5e5e5);
+    background: var(--bg-body);
 }
 
 .main-map {
     flex: 1;
     width: 100%;
     height: 100%;
-    min-height: auto;
+    min-height: 0;
     z-index: 1;
 }
 
@@ -72,43 +67,63 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    padding: 0.5rem 1rem;
-    background: var(--bg-card);
+    gap: .75rem;
+    min-height: 48px;
+    padding: .4rem .75rem;
+    background: color-mix(in srgb, var(--bg-card) 94%, transparent);
     border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
     z-index: 10;
+    backdrop-filter: blur(10px);
 }
 
 .btn-toolbar {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
     background: var(--bg-hover);
     border: 1px solid var(--border-color);
-    padding: 0.4rem 0.6rem;
+    padding: .42rem .7rem;
     border-radius: var(--radius-sm);
     cursor: pointer;
     color: var(--text-primary);
-    transition: background var(--transition-fast), transform .15s ease;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 600;
+    transition: background var(--transition-fast), border-color var(--transition-fast), transform .15s ease, box-shadow .15s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.btn-toolbar:hover { background: var(--gray-200); }
+.btn-toolbar:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+
 .btn-toolbar:active { transform: scale(.97); }
 
 .btn-toolbar:focus-visible,
 .map-action-btn:focus-visible,
 .btn-minimap:focus-visible {
-    outline: 3px solid rgba(199, 109, 92, .45);
+    outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
     outline-offset: 2px;
 }
 
 .map-status {
-    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .75rem;
     color: var(--text-secondary);
-    margin-left: 0.5rem;
+    margin-left: .35rem;
 }
 
 .pulse-dot {
     color: var(--color-success);
     animation: pulse-map 2s infinite;
-    font-size: 0.6rem;
+    font-size: .6rem;
 }
 
 @keyframes pulse-map {
@@ -117,9 +132,11 @@
 }
 
 /* ------------------------------------------------------------
-   TILES / TEMA
+   TILES
    ------------------------------------------------------------ */
-.leaflet-tile { transition: opacity var(--transition-normal); }
+.leaflet-tile {
+    transition: opacity var(--transition-normal);
+}
 
 /* ------------------------------------------------------------
    MINIMAPA
@@ -134,16 +151,15 @@
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
     z-index: 400;
-    transition: all var(--transition-slow);
     overflow: hidden;
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
+    transition: width var(--transition-slow), height var(--transition-slow), bottom var(--transition-slow), right var(--transition-slow), border-radius var(--transition-slow);
 }
 
 .minimap-container.expanded {
     width: 100%;
     height: 100%;
-    bottom: 0;
-    right: 0;
+    inset: 0;
     border-radius: 0;
     border: none;
 }
@@ -152,19 +168,33 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    min-height: 28px;
     padding: 5px 10px;
     background: var(--bg-hover);
+    border-bottom: 1px solid var(--border-color);
     font-size: 12px;
     font-weight: 700;
     color: var(--text-primary);
 }
 
 .btn-minimap {
-    background: none;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
     border: none;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     color: var(--text-secondary);
     font-size: 14px;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-minimap:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
 }
 
 .minimap {
@@ -186,28 +216,63 @@
 }
 
 .map-action-btn {
-    background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+    background: color-mix(in srgb, var(--bg-card) 92%, transparent);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     width: 42px;
     height: 42px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: var(--shadow-sm);
-    transition: background var(--transition-fast), transform .15s ease, box-shadow .15s ease;
+    box-shadow: var(--shadow-md);
+    transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform .15s ease, box-shadow .15s ease;
     -webkit-tap-highlight-color: transparent;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
 }
 
 .map-action-btn:hover {
     background: var(--bg-hover);
-    box-shadow: var(--shadow-md, var(--shadow-sm));
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: var(--shadow-lg);
 }
 
 .map-action-btn:active { transform: scale(.94); }
+
+/* Leaflet controls: integrate with the application theme without
+   changing their DOM or behavior. */
+.leaflet-control-zoom,
+.leaflet-control-layers,
+.leaflet-control-scale {
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+.leaflet-control-zoom a,
+.leaflet-control-layers,
+.leaflet-control-scale-line {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.leaflet-control-zoom a:hover,
+.leaflet-control-layers:hover {
+    background: var(--bg-hover) !important;
+}
+
+.leaflet-control-attribution {
+    background: color-mix(in srgb, var(--bg-card) 88%, transparent) !important;
+    color: var(--text-secondary) !important;
+    border-radius: 5px 0 0 0;
+    backdrop-filter: blur(6px);
+}
+
+.leaflet-control-attribution a {
+    color: var(--color-primary) !important;
+}
 
 /* ------------------------------------------------------------
    REDUCCIÓN DE MOVIMIENTO
@@ -216,7 +281,9 @@
     .map-layout,
     .map-action-btn,
     .btn-toolbar,
-    .leaflet-tile {
+    .leaflet-tile,
+    .minimap-container,
+    .btn-minimap {
         transition: none;
     }
 
@@ -229,7 +296,13 @@
 @media (max-width: 768px) {
     .map-layout {
         min-height: 0;
-        height: calc(100dvh - var(--header-height, 60px));
+        height: calc(100dvh - var(--header-height, 68px));
+        border-radius: 0;
+    }
+
+    .map-toolbar {
+        min-height: 46px;
+        padding: .35rem .55rem;
     }
 
     .map-floating-controls {
@@ -247,8 +320,14 @@
     .minimap-container {
         width: 120px;
         height: 90px;
-        bottom: 70px;
+        bottom: max(70px, calc(50px + env(safe-area-inset-bottom)));
         right: 10px;
+    }
+
+    .leaflet-control-zoom a {
+        width: 34px !important;
+        height: 34px !important;
+        line-height: 32px !important;
     }
 }
 
@@ -262,5 +341,16 @@
     .map-action-btn {
         width: 40px;
         height: 40px;
+    }
+
+    .map-status {
+        max-width: 45vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .btn-toolbar {
+        padding-inline: .55rem;
     }
 }
