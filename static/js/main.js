@@ -13,7 +13,7 @@
     // ============================================================
 
     /**
-     * Inicializa un mapa Leaflet con soporte para tema oscuro.
+     * Inicializa un mapa Leaflet con soporte para tema claro/oscuro.
      * @param {string} elementId - ID del div contenedor
      * @param {[number, number]} center - [lat, lng] del centro
      * @param {number} zoom - Nivel de zoom inicial
@@ -24,13 +24,20 @@
             console.error('[main.js] Leaflet no está cargado');
             return null;
         }
+
         const container = document.getElementById(elementId);
         if (!container) {
             console.warn(`[main.js] No existe el elemento #${elementId}`);
             return null;
         }
 
-        const map = L.map(elementId, {
+        // Evita inicializar dos veces el mismo contenedor.
+        if (container._leaflet_id) {
+            console.warn(`[main.js] El elemento #${elementId} ya contiene un mapa`);
+            return null;
+        }
+
+        const map = L.map(container, {
             center: center,
             zoom: zoom,
             zoomControl: true,
@@ -51,27 +58,32 @@
         const capaOscura = L.tileLayer(
             'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
             {
-                attribution:
-                    '&copy; OpenStreetMap contributors &copy; CARTO',
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                 referrerPolicy: 'strict-origin-when-cross-origin',
                 maxZoom: 19,
                 subdomains: 'abcd',
             }
         );
 
-        const temaActual = document.documentElement.getAttribute('data-theme');
-        (temaActual === 'dark' ? capaOscura : capaEstandar).addTo(map);
+        function aplicarCapaBase(tema) {
+            const capa = tema === 'dark' ? capaOscura : capaEstandar;
 
-        // base.html emite el evento en window; mantener el listener aquí
-        // evita que el helper quede desincronizado del selector global.
+            if (!map.hasLayer(capa)) {
+                capa.addTo(map);
+            }
+
+            const otraCapa = capa === capaOscura ? capaEstandar : capaOscura;
+            if (map.hasLayer(otraCapa)) {
+                map.removeLayer(otraCapa);
+            }
+        }
+
+        aplicarCapaBase(document.documentElement.getAttribute('data-theme'));
+
+        // base.html emite el evento en window. Se mantiene un único listener
+        // para evitar duplicar cambios de capas cuando cambia el tema.
         window.addEventListener('themeChanged', function (e) {
-            const usarOscuro = e.detail && e.detail.theme === 'dark';
-            map.eachLayer(function (layer) {
-                if (layer === capaEstandar || layer === capaOscura) {
-                    map.removeLayer(layer);
-                }
-            });
-            (usarOscuro ? capaOscura : capaEstandar).addTo(map);
+            aplicarCapaBase(e.detail && e.detail.theme);
         });
 
         map._capaEstandar = capaEstandar;
@@ -95,30 +107,38 @@
             console.warn('[main.js] Sin datos para la capa de calor');
             return null;
         }
+
         options = options || {};
 
         const config = {
-            radius: options.radius || 25,
-            blur: options.blur || 15,
-            maxZoom: options.maxZoom || 10,
-            max: options.max || 1.0,
-            minOpacity: options.minOpacity || 0.1,
-            gradient:
-                options.gradient ||
-                {
-                    0.2: '#00ff00',
-                    0.4: '#ffff00',
-                    0.6: '#ff9900',
-                    0.8: '#ff3300',
-                    1.0: '#cc0000',
-                },
+            radius: options.radius !== undefined ? options.radius : 25,
+            blur: options.blur !== undefined ? options.blur : 15,
+            maxZoom: options.maxZoom !== undefined ? options.maxZoom : 10,
+            max: options.max !== undefined ? options.max : 1.0,
+            minOpacity: options.minOpacity !== undefined ? options.minOpacity : 0.1,
+            gradient: options.gradient || {
+                0.2: '#00ff00',
+                0.4: '#ffff00',
+                0.6: '#ff9900',
+                0.8: '#ff3300',
+                1.0: '#cc0000',
+            },
         };
 
-        const puntos = data.map(function (d) {
-            const intensidad =
-                d.intensidad !== undefined ? d.intensidad : d.intensity || 0.5;
-            return [d.lat, d.lng, intensidad];
-        });
+        const puntos = data
+            .filter(function (d) {
+                return d && Number.isFinite(Number(d.lat)) && Number.isFinite(Number(d.lng));
+            })
+            .map(function (d) {
+                const intensidad =
+                    d.intensidad !== undefined ? d.intensidad : d.intensity !== undefined ? d.intensity : 0.5;
+                return [Number(d.lat), Number(d.lng), Number(intensidad) || 0.5];
+            });
+
+        if (puntos.length === 0) {
+            console.warn('[main.js] No hay coordenadas válidas para la capa de calor');
+            return null;
+        }
 
         const heatLayer = L.heatLayer(puntos, config);
         heatLayer.addTo(map);
@@ -128,12 +148,15 @@
     /**
      * Alterna la capa de calor (si existe, la quita; si no, la agrega).
      */
-    function toggleHeatLayer(map, heatLayer, data) {
+    function toggleHeatLayer(map, heatLayer, data, options) {
+        if (!map) return null;
+
         if (heatLayer) {
             map.removeLayer(heatLayer);
             return null;
         }
-        return addHeatLayer(map, data);
+
+        return addHeatLayer(map, data, options);
     }
 
     // ============================================================
@@ -188,7 +211,7 @@
             info: '#0066cc',
         };
         contenedor.style.backgroundColor = colores[tipo] || colores.info;
-        contenedor.textContent = texto;
+        contenedor.textContent = texto == null ? '' : String(texto);
         contenedor.style.opacity = '1';
 
         clearTimeout(contenedor._timeout);
@@ -201,6 +224,10 @@
      * Debounce genérico: retrasa la ejecución hasta que dejen de llamar.
      */
     function debounce(fn, delay) {
+        if (typeof fn !== 'function') {
+            throw new TypeError('debounce requiere una función');
+        }
+
         let timer = null;
         return function () {
             const args = arguments;
