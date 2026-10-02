@@ -16,18 +16,84 @@ from apps.core.models import (
     Estado, Parroquia, RefugioExistente, PuntoDemanda, ZonaAfectada,
 )
 from apps.emergencias.models import Evento
+from apps.core.history import estado_a_fecha
 
 
 logger = logging.getLogger(__name__)
+
+
+
+def _historicos(modelo, as_of):
+    """Última versión de cada objeto conocida a la fecha indicada."""
+    from apps.core.models import RegistroVersion
+    ids = (
+        RegistroVersion.objects
+        .filter(modelo=modelo, fecha_version__lte=as_of)
+        .values_list('objeto_id', flat=True)
+        .distinct()
+    )
+    resultado = []
+    for objeto_id in ids:
+        version = estado_a_fecha(modelo, objeto_id, as_of)
+        if version and version.operacion != 'eliminado':
+            resultado.append(version.datos)
+    return resultado
+
+
+def _df_historico_zonas(as_of):
+    zonas = _historicos('core.zonaafectada', as_of)
+    eventos = {str(v.get('id')): v for v in _historicos('emergencias.evento', as_of)}
+    data = []
+    for z in zonas:
+        evento = eventos.get(str(z.get('evento')), {})
+        data.append({
+            'ID': z.get('id'),
+            'Nombre': z.get('nombre', ''),
+            'Evento': evento.get('nombre', 'Sin evento'),
+            'Tipo Evento': evento.get('tipo', ''),
+            'Nivel Alerta': str(z.get('nivel_alerta', '')).upper(),
+            'Descripción': z.get('descripcion', ''),
+            'Heridos': z.get('heridos', 0) or 0,
+            'Fallecidos': z.get('fallecidos', 0) or 0,
+            'Damnificados': z.get('damnificados', 0) or 0,
+            'Fecha Inicio': str(z.get('fecha_inicio', '')),
+            'Fecha Fin': str(z.get('fecha_fin', '')) if z.get('fecha_fin') else 'Activa',
+        })
+    return pd.DataFrame(data)
+
+
+def _df_historico_simple(modelo, as_of, campos):
+    rows = _historicos(modelo, as_of)
+    return pd.DataFrame([{campo: row.get(campo) for campo in campos} for row in rows])
+
+
+def resumen_general_historico(as_of):
+    zonas = _historicos('core.zonaafectada', as_of)
+    eventos = _historicos('emergencias.evento', as_of)
+    refugios = _historicos('core.refugioexistente', as_of)
+    demandas = _historicos('core.puntodemanda', as_of)
+    return {
+        'estados': Estado.objects.count(),
+        'parroquias': Parroquia.objects.count(),
+        'refugios': len(refugios),
+        'demandas': len(demandas),
+        'zonas': len(zonas),
+        'eventos': len(eventos),
+        'heridos': sum(z.get('heridos', 0) or 0 for z in zonas),
+        'fallecidos': sum(z.get('fallecidos', 0) or 0 for z in zonas),
+        'damnificados': sum(z.get('damnificados', 0) or 0 for z in zonas),
+    }
 
 
 # ============================================================
 # DATAFRAMES BASE
 # ============================================================
 
-def df_zonas_afectadas(desde=None, hasta=None) -> pd.DataFrame:
+def df_zonas_afectadas(desde=None, hasta=None, as_of=None) -> pd.DataFrame:
     """DataFrame de zonas afectadas, opcionalmente filtrado por fecha/hora."""
     try:
+        if as_of is not None:
+            return _df_historico_zonas(as_of)
         qs = (
             ZonaAfectada.objects
             .select_related('evento')
@@ -70,13 +136,15 @@ def df_zonas_afectadas(desde=None, hasta=None) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def df_por_estado(desde=None, hasta=None) -> pd.DataFrame:
+def df_por_estado(desde=None, hasta=None, as_of=None) -> pd.DataFrame:
     """
     DataFrame agregado por estado.
 
     Optimizado: usa anotaciones en vez de N+1 queries.
     """
     try:
+        if as_of is not None:
+            return pd.DataFrame()
         # El filtro temporal afecta la información de zonas; el resto del estado
         # representa una fotografía territorial vigente.
         # Query principal: parroquias agregadas por estado
@@ -139,9 +207,11 @@ def df_por_estado(desde=None, hasta=None) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def df_refugios() -> pd.DataFrame:
+def df_refugios(as_of=None) -> pd.DataFrame:
     """DataFrame de refugios existentes."""
     try:
+        if as_of is not None:
+            return _df_historico_simple('core.refugioexistente', as_of, ['id','nombre','direccion','capacidad_total','capacidad_disponible','servicios','operativo','telefono'])
         qs = RefugioExistente.objects.only(
             'id', 'nombre', 'direccion', 'capacidad_total',
             'capacidad_disponible', 'servicios', 'operativo', 'telefono',
@@ -174,9 +244,11 @@ def df_refugios() -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def df_demandas() -> pd.DataFrame:
+def df_demandas(as_of=None) -> pd.DataFrame:
     """DataFrame de puntos de demanda."""
     try:
+        if as_of is not None:
+            return _df_historico_simple('core.puntodemanda', as_of, ['id','nombre','poblacion','vulnerabilidad'])
         qs = (
             PuntoDemanda.objects
             .select_related('parroquia', 'parroquia__estado')
@@ -205,9 +277,11 @@ def df_demandas() -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def df_eventos(desde=None, hasta=None) -> pd.DataFrame:
+def df_eventos(desde=None, hasta=None, as_of=None) -> pd.DataFrame:
     """DataFrame de eventos."""
     try:
+        if as_of is not None:
+            return _df_historico_simple('emergencias.evento', as_of, ['id','nombre','tipo','fecha','magnitud','descripcion','activo'])
         qs = Evento.objects.only(
             'id', 'nombre', 'tipo', 'fecha', 'magnitud',
             'descripcion', 'activo',
@@ -238,9 +312,11 @@ def df_eventos(desde=None, hasta=None) -> pd.DataFrame:
 # RESUMEN GENERAL
 # ============================================================
 
-def resumen_general(desde=None, hasta=None) -> Dict[str, int]:
+def resumen_general(desde=None, hasta=None, as_of=None) -> Dict[str, int]:
     """Métricas globales para el reporte general."""
     try:
+        if as_of is not None:
+            return resumen_general_historico(as_of)
         zonas_qs = ZonaAfectada.objects.all()
         eventos_qs = Evento.objects.all()
         if desde is not None:
