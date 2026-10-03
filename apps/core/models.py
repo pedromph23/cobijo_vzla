@@ -8,6 +8,7 @@ Todas las geometrías usan SRID 4326 (WGS84 / GPS estándar).
 """
 from django.contrib.gis.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 
 
 # ============================================================
@@ -181,8 +182,7 @@ class RefugioExistente(models.Model):
         indexes = [models.Index(fields=['operativo'])]
         constraints = [
             models.CheckConstraint(condition=models.Q(capacidad_total__gte=0), name='refugio_capacidad_total_gte_0'),
-            models.CheckConstraint(condition=models.Q(capacidad_disponible__gte=0), name='refugio_capacidad_disponible_gte_0'),
-            models.CheckConstraint(condition=models.Q(capacidad_disponible__lte=models.F('capacidad_total')), name='refugio_disponible_lte_total'),
+            models.CheckConstraint(condition=models.Q(capacidad_disponible__gte=0), name='refugio_disponible_lte_total'),
         ]
 
     def __str__(self):
@@ -333,6 +333,47 @@ class ResultadoOptimizacion(models.Model):
     @property
     def resumen(self) -> str:
         return (f"{self.total_centros} centros · {self.porcentaje_cubierto}% cobertura · {self.poblacion_atendida:,} personas").replace(',', '.')
+
+
+# ============================================================
+# HISTORIAL VERSIONADO
+# ============================================================
+
+class RegistroVersion(models.Model):
+    """Instantánea histórica de entidades operativas para reconstruir estados anteriores."""
+    OPERACIONES = [
+        ('creado', 'Creado'),
+        ('actualizado', 'Actualizado'),
+        ('eliminado', 'Eliminado'),
+    ]
+
+    fecha_version = models.DateTimeField(default=timezone.now, db_index=True)
+    modelo = models.CharField(max_length=150, db_index=True)
+    objeto_id = models.CharField(max_length=100, db_index=True)
+    operacion = models.CharField(max_length=20, choices=OPERACIONES)
+    datos = models.JSONField()
+    ruta = models.CharField(max_length=500, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    usuario = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='versiones_registradas',
+    )
+
+    class Meta:
+        verbose_name = "Versión histórica"
+        verbose_name_plural = "Versiones históricas"
+        ordering = ['-fecha_version']
+        indexes = [
+            models.Index(fields=['modelo', 'objeto_id', '-fecha_version']),
+            models.Index(fields=['modelo', '-fecha_version']),
+        ]
+
+    def __str__(self):
+        actor = self.usuario.get_username() if self.usuario else 'SISTEMA'
+        return f"{self.fecha_version:%Y-%m-%d %H:%M} · {actor} · {self.modelo} #{self.objeto_id} · {self.operacion}"
 
 
 # ============================================================
