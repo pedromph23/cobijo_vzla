@@ -196,12 +196,11 @@ DEFAULT_FROM_EMAIL = os.getenv(
 )
 EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '10'))
 
-if EMAIL_USE_TLS and EMAIL_USE_SSL:
-    raise ValueError('EMAIL_USE_TLS y EMAIL_USE_SSL no pueden estar activos simultáneamente.')
-
-# La configuración SMTP se valida al intentar enviar correo, no durante
-# el arranque de Django. Esto evita que un SMTP pendiente de configurar
-# deje inutilizable toda la aplicación.
+# No bloquear el arranque de Django por la configuración SMTP.
+# La conexión y validación efectiva del proveedor ocurren cuando
+# una funcionalidad de correo intenta enviar un mensaje.
+# En producción, EMAIL_USE_TLS y EMAIL_USE_SSL deben configurarse
+# de acuerdo con el proveedor SMTP utilizado.
 
 
 # ==========================================
