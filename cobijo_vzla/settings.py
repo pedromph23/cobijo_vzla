@@ -199,6 +199,19 @@ EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '10'))
 if EMAIL_USE_TLS and EMAIL_USE_SSL:
     raise ValueError('EMAIL_USE_TLS y EMAIL_USE_SSL no pueden estar activos simultáneamente.')
 
+if EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend':
+    smtp_required = {
+        'EMAIL_HOST': EMAIL_HOST,
+        'EMAIL_HOST_USER': EMAIL_HOST_USER,
+        'EMAIL_HOST_PASSWORD': EMAIL_HOST_PASSWORD,
+    }
+    smtp_missing = [name for name, value in smtp_required.items() if not str(value).strip()]
+    if smtp_missing:
+        raise ValueError(
+            'Configuración SMTP incompleta. Faltan variables: '
+            + ', '.join(smtp_missing)
+        )
+
 
 # ==========================================
 # GEODJANGO - Rutas a librerías nativas
