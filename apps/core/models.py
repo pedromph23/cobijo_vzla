@@ -182,7 +182,8 @@ class RefugioExistente(models.Model):
         indexes = [models.Index(fields=['operativo'])]
         constraints = [
             models.CheckConstraint(condition=models.Q(capacidad_total__gte=0), name='refugio_capacidad_total_gte_0'),
-            models.CheckConstraint(condition=models.Q(capacidad_disponible__gte=0), name='refugio_disponible_lte_total'),
+            models.CheckConstraint(condition=models.Q(capacidad_disponible__gte=0), name='refugio_capacidad_disponible_gte_0'),
+            models.CheckConstraint(condition=models.Q(capacidad_disponible__lte=models.F('capacidad_total')), name='refugio_disponible_lte_total'),
         ]
 
     def __str__(self):
@@ -354,13 +355,7 @@ class RegistroVersion(models.Model):
     datos = models.JSONField()
     ruta = models.CharField(max_length=500, blank=True)
     ip = models.GenericIPAddressField(null=True, blank=True)
-    usuario = models.ForeignKey(
-        'auth.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='versiones_registradas',
-    )
+    usuario = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='versiones_registradas')
 
     class Meta:
         verbose_name = "Versión histórica"
@@ -386,24 +381,23 @@ class RegistroAuditoria(models.Model):
     usuario = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='registros_auditoria')
     fecha = models.DateTimeField(auto_now_add=True, db_index=True)
     accion = models.CharField(max_length=80, db_index=True)
-    modulo = models.CharField(max_length=80, blank=True, db_index=True)
-    modelo = models.CharField(max_length=100, blank=True)
+    metodo = models.CharField(max_length=10)
+    ruta = models.CharField(max_length=500)
+    modelo = models.CharField(max_length=150, blank=True)
     objeto_id = models.CharField(max_length=100, blank=True)
-    objeto = models.CharField(max_length=255, blank=True)
-    descripcion = models.TextField(blank=True)
-    ip = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(blank=True)
     resultado = models.CharField(max_length=20, choices=RESULTADOS, default='exitoso', db_index=True)
+    detalle = models.TextField(blank=True)
     datos_anteriores = models.JSONField(null=True, blank=True)
     datos_nuevos = models.JSONField(null=True, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True)
 
     class Meta:
         verbose_name = "Registro de auditoría"
-        verbose_name_plural = "Registros de auditoría"
+        verbose_name_plural = "Bitácora del sistema"
         ordering = ['-fecha']
         indexes = [
             models.Index(fields=['usuario', '-fecha']),
-            models.Index(fields=['modulo', '-fecha']),
             models.Index(fields=['accion', '-fecha']),
             models.Index(fields=['resultado', '-fecha']),
         ]
