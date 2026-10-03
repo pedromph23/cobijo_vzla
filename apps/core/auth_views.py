@@ -1,8 +1,14 @@
 """Vistas de autenticación con trazabilidad de seguridad."""
 
+import logging
+
+from django.contrib import messages
 from django.contrib.auth import views as auth_views
 
 from .audit import registrar_auditoria
+
+
+logger = logging.getLogger(__name__)
 
 
 class PasswordChangeViewAudited(auth_views.PasswordChangeView):
@@ -35,7 +41,24 @@ class PasswordResetRequestView(auth_views.PasswordResetView):
     """Solicitud de recuperación sin revelar si el correo existe."""
 
     def form_valid(self, form):
-        response = super().form_valid(form)
+        try:
+            response = super().form_valid(form)
+        except Exception:
+            logger.exception('Fallo al enviar correo de recuperación de contraseña.')
+            registrar_auditoria(
+                self.request,
+                accion='PASSWORD_RESET_REQUEST',
+                resultado='fallido',
+                detalle='La solicitud fue recibida, pero el envío del correo falló.',
+                modelo='User',
+            )
+            messages.error(
+                self.request,
+                'No fue posible enviar las instrucciones en este momento. '
+                'Inténtalo nuevamente más tarde o contacta al administrador.',
+            )
+            return self.form_invalid(form)
+
         registrar_auditoria(
             self.request,
             accion='PASSWORD_RESET_REQUEST',
