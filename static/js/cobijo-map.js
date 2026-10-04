@@ -1,6 +1,9 @@
 /*
  * CobijoVzla — configuración cartográfica compartida.
  * Un único punto de entrada para mapas Leaflet; cada vista conserva sus capas.
+ *
+ * La cartografía base usa OpenStreetMap en todas las vistas para mantener
+ * consistencia entre inicio, panel y formularios CRUD.
  */
 (function () {
     'use strict';
@@ -12,25 +15,27 @@
         maxZoom: 18,
         tileMaxZoom: 19,
         tiles: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        darkTiles: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
         attribution: '&copy; OpenStreetMap contributors'
     };
 
-    function themeTiles(map, settings) {
-        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const url = dark ? settings.darkTiles : settings.tiles;
-        const attribution = dark
-            ? '&copy; OpenStreetMap contributors &copy; CARTO'
-            : settings.attribution;
+    function createBaseLayer(map, settings) {
         const existing = map._cobijoBaseLayer;
         if (existing) map.removeLayer(existing);
-        const layer = L.tileLayer(url, {
-            attribution,
+
+        const layer = L.tileLayer(settings.tiles, {
+            attribution: settings.attribution,
             referrerPolicy: 'strict-origin-when-cross-origin',
-            maxZoom: settings.tileMaxZoom,
-            subdomains: dark ? 'abcd' : undefined
+            maxZoom: settings.tileMaxZoom
         }).addTo(map);
+
         map._cobijoBaseLayer = layer;
+        return layer;
+    }
+
+    function refreshSize(map) {
+        if (!map) return;
+        window.requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+        window.setTimeout(() => map.invalidateSize({ pan: false }), 150);
     }
 
     window.CobijoMap = window.CobijoMap || {};
@@ -49,14 +54,12 @@
                 minZoom: settings.minZoom,
                 maxZoom: settings.maxZoom
             });
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
-            themeTiles(map, settings);
 
-            const onThemeChanged = () => themeTiles(map, settings);
-            window.addEventListener('themeChanged', onThemeChanged);
-            map._cobijoThemeListener = onThemeChanged;
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+            createBaseLayer(map, settings);
             map._cobijoMap = map;
             map._cobijoMapContainer = container;
+            refreshSize(map);
             return map;
         },
 
@@ -65,14 +68,19 @@
             const settings = Object.assign({}, config, options || {});
             map.setMinZoom(settings.minZoom);
             map.setMaxZoom(settings.maxZoom);
-            themeTiles(map, settings);
+            createBaseLayer(map, settings);
+            refreshSize(map);
+            return map;
+        },
+
+        refresh(map) {
+            refreshSize(map);
             return map;
         },
 
         destroy(map) {
             if (!map) return false;
-            if (map._cobijoThemeListener) window.removeEventListener('themeChanged', map._cobijoThemeListener);
-            const container = map._cobijoMapContainer;
+            const container = map._cobijoMapContainer || map.getContainer?.();
             map.remove();
             if (container && container._cobijoMap === map) delete container._cobijoMap;
             return true;
