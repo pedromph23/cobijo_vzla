@@ -56,7 +56,7 @@
                     {% elif field.name == 'direccion' %}
                         <div class="crud-address-control">
                             {{ field }}
-                            <button type="button" class="btn-crud btn-secondary crud-address-button" data-location-action="geocode" data-location-input="{{ field.id }}"{% if not field.value %} disabled{% endif %}>
+                            <button type="button" class="btn-crud btn-secondary crud-address-button" data-location-action="geocode" data-location-input="{{ field.id }}" data-geocode-url="{% url 'geocodificar_direccion' %}"{% if not field.value %} disabled{% endif %}>
                                 <i class="fas fa-location-crosshairs"></i> Ubicar dirección
                             </button>
                         </div>
@@ -64,7 +64,7 @@
                     {% elif field.name == 'nombre' %}
                         <div class="crud-address-control">
                             {{ field }}
-                            <button type="button" class="btn-crud btn-secondary crud-address-button" data-location-action="geocode" data-location-input="{{ field.id }}"{% if not field.value %} disabled{% endif %}>
+                            <button type="button" class="btn-crud btn-secondary crud-address-button" data-location-action="geocode" data-location-input="{{ field.id }}" data-geocode-url="{% url 'geocodificar_direccion' %}"{% if not field.value %} disabled{% endif %}>
                                 <i class="fas fa-location-crosshairs"></i> Ubicar en el mapa
                             </button>
                         </div>
@@ -121,5 +121,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/crud-form.js' %}?v=6"></script>
+<script src="{% static 'js/crud-form.js' %}?v=7"></script>
 {% endblock %}
