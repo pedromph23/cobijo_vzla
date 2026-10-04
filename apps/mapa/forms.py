@@ -29,7 +29,7 @@ def _parsear_punto(valor) -> Point:
     if isinstance(valor, Point):
         return valor
     if not isinstance(valor, str):
-        raise forms.ValidationError("Formato de ubicación inválido.")
+        raise forms.ValidationError("Selecciona una ubicación en el mapa.")
     partes = valor.replace(',', ' ').split()
     if len(partes) < 2:
         raise forms.ValidationError("Selecciona una ubicación en el mapa.")
@@ -45,10 +45,9 @@ def _parsear_punto(valor) -> Point:
 class PuntoDemandaForm(forms.ModelForm):
     class Meta:
         model = PuntoDemanda
-        fields = ['nombre', 'parroquia', 'ubicacion', 'poblacion', 'vulnerabilidad', 'descripcion']
+        fields = ['nombre', 'ubicacion', 'poblacion', 'vulnerabilidad', 'descripcion']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
-            'parroquia': forms.Select(attrs={'class': 'form-select'}),
             'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'decimal'}),
             'poblacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
             'vulnerabilidad': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': 0, 'max': 1, 'inputmode': 'decimal'}),
