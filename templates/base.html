@@ -45,12 +45,15 @@
     <script src="{% static 'js/leaflet.js' %}"></script>
     <script src="{% static 'js/leaflet.markercluster.js' %}"></script>
     <script src="{% static 'js/leaflet.heat.js' %}"></script>
-    <script src="{% static 'js/cobijo-map.js' %}?v=1"></script>
+    <script src="{% static 'js/cobijo-map.js' %}?v=2"></script>
     <script src="{% static 'js/theme.js' %}?v=1"></script>
     <script src="{% static 'js/sidebar.js' %}?v=1"></script>
     <script src="{% static 'js/responsive.js' %}?v=1"></script>
     <script src="{% static 'js/main.js' %}?v=11"></script>
     {% block extra_js %}{% endblock %}
+    <script>
+        if (window.mapaAdmin && window.CobijoMap) window.CobijoMap.adopt(window.mapaAdmin);
+    </script>
     {% if request.resolver_match.url_name == 'mapa_publico' %}
     <script src="{% static 'js/navegacion_localizacion_ve.js' %}?v=5"></script>
     <script src="{% static 'js/navegacion_proxy_ve.js' %}?v=2"></script>
