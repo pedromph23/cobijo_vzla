@@ -34,7 +34,7 @@
         <form method="post" enctype="multipart/form-data" class="crud-form">
             {% csrf_token %}
             {% for field in form %}
-                <div class="crud-field {% if field.errors %}has-error{% endif %}{% if field.name == 'ubicacion' %} crud-location-field{% endif %}{% if field.name == 'servicios' %} crud-services-field{% endif %}">
+                <div class="crud-field {% if field.errors %}has-error{% endif %}{% if field.name == 'ubicacion' %} crud-location-field{% endif %}{% if field.name == 'geom' %} crud-geometry-field{% endif %}{% if field.name == 'servicios' %} crud-services-field{% endif %}">
                     <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
                     {% if field.name == 'ubicacion' %}
                         <div class="crud-location-help"><i class="fas fa-location-dot"></i> Puedes escribir la dirección y pulsar <strong>Ubicar dirección</strong>; el mapa colocará el punto automáticamente. También puedes seleccionarlo directamente.</div>
@@ -42,6 +42,15 @@
                         <div class="crud-location-actions">
                             <button type="button" class="btn-crud btn-secondary" data-location-action="locate"><i class="fas fa-crosshairs"></i> Usar mi ubicación</button>
                             <span id="crud-location-status" class="crud-location-status">{% if field.value %}Ubicación cargada{% else %}Escribe una dirección arriba o haz clic en el mapa{% endif %}</span>
+                        </div>
+                        <div class="crud-location-value">{{ field }}</div>
+                    {% elif field.name == 'geom' %}
+                        <div class="crud-geometry-help"><i class="fas fa-draw-polygon"></i> Dibuja el área afectada directamente sobre el mapa. Haz clic en <strong>Comenzar dibujo</strong>, marca los puntos y cierra el polígono. No necesitas introducir coordenadas.</div>
+                        <div id="crud-geometry-map" class="crud-location-map crud-geometry-map" aria-label="Mapa para dibujar la zona afectada"></div>
+                        <div class="crud-location-actions">
+                            <button type="button" class="btn-crud btn-primary" data-geometry-action="draw"><i class="fas fa-draw-polygon"></i> Comenzar dibujo</button>
+                            <button type="button" class="btn-crud btn-secondary" data-geometry-action="clear"><i class="fas fa-eraser"></i> Limpiar zona</button>
+                            <span id="crud-geometry-status" class="crud-location-status">{% if field.value %}Zona cargada{% else %}Dibuja la zona sobre el mapa{% endif %}</span>
                         </div>
                         <div class="crud-location-value">{{ field }}</div>
                     {% elif field.name == 'direccion' %}
@@ -76,8 +85,11 @@
                     {% elif field.name != 'otros_servicios' %}
                         {{ field }}
                     {% endif %}
-                    {% if field.name != 'servicios' and field.name != 'otros_servicios' and field.name != 'direccion' and field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-                    {% if field.name != 'otros_servicios' and field.name != 'direccion' and field.errors %}
+                    {% if field.name != 'servicios' and field.name != 'otros_servicios' and field.name != 'direccion' and field.name != 'geom' and field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+                    {% if field.name != 'otros_servicios' and field.name != 'direccion' and field.name != 'geom' and field.errors %}
+                        <div class="field-errors">{% for err in field.errors %}<p>{{ err }}</p>{% endfor %}</div>
+                    {% endif %}
+                    {% if field.name == 'geom' and field.errors %}
                         <div class="field-errors">{% for err in field.errors %}<p>{{ err }}</p>{% endfor %}</div>
                     {% endif %}
                 </div>
@@ -94,9 +106,9 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/admin.css' %}?v=2">
 <link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">
-<link rel="stylesheet" href="{% static 'css/crud-form.css' %}?v=5">
+<link rel="stylesheet" href="{% static 'css/crud-form.css' %}?v=6">
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/crud-form.js' %}?v=3"></script>
+<script src="{% static 'js/crud-form.js' %}?v=4"></script>
 {% endblock %}
