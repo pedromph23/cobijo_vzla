@@ -8,7 +8,10 @@
 (() => {
     'use strict';
 
-    const TIMEOUT_MS = 10000;
+    // El backend puede probar dos motores (hasta 7 s cada uno). El cliente
+    // debe dar tiempo suficiente para que el fallback termine antes de
+    // declarar la solicitud como agotada.
+    const TIMEOUT_MS = 16000;
     let calculando = false;
 
     function escapar(valor) {
