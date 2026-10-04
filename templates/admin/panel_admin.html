@@ -1,10 +1,159 @@
-{% load static %}
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Panel de Administración — CobijoVzla{% endblock %}
+{% block title %}Panel de Administración - CobijoVzla{% endblock %}
 
 {% block content %}
-<!-- El contenido existente del panel permanece sin cambios. -->
+<div class="panel-container">
+    <header class="panel-header">
+        <div class="panel-header-left">
+            <div class="panel-icon admin" aria-hidden="true">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div>
+                <h2>Panel de Administración</h2>
+                <p>Control total del sistema</p>
+            </div>
+        </div>
+
+        <div class="panel-header-right">
+            <span class="user-badge admin">
+                <i class="fas fa-crown" aria-hidden="true"></i>
+                {{ user.username }}
+            </span>
+            <button type="button" class="btn-refresh" onclick="location.reload()" aria-label="Actualizar panel" title="Actualizar panel">
+                <i class="fas fa-sync" aria-hidden="true"></i>
+            </button>
+        </div>
+    </header>
+
+    <nav class="panel-tabs" aria-label="Secciones del panel">
+        <button type="button" class="tab active" data-tab="mapa" aria-controls="tab-mapa" aria-selected="true">
+            <i class="fas fa-map" aria-hidden="true"></i>
+            <span>Mapa</span>
+        </button>
+        <button type="button" class="tab" data-tab="datos" aria-controls="tab-datos" aria-selected="false">
+            <i class="fas fa-database" aria-hidden="true"></i>
+            <span>Datos</span>
+        </button>
+        <button type="button" class="tab" data-tab="reportes" aria-controls="tab-reportes" aria-selected="false">
+            <i class="fas fa-chart-bar" aria-hidden="true"></i>
+            <span>Reportes</span>
+        </button>
+    </nav>
+
+    <div class="panel-content">
+        <section id="tab-mapa" class="tab-content active" role="tabpanel">
+            <div class="mapa-admin-wrapper">
+                <div class="mapa-toolbar">
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Capas:</span>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-demandas" checked>
+                            <span><i class="fas fa-users" aria-hidden="true"></i> Demandas</span>
+                        </label>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-candidatos" checked>
+                            <span><i class="fas fa-building" aria-hidden="true"></i> Candidatos</span>
+                        </label>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-refugios" checked>
+                            <span><i class="fas fa-home" aria-hidden="true"></i> Refugios</span>
+                        </label>
+
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chk-zonas" checked>
+                            <span><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Zonas</span>
+                        </label>
+                    </div>
+                    <span id="mapa-estado" class="mapa-estado" role="status" aria-live="polite">Cargando datos...</span>
+                </div>
+
+                <div id="mapa-admin" class="mapa-admin" aria-label="Mapa administrativo"></div>
+            </div>
+        </section>
+
+        <section id="tab-datos" class="tab-content" role="tabpanel" hidden>
+            <h3 class="section-title">
+                <i class="fas fa-database" aria-hidden="true"></i>
+                Gestión de Datos
+            </h3>
+            <p class="section-subtitle">Seleccione un modelo para gestionar sus registros</p>
+
+            <div class="crud-menu-grid">
+                {% for m in menu_modelos %}
+                    <a href="{% url 'crud_list' m.key %}" class="crud-card">
+                        <i class="fas {{ m.icon }}" aria-hidden="true"></i>
+                        <h4>{{ m.verbose_name_plural }}</h4>
+                        <p>
+                            {% if 'crear' in m.acciones %}
+                                <span class="badge-mini badge-create">Crear</span>
+                            {% endif %}
+                            {% if 'editar' in m.acciones %}
+                                <span class="badge-mini badge-edit">Editar</span>
+                            {% endif %}
+                            {% if 'borrar' in m.acciones %}
+                                <span class="badge-mini badge-delete">Borrar</span>
+                            {% endif %}
+                        </p>
+                    </a>
+                {% empty %}
+                    <div class="crud-empty">
+                        <i class="fas fa-inbox fa-3x" aria-hidden="true"></i>
+                        <p>No tiene acceso a ningún modelo.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="quick-actions">
+                <h4>Acciones rápidas</h4>
+                <a href="{% url 'carga_datos' %}" class="accion-item">
+                    <i class="fas fa-upload" aria-hidden="true"></i>
+                    <span>Cargar datos masivos</span>
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </a>
+                <a href="{% url 'admin:core_registroauditoria_changelist' %}" class="accion-item">
+                    <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+                    <span>Bitácora del sistema</span>
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </a>
+            </div>
+        </section>
+
+        <section id="tab-reportes" class="tab-content" role="tabpanel" hidden>
+            <div class="reportes-layout">
+                <div class="reportes-acciones">
+                    <h3>
+                        <i class="fas fa-download" aria-hidden="true"></i>
+                        Reportes Estadísticos
+                    </h3>
+
+                    <button type="button" class="btn-export" onclick="generarReporte('excel', 'zonas')">
+                        <i class="fas fa-file-excel" aria-hidden="true"></i>
+                        Excel - Zonas Afectadas
+                    </button>
+                    <button type="button" class="btn-export" onclick="generarReporte('pdf', 'zonas')">
+                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                        PDF - Zonas Afectadas
+                    </button>
+                    <button type="button" class="btn-export" onclick="generarReporte('excel', 'general')">
+                        <i class="fas fa-file-excel" aria-hidden="true"></i>
+                        Excel - Estadísticas Generales
+                    </button>
+                    <button type="button" class="btn-export" onclick="generarReporte('pdf', 'general')">
+                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                        PDF - Estadísticas Generales
+                    </button>
+
+                    <div id="mensaje-reporte" class="mensaje-reporte" hidden></div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_css %}
@@ -16,17 +165,253 @@
 <script>
 (function () {
     'use strict';
-    const mapa = document.getElementById('mapa-admin');
-    const estado = document.getElementById('mapa-estado');
-    if (!mapa || typeof window.CobijoMap === 'undefined') return;
-    window.mapaAdmin = window.CobijoMap.create('mapa-admin');
-    if (!window.mapaAdmin) {
-        if (estado) {
-            estado.textContent = 'Mapa no disponible';
-            estado.dataset.estado = 'error';
+
+    const tabs = document.querySelectorAll('.panel-tabs .tab');
+    const contents = document.querySelectorAll('.panel-content .tab-content');
+    const mapaEstado = document.getElementById('mapa-estado');
+
+    function activarTab(tab) {
+        const nombre = tab.dataset.tab;
+        tabs.forEach((item) => {
+            const activo = item === tab;
+            item.classList.toggle('active', activo);
+            item.setAttribute('aria-selected', String(activo));
+        });
+        contents.forEach((content) => {
+            const activo = content.id === 'tab-' + nombre;
+            content.classList.toggle('active', activo);
+            content.hidden = !activo;
+        });
+        if (nombre === 'mapa' && window.mapaAdmin) {
+            setTimeout(() => window.mapaAdmin.invalidateSize(), 300);
         }
-        return;
+        if (nombre === 'reportes' && typeof window.cargarResultados === 'function') {
+            window.cargarResultados();
+        }
     }
+
+    tabs.forEach((tab) => tab.addEventListener('click', () => activarTab(tab)));
+
+    function actualizarEstado(texto, tipo) {
+        if (!mapaEstado) return;
+        mapaEstado.textContent = texto;
+        mapaEstado.dataset.estado = tipo || '';
+    }
+
+    function escaparHtml(valor) {
+        const div = document.createElement('div');
+        div.textContent = valor == null ? '' : String(valor);
+        return div.innerHTML;
+    }
+
+    function popupPunto(item, extras) {
+        return '<strong>' + escaparHtml(item.nombre || 'Sin nombre') + '</strong>' + (extras || '');
+    }
+
+    function crearCapasMapa(datos) {
+        const grupos = {
+            demandas: L.layerGroup(),
+            candidatos: L.layerGroup(),
+            refugios: L.layerGroup(),
+            zonas: L.layerGroup()
+        };
+
+        function coordenadasValidas(item) {
+            const lat = Number(item.lat);
+            const lng = Number(item.lng);
+            return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
+        }
+
+        (datos.puntos_demanda || []).forEach((item) => {
+            const coords = coordenadasValidas(item);
+            if (!coords) return;
+            L.circleMarker(coords, { radius: 7, weight: 2, fillOpacity: 0.75 })
+                .bindPopup(popupPunto(item,
+                    '<br>Población: ' + escaparHtml(item.poblacion ?? 0) +
+                    '<br>Vulnerabilidad: ' + escaparHtml(item.vulnerabilidad ?? 'No especificada')))
+                .addTo(grupos.demandas);
+        });
+
+        (datos.sitios_candidatos || []).forEach((item) => {
+            const coords = coordenadasValidas(item);
+            if (!coords) return;
+            L.marker(coords)
+                .bindPopup(popupPunto(item,
+                    '<br>Capacidad máxima: ' + escaparHtml(item.capacidad_maxima ?? 0)))
+                .addTo(grupos.candidatos);
+        });
+
+        (datos.refugios || []).forEach((item) => {
+            const coords = coordenadasValidas(item);
+            if (!coords) return;
+            L.marker(coords)
+                .bindPopup(popupPunto(item,
+                    '<br>Capacidad disponible: ' + escaparHtml(item.capacidad_disponible ?? 0) +
+                    '<br>Estado: ' + (item.operativo ? 'Operativo' : 'No operativo')))
+                .addTo(grupos.refugios);
+        });
+
+        (datos.zonas_afectadas || []).forEach((item) => {
+            if (!item.geojson) return;
+            try {
+                const geojson = typeof item.geojson === 'string' ? JSON.parse(item.geojson) : item.geojson;
+                const capa = L.geoJSON(geojson, { weight: 2, fillOpacity: 0.25 });
+                capa.bindPopup(
+                    '<strong>' + escaparHtml(item.nombre || 'Zona afectada') + '</strong>' +
+                    '<br>Nivel de alerta: ' + escaparHtml(item.nivel_alerta ?? 'No especificado') +
+                    '<br>Heridos: ' + escaparHtml(item.heridos ?? 0) +
+                    '<br>Fallecidos: ' + escaparHtml(item.fallecidos ?? 0) +
+                    '<br>Damnificados: ' + escaparHtml(item.damnificados ?? 0)
+                );
+                grupos.zonas.addLayer(capa);
+            } catch (error) {
+                console.warn('[panel_admin] Geometría inválida:', item.id, error);
+            }
+        });
+
+        return grupos;
+    }
+
+    function configurarControlesCapas(grupos) {
+        [
+            ['chk-demandas', grupos.demandas],
+            ['chk-candidatos', grupos.candidatos],
+            ['chk-refugios', grupos.refugios],
+            ['chk-zonas', grupos.zonas]
+        ].forEach(([id, grupo]) => {
+            const checkbox = document.getElementById(id);
+            if (!checkbox) return;
+            if (checkbox.checked) grupo.addTo(window.mapaAdmin);
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) grupo.addTo(window.mapaAdmin);
+                else window.mapaAdmin.removeLayer(grupo);
+            });
+        });
+    }
+
+    async function cargarDatosMapa() {
+        if (!window.mapaAdmin) return;
+        actualizarEstado('Cargando datos...', 'loading');
+        try {
+            const response = await fetch('/api/datos-mapa/', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            if (!response.ok) throw new Error('No se pudieron cargar las capas.');
+            const datos = await response.json();
+            const grupos = crearCapasMapa(datos);
+            configurarControlesCapas(grupos);
+
+            const todas = L.featureGroup([
+                grupos.demandas, grupos.candidatos, grupos.refugios, grupos.zonas
+            ]);
+            if (todas.getLayers().length) {
+                const bounds = todas.getBounds();
+                if (bounds.isValid()) window.mapaAdmin.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+            }
+
+            const total = [datos.puntos_demanda, datos.sitios_candidatos, datos.refugios, datos.zonas_afectadas]
+                .reduce((sum, capa) => sum + (Array.isArray(capa) ? capa.length : 0), 0);
+            actualizarEstado(total + ' elementos cargados', 'success');
+        } catch (error) {
+            console.error('[panel_admin] Error cargando mapa:', error);
+            actualizarEstado('No fue posible cargar las capas', 'error');
+        }
+    }
+
+    function inicializarMapa() {
+        const contenedor = document.getElementById('mapa-admin');
+        if (!contenedor || typeof L === 'undefined') {
+            actualizarEstado('Mapa no disponible', 'error');
+            return;
+        }
+        window.mapaAdmin = L.map(contenedor, { center: [10.0, -66.0], zoom: 6 });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            referrerPolicy: 'strict-origin-when-cross-origin',
+            maxZoom: 19
+        }).addTo(window.mapaAdmin);
+        cargarDatosMapa();
+    }
+
+    window.cargarResultados = async function () {
+        const tbody = document.querySelector('#tabla-resultados tbody');
+        if (!tbody) return;
+        try {
+            const response = await fetch('/api/listar-resultados/', {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            if (!response.ok) throw new Error('No se pudo obtener el historial.');
+            const data = await response.json();
+            tbody.innerHTML = '';
+            if (!Array.isArray(data) || !data.length) {
+                const fila = document.createElement('tr');
+                const celda = document.createElement('td');
+                celda.colSpan = 6;
+                celda.textContent = 'Sin actividad';
+                fila.appendChild(celda);
+                tbody.appendChild(fila);
+                return;
+            }
+            data.forEach((resultado) => {
+                const fila = document.createElement('tr');
+                const valores = [
+                    resultado.id ?? '',
+                    String(resultado.fecha || '').substring(0, 10),
+                    resultado.escenario ?? '',
+                    ((resultado.resumen || {}).distancia_total ?? 0) + ' km',
+                    (resultado.resumen || {}).poblacion_atendida ?? 0,
+                    ((resultado.resumen || {}).porcentaje_cubierto ?? 0) + '%'
+                ];
+                valores.forEach((valor) => {
+                    const celda = document.createElement('td');
+                    celda.textContent = valor;
+                    fila.appendChild(celda);
+                });
+                tbody.appendChild(fila);
+            });
+        } catch (error) {
+            console.error('[panel_admin] Error cargando historial:', error);
+            tbody.innerHTML = '';
+            const fila = document.createElement('tr');
+            const celda = document.createElement('td');
+            celda.colSpan = 6;
+            celda.textContent = 'No fue posible cargar el historial.';
+            fila.appendChild(celda);
+            tbody.appendChild(fila);
+        }
+    };
+
+    window.generarReporte = async function (tipo, contenido) {
+        const mensaje = document.getElementById('mensaje-reporte');
+        if (!mensaje) return;
+        mensaje.hidden = false;
+        mensaje.className = 'mensaje-reporte loading';
+        mensaje.textContent = 'Generando...';
+        try {
+            const params = new URLSearchParams({ tipo: tipo, contenido: contenido });
+            const response = await fetch('/api/reportes/generar/?' + params.toString(), {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            if (!response.ok) throw new Error('No fue posible generar el reporte.');
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || 'Error al generar el reporte.');
+            mensaje.className = 'mensaje-reporte success';
+            mensaje.textContent = data.mensaje || 'Reporte generado correctamente.';
+            if (data.archivo) {
+                window.location.href = '/api/reportes/descargar/' + encodeURIComponent(data.archivo) + '/';
+            }
+        } catch (error) {
+            console.error('[panel_admin] Error generando reporte:', error);
+            mensaje.className = 'mensaje-reporte error';
+            mensaje.textContent = error.message;
+        }
+    };
+
+    inicializarMapa();
 })();
 </script>
 {% endblock %}
