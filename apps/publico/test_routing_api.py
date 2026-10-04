@@ -22,6 +22,8 @@ class RutaPublicaApiTests(SimpleTestCase):
 
     @patch("apps.publico.routing_api.urlopen")
     def test_calcula_ruta_y_devuelve_instrucciones_en_espanol(self, mock_urlopen):
+        payload = self._payload()
+
         class Response:
             def __enter__(self):
                 return self
@@ -30,9 +32,7 @@ class RutaPublicaApiTests(SimpleTestCase):
                 return False
 
             def read(self):
-                return json.dumps(self.payload).encode("utf-8")
-
-            payload = self._payload()
+                return json.dumps(payload).encode("utf-8")
 
         mock_urlopen.return_value = Response()
         response = self.client.get("/api/publico/ruta/?origen_lat=10.50&origen_lng=-66.90&destino_lat=10.52&destino_lng=-66.88")
