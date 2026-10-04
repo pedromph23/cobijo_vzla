@@ -125,7 +125,7 @@ class FormsTest(TestCase):
         self.assertAlmostEqual(form.cleaned_data['ubicacion'].x, -66.9036, places=4)
         self.assertEqual(form.cleaned_data['tipo_terreno'], 'escuela')
 
-    def test_sitio_candidato_mantiene_ubicacion_al_editar(self):
+    def test_sitio_candidato_muestra_ubicacion_existente_en_formato_del_mapa(self):
         from apps.core.models import SitioCandidato
         sitio = SitioCandidato.objects.create(
             nombre='Sitio existente',
@@ -137,8 +137,8 @@ class FormsTest(TestCase):
             disponible=True,
         )
         form = SitioCandidatoForm(instance=sitio)
-        self.assertEqual(form.initial['ubicacion'], '-66.910000,10.490000')
-        self.assertEqual(form.initial['tipo_terreno'], 'edificio')
+        self.assertEqual(form['ubicacion'].value(), '-66.910000,10.490000')
+        self.assertEqual(form['tipo_terreno'].value(), 'edificio')
 
     def test_nombre_de_punto_acepta_numero_si_es_parte_del_nombre(self):
         """Los topónimos pueden contener números: Sector 23, 5 de Julio, etc."""
