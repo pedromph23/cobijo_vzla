@@ -2,20 +2,6 @@
 from django.db import migrations, models
 
 
-def asignar_parroquias(apps, schema_editor):
-    Parroquia = apps.get_model('core', 'Parroquia')
-    modelos = (
-        apps.get_model('core', 'SitioCandidato'),
-        apps.get_model('core', 'RefugioExistente'),
-    )
-
-    for Modelo in modelos:
-        for obj in Modelo.objects.filter(parroquia__isnull=True).exclude(ubicacion__isnull=True).only('pk', 'ubicacion'):
-            parroquia = Parroquia.objects.filter(geom__intersects=obj.ubicacion).only('pk').first()
-            if parroquia:
-                Modelo.objects.filter(pk=obj.pk).update(parroquia_id=parroquia.pk)
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ('core', '0013_alter_sitiocandidato_costos'),
@@ -25,12 +11,24 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='sitiocandidato',
             name='parroquia',
-            field=models.ForeignKey(blank=True, null=True, on_delete=models.deletion.SET_NULL, related_name='sitios_candidatos', to='core.parroquia'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=models.deletion.SET_NULL,
+                related_name='sitios_candidatos',
+                to='core.parroquia',
+            ),
         ),
         migrations.AddField(
             model_name='refugioexistente',
             name='parroquia',
-            field=models.ForeignKey(blank=True, null=True, on_delete=models.deletion.SET_NULL, related_name='refugios_existentes', to='core.parroquia'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=models.deletion.SET_NULL,
+                related_name='refugios_existentes',
+                to='core.parroquia',
+            ),
         ),
         migrations.AddIndex(
             model_name='sitiocandidato',
@@ -40,5 +38,4 @@ class Migration(migrations.Migration):
             model_name='refugioexistente',
             index=models.Index(fields=['parroquia'], name='core_refugio_parroqui_idx'),
         ),
-        migrations.RunPython(asignar_parroquias, migrations.RunPython.noop),
     ]
