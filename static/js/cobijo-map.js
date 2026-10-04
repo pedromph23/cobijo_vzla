@@ -37,12 +37,22 @@
             return map;
         },
 
-        normalize(map) {
+        adopt(map, options) {
             if (!map || typeof L === 'undefined') return map;
-            map.setMinZoom(config.minZoom);
-            map.setMaxZoom(config.maxZoom);
+            const settings = Object.assign({}, config, options || {});
+            map.setMinZoom(settings.minZoom);
+            map.setMaxZoom(settings.maxZoom);
             map.options.zoomControl = false;
             if (!map.zoomControl) L.control.zoom({ position: 'bottomright' }).addTo(map);
+            map.eachLayer((layer) => {
+                if (layer instanceof L.TileLayer) map.removeLayer(layer);
+            });
+            L.tileLayer(settings.tiles, {
+                attribution: settings.attribution,
+                referrerPolicy: 'strict-origin-when-cross-origin',
+                maxZoom: settings.tileMaxZoom
+            }).addTo(map);
+            map.setView(settings.center, settings.zoom);
             return map;
         }
     });
