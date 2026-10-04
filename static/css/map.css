@@ -9,9 +9,6 @@
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    height: calc(100vh - var(--header-height, 60px));
-    height: calc(100dvh - var(--header-height, 60px));
-    min-height: 500px;
     position: relative;
     background: var(--bg-card);
     overflow: hidden;
@@ -21,6 +18,7 @@
 @media (min-width: 769px) {
     .map-layout {
         height: calc(100vh - var(--header-height, 78px) - 40px);
+        min-height: 420px;
         margin: 20px auto;
         max-width: 1400px;
         border-radius: var(--radius-lg);
@@ -241,8 +239,6 @@
 
 .map-action-btn:active { transform: scale(.94); }
 
-/* Leaflet controls: integrate with the application theme without
-   changing their DOM or behavior. */
 .leaflet-control-zoom,
 .leaflet-control-layers,
 .leaflet-control-scale {
@@ -274,58 +270,29 @@
     color: var(--color-primary) !important;
 }
 
-/* ------------------------------------------------------------
-   REDUCCIÓN DE MOVIMIENTO
-   ------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
     .map-layout,
     .map-action-btn,
     .btn-toolbar,
     .leaflet-tile,
     .minimap-container,
-    .btn-minimap {
-        transition: none;
-    }
-
+    .btn-minimap { transition: none; }
     .pulse-dot { animation: none; }
 }
 
-/* ------------------------------------------------------------
-   RESPONSIVE
-   ------------------------------------------------------------
-   La altura del mapa en móvil pertenece a responsive.css.
-   map.css conserva aquí únicamente ajustes propios del mapa.
-   ------------------------------------------------------------ */
+/* La altura del mapa en móvil pertenece exclusivamente a responsive.css. */
 @media (max-width: 768px) {
-    .map-layout {
-        min-height: 0;
-        border-radius: 0;
-    }
-
-    .map-toolbar {
-        min-height: 46px;
-        padding: .35rem .55rem;
-    }
-
-    .map-floating-controls {
-        top: max(12px, env(safe-area-inset-top));
-        right: 12px;
-    }
-
-    .map-action-btn {
-        width: 44px;
-        height: 44px;
-    }
-
+    .map-layout { min-height: 0; border-radius: 0; }
+    .map-toolbar { min-height: 46px; padding: .35rem .55rem; }
+    .map-floating-controls { top: max(12px, env(safe-area-inset-top)); right: 12px; }
+    .map-action-btn { width: 44px; height: 44px; }
     .desktop-only { display: none; }
-
     .minimap-container {
         width: 120px;
         height: 90px;
         bottom: max(70px, calc(50px + env(safe-area-inset-bottom)));
         right: 10px;
     }
-
     .leaflet-control-zoom a {
         width: 34px !important;
         height: 34px !important;
@@ -334,25 +301,13 @@
 }
 
 @media (max-width: 480px) {
-    .map-floating-controls {
-        top: 10px;
-        right: 10px;
-        gap: 6px;
-    }
-
-    .map-action-btn {
-        width: 40px;
-        height: 40px;
-    }
-
+    .map-floating-controls { top: 10px; right: 10px; gap: 6px; }
+    .map-action-btn { width: 40px; height: 40px; }
     .map-status {
         max-width: 45vw;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-
-    .btn-toolbar {
-        padding-inline: .55rem;
-    }
+    .btn-toolbar { padding-inline: .55rem; }
 }
