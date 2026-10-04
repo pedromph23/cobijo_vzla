@@ -34,7 +34,7 @@
         <form method="post" enctype="multipart/form-data" class="crud-form">
             {% csrf_token %}
             {% for field in form %}
-                <div class="crud-field {% if field.errors %}has-error{% endif %}{% if field.name == 'ubicacion' %} crud-location-field{% endif %}">
+                <div class="crud-field {% if field.errors %}has-error{% endif %}{% if field.name == 'ubicacion' %} crud-location-field{% endif %}{% if field.name == 'servicios' %} crud-services-field{% endif %}">
                     <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
                     {% if field.name == 'ubicacion' %}
                         <div class="crud-location-help"><i class="fas fa-location-dot"></i> Selecciona el punto directamente en el mapa. Las coordenadas se guardan automáticamente.</div>
@@ -44,10 +44,23 @@
                             <span id="crud-location-status" class="crud-location-status">{% if field.value %}Ubicación cargada{% else %}Haz clic en el mapa para colocar el punto{% endif %}</span>
                         </div>
                         <div class="crud-location-value">{{ field }}</div>
+                    {% elif field.name == 'servicios' %}
+                        {% if field.help_text %}<small class="help-text crud-services-help">{{ field.help_text }}</small>{% endif %}
+                        <div class="crud-services-grid" role="group" aria-label="Servicios e insumos disponibles">
+                            {% for checkbox in field %}
+                                <label class="crud-service-option" for="{{ checkbox.id_for_label }}">
+                                    {{ checkbox.tag }}
+                                    <span class="crud-service-content">
+                                        <i class="fas {% if checkbox.data.value == 'agua' %}fa-droplet{% elif checkbox.data.value == 'alimentacion' %}fa-utensils{% elif checkbox.data.value == 'medicina' %}fa-pills{% elif checkbox.data.value == 'primeros_auxilios' %}fa-kit-medical{% elif checkbox.data.value == 'higiene' %}fa-hands-bubbles{% elif checkbox.data.value == 'atencion_medica' %}fa-user-doctor{% elif checkbox.data.value == 'electricidad' %}fa-bolt{% else %}fa-wifi{% endif %}"></i>
+                                        <span>{{ checkbox.choice_label }}</span>
+                                    </span>
+                                </label>
+                            {% endfor %}
+                        </div>
                     {% else %}
                         {{ field }}
                     {% endif %}
-                    {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+                    {% if field.name != 'servicios' and field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
                     {% if field.errors %}
                         <div class="field-errors">{% for err in field.errors %}<p>{{ err }}</p>{% endfor %}</div>
                     {% endif %}
@@ -65,7 +78,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/admin.css' %}?v=2">
 <link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">
-<link rel="stylesheet" href="{% static 'css/crud-form.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/crud-form.css' %}?v=3">
 {% endblock %}
 
 {% block extra_js %}
