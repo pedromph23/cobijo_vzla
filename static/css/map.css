@@ -292,11 +292,13 @@
 
 /* ------------------------------------------------------------
    RESPONSIVE
+   ------------------------------------------------------------
+   La altura del mapa en móvil pertenece a responsive.css.
+   map.css conserva aquí únicamente ajustes propios del mapa.
    ------------------------------------------------------------ */
 @media (max-width: 768px) {
     .map-layout {
         min-height: 0;
-        height: calc(100dvh - var(--header-height, 68px));
         border-radius: 0;
     }
 
