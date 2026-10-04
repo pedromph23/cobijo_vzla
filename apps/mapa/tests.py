@@ -111,6 +111,35 @@ class FormsTest(TestCase):
         })
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_sitio_candidato_acepta_datos_operativos_y_mapa(self):
+        form = SitioCandidatoForm(data={
+            'nombre': 'Escuela Bolivariana',
+            'ubicacion': '-66.903600,10.480600',
+            'capacidad_maxima': 250,
+            'costo_apertura': '1250.50',
+            'costo_operacion': '300.00',
+            'tipo_terreno': 'escuela',
+            'disponible': True,
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertAlmostEqual(form.cleaned_data['ubicacion'].x, -66.9036, places=4)
+        self.assertEqual(form.cleaned_data['tipo_terreno'], 'escuela')
+
+    def test_sitio_candidato_mantiene_ubicacion_al_editar(self):
+        from apps.core.models import SitioCandidato
+        sitio = SitioCandidato.objects.create(
+            nombre='Sitio existente',
+            ubicacion=Point(-66.91, 10.49, srid=4326),
+            capacidad_maxima=100,
+            costo_apertura=0,
+            costo_operacion=0,
+            tipo_terreno='edificio',
+            disponible=True,
+        )
+        form = SitioCandidatoForm(instance=sitio)
+        self.assertEqual(form.initial['ubicacion'], '-66.910000,10.490000')
+        self.assertEqual(form.initial['tipo_terreno'], 'edificio')
+
     def test_nombre_de_punto_acepta_numero_si_es_parte_del_nombre(self):
         """Los topónimos pueden contener números: Sector 23, 5 de Julio, etc."""
         form = PuntoDemandaForm(data={
