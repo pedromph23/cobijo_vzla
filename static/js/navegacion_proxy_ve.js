@@ -58,13 +58,6 @@
         });
     }
 
-    function obtenerErrorGeolocalizacion(error) {
-        if (error?.code === 1) return 'Permiso de ubicación denegado. Actívalo para calcular la ruta.';
-        if (error?.code === 2) return 'No fue posible determinar tu ubicación.';
-        if (error?.code === 3) return 'La ubicación tardó demasiado en responder.';
-        return error?.message || 'No fue posible obtener tu ubicación.';
-    }
-
     async function solicitarRuta(origen, destino) {
         const parametros = new URLSearchParams({
             origen_lat: origen.lat.toFixed(6),
@@ -164,6 +157,7 @@
         control.on('routesfound', event => {
             const encontrada = event.routes?.[0];
             if (!encontrada) {
+                calculando = false;
                 mostrarError('El servidor no devolvió una ruta válida.');
                 return;
             }
@@ -205,8 +199,6 @@
     }
 
     function instalar() {
-        // Captura el botón antes del listener histórico de mapa_publico.html.
-        // Así no se inicia simultáneamente la petición directa a OSRM del navegador.
         document.addEventListener('click', event => {
             const boton = event.target.closest?.('.btn-como-llegar');
             if (!boton) return;
@@ -224,25 +216,8 @@
             event.stopImmediatePropagation();
             calcularRutaProduccion(data.lat, data.lng, data.nombre);
         }, true);
-
-        // El template histórico no deja las coordenadas en el DOM. Enlazamos
-        // el botón dinámico con la última opción de ruta que abrió el usuario.
-        const original = window.mostrarInfoCard;
-        if (typeof original === 'function') return;
-
-        const observar = new MutationObserver(() => {
-            const boton = document.querySelector('.btn-como-llegar');
-            const body = document.getElementById('info-card-body');
-            if (!boton || !body || body.dataset.rutaLat) return;
-            // No inventamos coordenadas: las obtiene del listener de refugios
-            // mediante el atributo temporal instalado abajo.
-        });
-        observar.observe(document.body, { childList: true, subtree: true });
     }
 
-    // El listener de captura necesita las coordenadas. Sobrescribimos la
-    // función global usada por los marcadores sin alterar la versión lexical
-    // histórica: el nuevo botón guarda explícitamente lat/lng en el body.
     function parchearMostrarInfoCard() {
         const interval = window.setInterval(() => {
             if (typeof window.mostrarInfoCard !== 'function') return;
