@@ -10,13 +10,14 @@ from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
 from geopy.exc import GeocoderServiceError, GeocoderTimedOut
-from geopy.geocoders import Nominatim
+from geopy.geocoders import ArcGIS, Nominatim
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
 logger = logging.getLogger(__name__)
 
 _CACHE_TIMEOUT = 60 * 60 * 24
+_CACHE_VERSION = "v3"
 _GEOCODER = Nominatim(
     user_agent=getattr(
         settings,
@@ -25,6 +26,7 @@ _GEOCODER = Nominatim(
     ),
     timeout=8,
 )
+_GEOCODER_FALLBACK = ArcGIS(timeout=8)
 
 _GENERIC_WORDS = {
     "av",
@@ -56,11 +58,11 @@ def _normalizar_texto(value: str) -> str:
 
 def _cache_key(address: str) -> str:
     normalized = _normalizar_texto(address)
-    return f"cobijo:geocode:ve:{normalized}"
+    return f"cobijo:geocode:{_CACHE_VERSION}:ve:{normalized}"
 
 
 def _resultado_score(query: str, result) -> float:
-    """Prioriza coincidencias de nombre sin perder el ranking geográfico de Nominatim."""
+    """Prioriza coincidencias de nombre sin perder el ranking geográfico."""
     raw = getattr(result, "raw", {}) or {}
     query_normalizado = _normalizar_texto(query)
     query_tokens = set(query_normalizado.split()) - _GENERIC_WORDS
@@ -86,7 +88,6 @@ def _resultado_score(query: str, result) -> float:
         contiene = 1.0 if query_normalizado in normalizado else 0.0
         mejor = max(mejor, (similitud * 0.45) + (coincidencias * 0.45) + (contiene * 0.10))
 
-    # Los POI tienen prioridad frente a resultados administrativos genéricos.
     categoria = str(raw.get("class") or raw.get("category") or "")
     tipo = str(raw.get("type") or "")
     if categoria in {"amenity", "building", "shop", "tourism", "leisure", "office"}:
@@ -95,6 +96,46 @@ def _resultado_score(query: str, result) -> float:
         mejor += 0.12
 
     return mejor + (float(raw.get("importance") or 0) * 0.05)
+
+
+def _buscar_nominatim(query: str):
+    return _GEOCODER.geocode(
+        query,
+        exactly_one=False,
+        limit=8,
+        country_codes="ve",
+        language="es",
+        addressdetails=True,
+        namedetails=True,
+    ) or []
+
+
+def _buscar_arcgis(query: str):
+    """Respaldo para nombres de centros y lugares que OSM no tenga indexados."""
+    try:
+        result = _GEOCODER_FALLBACK.geocode(query, exactly_one=False)
+    except (GeocoderTimedOut, GeocoderServiceError):
+        return []
+    except Exception:
+        logger.exception("Error inesperado durante la geocodificación de respaldo")
+        return []
+    if not result:
+        return []
+    return result if isinstance(result, list) else [result]
+
+
+def _buscar_resultados(query: str):
+    """Hace una sola búsqueda lógica y usa un respaldo si el primer proveedor no encuentra nada."""
+    try:
+        resultados = _buscar_nominatim(query)
+    except (GeocoderTimedOut, GeocoderServiceError) as exc:
+        logger.warning("Geocodificación principal no disponible: %s", exc)
+        resultados = []
+
+    if resultados:
+        return resultados
+
+    return _buscar_arcgis(query)
 
 
 @api_view(["GET"])
@@ -114,30 +155,8 @@ def api_geocodificar_direccion(request):
 
     query = address if "venezuela" in _normalizar_texto(address) else f"{address}, Venezuela"
 
-    try:
-        results = _GEOCODER.geocode(
-            query,
-            exactly_one=False,
-            limit=8,
-            country_codes="ve",
-            language="es",
-            addressdetails=True,
-            namedetails=True,
-        ) or []
-    except (GeocoderTimedOut, GeocoderServiceError) as exc:
-        logger.warning("Geocodificación no disponible: %s", exc)
-        return JsonResponse(
-            {"ok": False, "detail": "No se pudo consultar el servicio de ubicación."},
-            status=503,
-        )
-    except Exception:
-        logger.exception("Error inesperado durante la geocodificación")
-        return JsonResponse(
-            {"ok": False, "detail": "No se pudo ubicar la dirección."},
-            status=503,
-        )
-
-    if not results:
+    resultados = _buscar_resultados(query)
+    if not resultados:
         response = {
             "ok": False,
             "found": False,
@@ -146,15 +165,16 @@ def api_geocodificar_direccion(request):
         cache.set(key, response, _CACHE_TIMEOUT)
         return JsonResponse(response)
 
-    result = max(results, key=lambda item: _resultado_score(address, item))
+    result = max(resultados, key=lambda item: _resultado_score(address, item))
     lat = float(result.latitude)
     lng = float(result.longitude)
+    display_name = getattr(result, "address", None) or getattr(result, "raw", {}).get("address") or "Ubicación encontrada"
     response = {
         "ok": True,
         "found": True,
         "lat": lat,
         "lng": lng,
-        "display_name": result.address,
+        "display_name": display_name,
     }
     cache.set(key, response, _CACHE_TIMEOUT)
     return JsonResponse(response)
