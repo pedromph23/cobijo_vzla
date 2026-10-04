@@ -55,7 +55,7 @@
 
     .nav-ruta-panel-ve {
         width: min(380px, calc(100% - 28px)) !important;
-        max-height: min(54vh, 520px) !important;
+        max-height: min(50vh, 500px) !important;
         right: 14px !important;
         top: 60px !important;
         bottom: auto !important;
@@ -79,7 +79,7 @@
     }
 
     .nav-ruta-pasos-ve {
-        max-height: 30vh !important;
+        max-height: 27vh !important;
         overflow-y: auto !important;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
@@ -94,7 +94,7 @@
         left: 15px !important;
         bottom: 15px !important;
         width: min(320px, calc(100% - 30px)) !important;
-        max-height: min(42vh, 360px) !important;
+        max-height: min(38vh, 340px) !important;
         border-radius: 12px !important;
         overflow: hidden !important;
     }
@@ -106,7 +106,7 @@
     }
 
     .info-card-body {
-        max-height: min(29vh, 240px) !important;
+        max-height: min(26vh, 220px) !important;
         padding: .75rem .8rem !important;
         overflow-y: auto !important;
     }
@@ -154,7 +154,7 @@
         bottom: auto !important;
         width: auto !important;
         max-width: none !important;
-        max-height: 40vh !important;
+        max-height: 37vh !important;
         border-radius: 14px !important;
         overflow: hidden !important;
         box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
@@ -166,9 +166,7 @@
         gap: 4px !important;
     }
 
-    .nav-ruta-header-ve > div:first-child {
-        min-width: 0 !important;
-    }
+    .nav-ruta-header-ve > div:first-child { min-width: 0 !important; }
 
     .nav-ruta-kicker-ve {
         font-size: .58rem !important;
@@ -178,9 +176,7 @@
         text-overflow: ellipsis;
     }
 
-    .nav-ruta-progreso-ve {
-        font-size: .56rem !important;
-    }
+    .nav-ruta-progreso-ve { font-size: .56rem !important; }
 
     .nav-ruta-header-ve h2,
     .nav-ruta-header-ve h3,
@@ -208,14 +204,10 @@
         gap: 6px !important;
     }
 
-    .nav-ruta-resumen-ve > * {
-        min-width: 0;
-    }
+    .nav-ruta-resumen-ve > * { min-width: 0; }
 
     .nav-ruta-estado-ve,
-    .nav-ruta-acciones-ve {
-        padding-inline: 9px !important;
-    }
+    .nav-ruta-acciones-ve { padding-inline: 9px !important; }
 
     .nav-ruta-estado-ve {
         padding-block: 6px !important;
@@ -224,7 +216,7 @@
     }
 
     .nav-ruta-pasos-ve {
-        max-height: 21vh !important;
+        max-height: 18vh !important;
         overflow-y: auto !important;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
@@ -243,18 +235,14 @@
         line-height: 1.2 !important;
     }
 
-    .nav-ruta-paso-ve small {
-        font-size: .66rem !important;
-    }
+    .nav-ruta-paso-ve small { font-size: .66rem !important; }
 
     .nav-ruta-acciones-ve {
         padding-block: 6px !important;
         gap: 6px !important;
     }
 
-    .nav-ruta-panel-ve.colapsado {
-        max-height: 54px !important;
-    }
+    .nav-ruta-panel-ve.colapsado { max-height: 54px !important; }
 
     /* --------------------------------------------------------
        TARJETA DEL REFUGIO
@@ -265,7 +253,7 @@
         bottom: 8px !important;
         width: auto !important;
         max-width: none !important;
-        max-height: 26vh !important;
+        max-height: 23vh !important;
         border-radius: 12px !important;
         overflow: hidden !important;
         box-shadow: 0 8px 24px rgba(0,0,0,.24) !important;
@@ -279,7 +267,7 @@
     }
 
     .info-card-body {
-        max-height: 19vh !important;
+        max-height: 16vh !important;
         padding: .55rem .65rem !important;
         font-size: .72rem !important;
         line-height: 1.25 !important;
@@ -289,9 +277,7 @@
         scrollbar-width: thin;
     }
 
-    .info-card-body p {
-        margin: 0 0 .32rem !important;
-    }
+    .info-card-body p { margin: 0 0 .32rem !important; }
 
     .btn-como-llegar {
         min-height: 38px !important;
@@ -340,29 +326,12 @@
         max-height: 620px !important;
     }
 
-    .nav-ruta-panel-ve {
-        max-height: 39vh !important;
-    }
-
-    .nav-ruta-pasos-ve {
-        max-height: 20vh !important;
-    }
-
-    .info-card {
-        max-height: 25vh !important;
-    }
-
-    .info-card-body {
-        max-height: 18vh !important;
-    }
-
-    .info-card-header {
-        min-height: 40px !important;
-    }
-
-    .btn-como-llegar {
-        min-height: 36px !important;
-    }
+    .nav-ruta-panel-ve { max-height: 36vh !important; }
+    .nav-ruta-pasos-ve { max-height: 17vh !important; }
+    .info-card { max-height: 22vh !important; }
+    .info-card-body { max-height: 15vh !important; }
+    .info-card-header { min-height: 40px !important; }
+    .btn-como-llegar { min-height: 36px !important; }
 }
 
 /* ------------------------------------------------------------
@@ -376,28 +345,17 @@
     }
 
     .nav-ruta-panel-ve {
-        max-height: 68vh !important;
+        max-height: 64vh !important;
         top: 6px !important;
     }
 
-    .nav-ruta-pasos-ve {
-        max-height: 38vh !important;
-    }
-
-    .info-card {
-        max-height: 34vh !important;
-        bottom: 6px !important;
-    }
-
-    .info-card-body {
-        max-height: 24vh !important;
-    }
+    .nav-ruta-pasos-ve { max-height: 34vh !important; }
+    .info-card { max-height: 30vh !important; bottom: 6px !important; }
+    .info-card-body { max-height: 21vh !important; }
 }
 
 /* Respeta preferencias de movimiento reducido. */
 @media (prefers-reduced-motion: reduce) {
     .nav-ruta-panel-ve,
-    .info-card {
-        scroll-behavior: auto !important;
-    }
+    .info-card { scroll-behavior: auto !important; }
 }
