@@ -57,11 +57,19 @@
                                 </label>
                             {% endfor %}
                         </div>
-                    {% else %}
+                        {% with otros=form.otros_servicios %}
+                            <div class="crud-service-extra">
+                                <label for="{{ otros.id_for_label }}">{{ otros.label }}</label>
+                                {{ otros }}
+                                {% if otros.help_text %}<small class="help-text">{{ otros.help_text }}</small>{% endif %}
+                                {% if otros.errors %}<div class="field-errors">{% for err in otros.errors %}<p>{{ err }}</p>{% endfor %}</div>{% endif %}
+                            </div>
+                        {% endwith %}
+                    {% elif field.name != 'otros_servicios' %}
                         {{ field }}
                     {% endif %}
-                    {% if field.name != 'servicios' and field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-                    {% if field.errors %}
+                    {% if field.name != 'servicios' and field.name != 'otros_servicios' and field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+                    {% if field.name != 'otros_servicios' and field.errors %}
                         <div class="field-errors">{% for err in field.errors %}<p>{{ err }}</p>{% endfor %}</div>
                     {% endif %}
                 </div>
@@ -78,7 +86,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/admin.css' %}?v=2">
 <link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">
-<link rel="stylesheet" href="{% static 'css/crud-form.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/crud-form.css' %}?v=4">
 {% endblock %}
 
 {% block extra_js %}
