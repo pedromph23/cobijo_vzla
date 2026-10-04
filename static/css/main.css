@@ -302,17 +302,6 @@ main {
 .btn-danger:hover { background: var(--color-danger-dark); }
 .btn-block { width: 100%; margin: .5rem 0; }
 
-.app-footer {
-    margin-top: auto;
-    padding: 1rem;
-    flex-shrink: 0;
-    background: var(--color-dark);
-    color: #fff;
-    text-align: center;
-    font-size: .85rem;
-}
-
-
 /* ============================================================
    FOOTER GLOBAL · INFORMACIÓN Y CONTACTO
    ============================================================ */
