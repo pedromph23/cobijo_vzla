@@ -42,13 +42,16 @@ def _parsear_punto(valor) -> Point:
     return Point(lng, lat, srid=4326)
 
 
+UBICACION_WIDGET = forms.HiddenInput()
+
+
 class PuntoDemandaForm(forms.ModelForm):
     class Meta:
         model = PuntoDemanda
         fields = ['nombre', 'ubicacion', 'poblacion', 'vulnerabilidad', 'descripcion']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
-            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'decimal'}),
+            'ubicacion': UBICACION_WIDGET,
             'poblacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
             'vulnerabilidad': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': 0, 'max': 1, 'inputmode': 'decimal'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'maxlength': 2000}),
@@ -64,7 +67,7 @@ class SitioCandidatoForm(forms.ModelForm):
         fields = ['nombre', 'ubicacion', 'capacidad_maxima', 'costo_apertura', 'costo_operacion', 'tipo_terreno', 'disponible']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
-            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'decimal'}),
+            'ubicacion': UBICACION_WIDGET,
             'capacidad_maxima': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'step': 1, 'inputmode': 'numeric'}),
             'costo_apertura': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal'}),
             'costo_operacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal'}),
@@ -90,7 +93,7 @@ class RefugioExistenteForm(forms.ModelForm):
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
             'direccion': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 300}),
-            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'decimal'}),
+            'ubicacion': UBICACION_WIDGET,
             'capacidad_total': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
             'capacidad_disponible': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
             'operativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
