@@ -163,7 +163,7 @@ class ZonaAfectadaForm(forms.ModelForm):
             'evento': forms.Select(attrs={'class': 'form-select'}),
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'maxlength': 2000}),
-            'geom': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'geom': forms.HiddenInput(),
             'nivel_alerta': forms.Select(attrs={'class': 'form-select'}),
             'fecha_inicio': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'fecha_fin': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
@@ -178,10 +178,17 @@ class ZonaAfectadaForm(forms.ModelForm):
             return valor
         if isinstance(valor, str):
             try:
-                return GEOSGeometry(valor)
+                geometria = GEOSGeometry(valor)
             except Exception:
-                raise forms.ValidationError('La geometría proporcionada no es válida.')
-        return valor
+                raise forms.ValidationError('La zona dibujada no es válida.')
+            if geometria.geom_type != 'Polygon':
+                raise forms.ValidationError('La zona afectada debe ser un área cerrada.')
+            if geometria.srid is None:
+                geometria.srid = 4326
+            elif geometria.srid != 4326:
+                geometria.transform(4326)
+            return geometria
+        raise forms.ValidationError('Dibuja la zona afectada en el mapa.')
 
     def clean(self):
         cleaned = super().clean()
