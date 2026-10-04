@@ -37,11 +37,11 @@
                 <div class="crud-field {% if field.errors %}has-error{% endif %}{% if field.name == 'ubicacion' %} crud-location-field{% endif %}{% if field.name == 'geom' %} crud-geometry-field{% endif %}{% if field.name == 'servicios' %} crud-services-field{% endif %}">
                     <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
                     {% if field.name == 'ubicacion' %}
-                        <div class="crud-location-help"><i class="fas fa-location-dot"></i> Puedes escribir la dirección y pulsar <strong>Ubicar dirección</strong>; el mapa colocará el punto automáticamente. También puedes seleccionarlo directamente.</div>
+                        <div class="crud-location-help"><i class="fas fa-location-dot"></i> Escribe el nombre o dirección del lugar y pulsa <strong>Ubicar en el mapa</strong>; también puedes seleccionar el punto directamente.</div>
                         <div id="crud-location-map" class="crud-location-map" aria-label="Mapa para seleccionar la ubicación"></div>
                         <div class="crud-location-actions">
                             <button type="button" class="btn-crud btn-secondary" data-location-action="locate"><i class="fas fa-crosshairs"></i> Usar mi ubicación</button>
-                            <span id="crud-location-status" class="crud-location-status">{% if field.value %}Ubicación cargada{% else %}Escribe una dirección arriba o haz clic en el mapa{% endif %}</span>
+                            <span id="crud-location-status" class="crud-location-status">{% if field.value %}Ubicación cargada{% else %}Escribe el nombre o dirección arriba o haz clic en el mapa{% endif %}</span>
                         </div>
                         <div class="crud-location-value">{{ field }}</div>
                     {% elif field.name == 'geom' %}
@@ -61,6 +61,16 @@
                             </button>
                         </div>
                         <small class="help-text">Escribe la dirección y usa este botón, o presiona Enter. El punto se colocará automáticamente en el mapa.</small>
+                    {% elif field.name == 'nombre' and input|default:'' %}
+                        {{ field }}
+                    {% elif field.name == 'nombre' %}
+                        <div class="crud-address-control">
+                            {{ field }}
+                            <button type="button" class="btn-crud btn-secondary crud-address-button" data-location-action="geocode"{% if not field.value %} disabled{% endif %}>
+                                <i class="fas fa-location-crosshairs"></i> Ubicar en el mapa
+                            </button>
+                        </div>
+                        <small class="help-text">Escribe el nombre del lugar, por ejemplo «Liceo Juan Lovera», y ubícalo automáticamente. Luego puedes ajustar el punto directamente en el mapa.</small>
                     {% elif field.name == 'servicios' %}
                         {% if field.help_text %}<small class="help-text crud-services-help">{{ field.help_text }}</small>{% endif %}
                         <div class="crud-services-grid" role="group" aria-label="Servicios e insumos disponibles">
@@ -85,8 +95,11 @@
                     {% elif field.name != 'otros_servicios' %}
                         {{ field }}
                     {% endif %}
-                    {% if field.name != 'servicios' and field.name != 'otros_servicios' and field.name != 'direccion' and field.name != 'geom' and field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
-                    {% if field.name != 'otros_servicios' and field.name != 'direccion' and field.name != 'geom' and field.errors %}
+                    {% if field.name != 'servicios' and field.name != 'otros_servicios' and field.name != 'direccion' and field.name != 'geom' and field.name != 'nombre' and field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+                    {% if field.name != 'otros_servicios' and field.name != 'direccion' and field.name != 'geom' and field.name != 'nombre' and field.errors %}
+                        <div class="field-errors">{% for err in field.errors %}<p>{{ err }}</p>{% endfor %}</div>
+                    {% endif %}
+                    {% if field.name == 'nombre' and field.errors %}
                         <div class="field-errors">{% for err in field.errors %}<p>{{ err }}</p>{% endfor %}</div>
                     {% endif %}
                     {% if field.name == 'geom' and field.errors %}
@@ -110,5 +123,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/crud-form.js' %}?v=4"></script>
+<script src="{% static 'js/crud-form.js' %}?v=5"></script>
 {% endblock %}
