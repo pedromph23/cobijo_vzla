@@ -9,7 +9,6 @@
 
     const defaultCenter = window.CobijoMap ? window.CobijoMap.center : [8.5, -66.0];
 
-    // Punto: dirección/nombre del lugar -> geocodificación o clic directo.
     if (input && mapElement && typeof L !== 'undefined') {
         const status = document.getElementById('crud-location-status');
         const geocodeButtons = document.querySelectorAll('[data-location-action="geocode"]');
@@ -27,11 +26,15 @@
         };
 
         const setValue = (lat, lng, zoom = true, message = 'Ubicación seleccionada correctamente') => {
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                setStatus('La ubicación encontrada no es válida.');
+                return;
+            }
             input.value = `${lng.toFixed(6)},${lat.toFixed(6)}`;
             input.dispatchEvent(new Event('change', { bubbles: true }));
             if (!marker) marker = L.marker([lat, lng]).addTo(map);
             else marker.setLatLng([lat, lng]);
-            if (zoom) map.setView([lat, lng], Math.max(map.getZoom(), 14));
+            if (zoom) map.setView([lat, lng], Math.max(map.getZoom(), 16));
             setStatus(message);
         };
 
@@ -47,39 +50,57 @@
             }
         }
 
-        const geocodificarDireccion = async (sourceInput, button) => {
+        const geocodificar = async (sourceInput, button) => {
             if (!sourceInput || geocoding) return;
-            const address = sourceInput.value.trim();
-            if (!address) {
+            const texto = sourceInput.value.trim();
+            if (!texto) {
                 setStatus('Escribe el nombre o dirección para ubicarlo en el mapa.');
                 return;
             }
-            if (address === lastGeocodedAddress) {
-                setStatus('El lugar ya fue ubicado en el mapa.');
+
+            const endpoint = button?.dataset.geocodeUrl;
+            if (!endpoint) {
+                setStatus('No está disponible el servicio de ubicación.');
                 return;
             }
 
             geocoding = true;
             geocodeButtons.forEach(item => { item.disabled = true; });
-            setStatus('Buscando el lugar en Venezuela…');
+            setStatus(`Buscando «${texto}» en Venezuela…`);
 
             try {
-                const params = new URLSearchParams({ direccion: address });
-                const response = await fetch(`/api/geocodificar/?${params.toString()}`, {
+                const params = new URLSearchParams({ direccion: texto });
+                const response = await fetch(`${endpoint}?${params.toString()}`, {
+                    method: 'GET',
                     headers: { Accept: 'application/json' },
                     credentials: 'same-origin',
+                    cache: 'no-store',
                 });
-                const result = await response.json();
-                if (!response.ok || !result.ok || !result.found) {
-                    lastGeocodedAddress = '';
-                    setStatus(result.detail || 'No encontramos el lugar. Puedes seleccionar el punto manualmente.');
+
+                let result = null;
+                try {
+                    result = await response.json();
+                } catch (_) {
+                    result = null;
+                }
+
+                if (!response.ok || !result?.ok || !result?.found) {
+                    setStatus(result?.detail || `No encontramos «${texto}». Puedes seleccionar el punto manualmente.`);
                     return;
                 }
-                lastGeocodedAddress = address;
-                setValue(Number(result.lat), Number(result.lng), true, 'Lugar ubicado automáticamente');
+
+                const lat = Number(result.lat);
+                const lng = Number(result.lng);
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                    setStatus('El servicio devolvió una ubicación inválida.');
+                    return;
+                }
+
+                lastGeocodedAddress = texto;
+                setValue(lat, lng, true, result.display_name ? `Ubicado: ${result.display_name}` : 'Lugar ubicado automáticamente');
             } catch (error) {
-                lastGeocodedAddress = '';
-                setStatus('No se pudo ubicar el lugar. Puedes seleccionar el punto manualmente.');
+                console.error('Error al geocodificar ubicación:', error);
+                setStatus('No se pudo consultar el servicio de ubicación. Puedes seleccionar el punto manualmente.');
             } finally {
                 geocoding = false;
                 geocodeButtons.forEach(item => {
@@ -104,10 +125,10 @@
             sourceInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
-                    geocodificarDireccion(sourceInput, button);
+                    geocodificar(sourceInput, button);
                 }
             });
-            button.addEventListener('click', () => geocodificarDireccion(sourceInput, button));
+            button.addEventListener('click', () => geocodificar(sourceInput, button));
             syncButton();
         });
 
@@ -129,8 +150,6 @@
         }
     }
 
-    // Polígono: se implementa sin una dependencia adicional. Esto mantiene el
-    // mismo Leaflet base y evita introducir otro paquete solo para el CRUD.
     if (geometryElement && geometryInput && typeof L !== 'undefined') {
         const status = document.getElementById('crud-geometry-status');
         const drawButton = document.querySelector('[data-geometry-action="draw"]');
