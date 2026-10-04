@@ -1,4 +1,4 @@
-/* Selector de ubicación para formularios CRUD. Las coordenadas quedan ocultas. */
+/* Selector de ubicación compartido para formularios CRUD. Las coordenadas quedan ocultas. */
 (function () {
     'use strict';
 
@@ -15,13 +15,17 @@
 
     let marker = null;
 
+    const setStatus = (message) => {
+        if (status) status.textContent = message;
+    };
+
     const setValue = (lat, lng, zoom = true) => {
         input.value = `${lng.toFixed(6)},${lat.toFixed(6)}`;
         input.dispatchEvent(new Event('change', { bubbles: true }));
         if (!marker) marker = L.marker([lat, lng]).addTo(map);
         else marker.setLatLng([lat, lng]);
         if (zoom) map.setView([lat, lng], Math.max(map.getZoom(), 14));
-        if (status) status.textContent = `Ubicación seleccionada: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        setStatus('Ubicación seleccionada correctamente');
     };
 
     const initial = (input.value || '').match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
@@ -30,7 +34,10 @@
         const b = Number(initial[2]);
         const lat = Math.abs(a) <= 90 ? a : b;
         const lng = Math.abs(a) <= 90 ? b : a;
-        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) setValue(lat, lng, false);
+        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            setValue(lat, lng, false);
+            setStatus('Ubicación cargada');
+        }
     }
 
     map.on('click', (event) => setValue(event.latlng.lat, event.latlng.lng));
@@ -38,12 +45,14 @@
     const locate = document.querySelector('[data-location-action="locate"]');
     if (locate && navigator.geolocation) {
         locate.addEventListener('click', () => {
+            setStatus('Obteniendo ubicación…');
             navigator.geolocation.getCurrentPosition(
                 position => setValue(position.coords.latitude, position.coords.longitude),
                 () => {
-                    if (status) status.textContent = 'No se pudo obtener tu ubicación. Selecciona un punto en el mapa.';
+                    setStatus('No se pudo obtener tu ubicación. Selecciona un punto en el mapa.');
                     map.setView(defaultCenter, 8);
-                }
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
             );
         });
     }
