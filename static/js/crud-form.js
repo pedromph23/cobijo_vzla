@@ -12,8 +12,7 @@
     // Punto: dirección/nombre del lugar -> geocodificación o clic directo.
     if (input && mapElement && typeof L !== 'undefined') {
         const status = document.getElementById('crud-location-status');
-        const addressInput = document.getElementById('id_direccion') || document.getElementById('id_nombre');
-        const geocodeButton = document.querySelector('[data-location-action="geocode"]');
+        const geocodeButtons = document.querySelectorAll('[data-location-action="geocode"]');
         const map = window.CobijoMap
             ? window.CobijoMap.create('crud-location-map', { zoom: 6, minZoom: 5, maxZoom: 19 })
             : L.map(mapElement).setView(defaultCenter, 6);
@@ -48,9 +47,9 @@
             }
         }
 
-        const geocodificarDireccion = async () => {
-            if (!addressInput || geocoding) return;
-            const address = addressInput.value.trim();
+        const geocodificarDireccion = async (sourceInput, button) => {
+            if (!sourceInput || geocoding) return;
+            const address = sourceInput.value.trim();
             if (!address) {
                 setStatus('Escribe el nombre o dirección para ubicarlo en el mapa.');
                 return;
@@ -61,7 +60,7 @@
             }
 
             geocoding = true;
-            if (geocodeButton) geocodeButton.disabled = true;
+            geocodeButtons.forEach(item => { item.disabled = true; });
             setStatus('Buscando el lugar en Venezuela…');
 
             try {
@@ -83,27 +82,34 @@
                 setStatus('No se pudo ubicar el lugar. Puedes seleccionar el punto manualmente.');
             } finally {
                 geocoding = false;
-                if (geocodeButton) geocodeButton.disabled = !addressInput.value.trim();
+                geocodeButtons.forEach(item => {
+                    const source = document.getElementById(item.dataset.locationInput);
+                    item.disabled = !source || !source.value.trim();
+                });
             }
         };
 
-        if (addressInput) {
-            const syncAddressButton = () => {
-                if (geocodeButton) geocodeButton.disabled = !addressInput.value.trim() || geocoding;
-                if (addressInput.value.trim() !== lastGeocodedAddress && lastGeocodedAddress) {
+        geocodeButtons.forEach(button => {
+            const sourceInput = document.getElementById(button.dataset.locationInput);
+            if (!sourceInput) return;
+
+            const syncButton = () => {
+                button.disabled = !sourceInput.value.trim() || geocoding;
+                if (sourceInput.value.trim() !== lastGeocodedAddress && lastGeocodedAddress) {
                     setStatus('El nombre o dirección cambió. Pulsa «Ubicar» para actualizar el punto.');
                 }
             };
-            addressInput.addEventListener('input', syncAddressButton);
-            addressInput.addEventListener('keydown', (event) => {
+
+            sourceInput.addEventListener('input', syncButton);
+            sourceInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
-                    geocodificarDireccion();
+                    geocodificarDireccion(sourceInput, button);
                 }
             });
-            if (geocodeButton) geocodeButton.addEventListener('click', geocodificarDireccion);
-            syncAddressButton();
-        }
+            button.addEventListener('click', () => geocodificarDireccion(sourceInput, button));
+            syncButton();
+        });
 
         map.on('click', (event) => setValue(event.latlng.lat, event.latlng.lng));
 
