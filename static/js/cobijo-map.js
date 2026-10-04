@@ -1,47 +1,49 @@
 /*
- * CobijoVzla — configuración compartida del mapa.
- * Mantiene una única configuración cartográfica para las vistas pública y administrativa.
- * Las funciones específicas de cada pantalla permanecen en sus respectivos módulos.
+ * CobijoVzla — configuración cartográfica compartida.
+ * El mapa base es único; cada vista conserva sus propias capas y lógica.
  */
 (function () {
     'use strict';
 
-    window.CobijoMap = window.CobijoMap || {
+    const config = {
         center: [8.5, -66.0],
         zoom: 6,
         minZoom: 5,
         maxZoom: 18,
         tileMaxZoom: 19,
         tiles: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    };
 
+    window.CobijoMap = window.CobijoMap || {};
+    Object.assign(window.CobijoMap, config, {
         create(containerId, options) {
-            const config = Object.assign({}, this, options || {});
             const container = document.getElementById(containerId);
             if (!container || typeof L === 'undefined') return null;
-
+            const settings = Object.assign({}, config, options || {});
             const map = L.map(container, {
-                center: config.center,
-                zoom: config.zoom,
+                center: settings.center,
+                zoom: settings.zoom,
                 zoomControl: false,
-                minZoom: config.minZoom,
-                maxZoom: config.maxZoom
+                minZoom: settings.minZoom,
+                maxZoom: settings.maxZoom
             });
-
             L.control.zoom({ position: 'bottomright' }).addTo(map);
-            L.tileLayer(config.tiles, {
-                attribution: config.attribution,
+            L.tileLayer(settings.tiles, {
+                attribution: settings.attribution,
                 referrerPolicy: 'strict-origin-when-cross-origin',
-                maxZoom: config.tileMaxZoom
+                maxZoom: settings.tileMaxZoom
             }).addTo(map);
-
             return map;
         },
 
-        applyTheme(theme) {
-            const container = document.querySelector('.leaflet-container');
-            if (!container) return;
-            container.classList.toggle('mapa-tema-oscuro', theme === 'dark');
+        normalize(map) {
+            if (!map || typeof L === 'undefined') return map;
+            map.setMinZoom(config.minZoom);
+            map.setMaxZoom(config.maxZoom);
+            map.options.zoomControl = false;
+            if (!map.zoomControl) L.control.zoom({ position: 'bottomright' }).addTo(map);
+            return map;
         }
-    };
+    });
 })();
