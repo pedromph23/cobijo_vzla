@@ -1,6 +1,10 @@
 /**
  * Geocerca y métricas dinámicas para la navegación de Cobijo VZLA.
  * No sustituye OSRM/LRM ni modifica la lógica de refugios.
+ *
+ * Esta capa observa el control LRM activo para mantener las métricas del HUD
+ * sincronizadas con la ruta realmente calculada. No depende de una variable
+ * interna inexistente de la navegación.
  */
 (() => {
     'use strict';
@@ -8,6 +12,7 @@
     const GEOJSON_URL = '/static/data/venezuela.geojson';
     let poligonoVE = null;
     let controlObservado = null;
+    let rutaObservada = null;
     let cargando = null;
 
     function puntoEnPoligono(lat, lng, ring) {
@@ -29,10 +34,12 @@
         const geometria = poligonoVE.geometry;
         if (!geometria) return true;
         if (geometria.type === 'Polygon') {
-            return geometria.coordinates.some((ring, index) => {
-                const enRing = puntoEnPoligono(lat, lng, ring);
-                return index === 0 ? enRing : !enRing;
-            });
+            const anillos = geometria.coordinates || [];
+            if (!anillos.length || !puntoEnPoligono(lat, lng, anillos[0])) return false;
+            for (let i = 1; i < anillos.length; i += 1) {
+                if (puntoEnPoligono(lat, lng, anillos[i])) return false;
+            }
+            return true;
         }
         return true;
     }
@@ -83,14 +90,26 @@
 
     function observarRutas() {
         if (typeof rutaControl === 'undefined' || !rutaControl || rutaControl === controlObservado) return;
+
         controlObservado = rutaControl;
+        rutaObservada = null;
+
         rutaControl.on?.('routesfound', evento => {
             const ruta = evento?.routes?.[0];
-            if (!ruta || !poligonoVE) return;
+            if (!ruta) return;
+
+            rutaObservada = ruta;
+            if (!poligonoVE) return;
+
             if (!rutaDentroDeVenezuela(ruta)) {
                 try { mapaPrincipal?.removeControl(rutaControl); } catch (_) {}
+                rutaObservada = null;
                 mostrarAlerta('La ruta calculada sale del territorio venezolano. Selecciona un origen y destino dentro de Venezuela.');
             }
+        });
+
+        rutaControl.on?.('routingerror', () => {
+            rutaObservada = null;
         });
     }
 
@@ -105,34 +124,48 @@
     }
 
     function metricasRutaDesdePosicion() {
-        if (typeof rutaActiva === 'undefined' || !rutaActiva || typeof posicionActual === 'undefined' || !posicionActual) return null;
-        const puntos = extraerPuntos(rutaActiva);
+        if (!rutaObservada || typeof posicionActual === 'undefined' || !posicionActual) return null;
+
+        const puntos = extraerPuntos(rutaObservada);
         if (puntos.length < 2) return null;
 
         let mejor = { distancia: Infinity, indice: 0 };
-        for (let i = 0; i < puntos.length - 1; i++) {
-            const d = Math.min(distanciaMetros(posicionActual, puntos[i]), distanciaMetros(posicionActual, puntos[i + 1]));
+        for (let i = 0; i < puntos.length - 1; i += 1) {
+            const d = Math.min(
+                distanciaMetros(posicionActual, puntos[i]),
+                distanciaMetros(posicionActual, puntos[i + 1])
+            );
             if (d < mejor.distancia) mejor = { distancia: d, indice: i };
         }
 
         let restante = distanciaMetros(posicionActual, puntos[mejor.indice + 1]);
-        for (let i = mejor.indice + 1; i < puntos.length - 1; i++) restante += distanciaMetros(puntos[i], puntos[i + 1]);
-        const total = Number(rutaActiva.summary?.totalDistance || 0);
-        const totalTiempo = Number(rutaActiva.summary?.totalTime || 0);
+        for (let i = mejor.indice + 1; i < puntos.length - 1; i += 1) {
+            restante += distanciaMetros(puntos[i], puntos[i + 1]);
+        }
+
+        const total = Number(rutaObservada.summary?.totalDistance || 0);
+        const totalTiempo = Number(rutaObservada.summary?.totalTime || 0);
         if (!total || !totalTiempo) return null;
+
         const restanteClamped = Math.max(0, Math.min(total, restante));
-        return { distancia: restanteClamped, segundos: totalTiempo * (restanteClamped / total) };
+        return {
+            distancia: restanteClamped,
+            segundos: totalTiempo * (restanteClamped / total),
+        };
     }
 
     function actualizarMetricas() {
         const m = metricasRutaDesdePosicion();
         if (!m) return;
+
         const dist = document.getElementById('nav-hud-distance');
         const tiempo = document.getElementById('nav-hud-time');
         const eta = document.getElementById('nav-hud-eta');
         const km = m.distancia / 1000;
         const minutos = Math.max(0, Math.ceil(m.segundos / 60));
-        const llegada = new Date(Date.now() + m.segundos * 1000).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+        const llegada = new Date(Date.now() + m.segundos * 1000)
+            .toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+
         if (dist) dist.textContent = `${km < 10 ? km.toFixed(1) : km.toFixed(0)} km`;
         if (tiempo) tiempo.textContent = `${minutos} min`;
         if (eta) eta.textContent = llegada;
@@ -142,7 +175,10 @@
         await cargarPoligono();
         observarRutas();
         actualizarMetricas();
-        setInterval(() => { observarRutas(); actualizarMetricas(); }, 1000);
+        setInterval(() => {
+            observarRutas();
+            actualizarMetricas();
+        }, 1000);
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', instalar, { once: true });
