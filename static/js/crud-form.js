@@ -1,4 +1,4 @@
-/* Selector de ubicación compartido para formularios CRUD. Las coordenadas quedan ocultas. */
+/* Selector de ubicación compartido para formularios CRUD. */
 (function () {
     'use strict';
 
@@ -8,6 +8,7 @@
 
     const status = document.getElementById('crud-location-status');
     const addressInput = document.getElementById('id_direccion');
+    const geocodeButton = document.querySelector('[data-location-action="geocode"]');
     const defaultCenter = window.CobijoMap ? window.CobijoMap.center : [8.5, -66.0];
     const map = window.CobijoMap
         ? window.CobijoMap.create('crud-location-map', { zoom: 6, minZoom: 5, maxZoom: 19 })
@@ -47,9 +48,17 @@
         if (!addressInput || geocoding) return;
 
         const address = addressInput.value.trim();
-        if (!address || address === lastGeocodedAddress) return;
+        if (!address) {
+            setStatus('Escribe una dirección para ubicarla en el mapa.');
+            return;
+        }
+        if (address === lastGeocodedAddress) {
+            setStatus('La dirección ya fue ubicada en el mapa.');
+            return;
+        }
 
         geocoding = true;
+        if (geocodeButton) geocodeButton.disabled = true;
         setStatus('Buscando la dirección en Venezuela…');
 
         try {
@@ -61,28 +70,38 @@
             const result = await response.json();
 
             if (!response.ok || !result.ok || !result.found) {
-                lastGeocodedAddress = address;
-                setStatus(result.detail || 'No encontramos la dirección. Puedes colocar el punto manualmente en el mapa.');
+                lastGeocodedAddress = '';
+                setStatus(result.detail || 'No encontramos la dirección. Puedes colocar el punto manualmente.');
                 return;
             }
 
             lastGeocodedAddress = address;
             setValue(Number(result.lat), Number(result.lng), true, 'Dirección ubicada automáticamente');
         } catch (error) {
-            setStatus('No se pudo ubicar la dirección automáticamente. Puedes seleccionar el punto en el mapa.');
+            lastGeocodedAddress = '';
+            setStatus('No se pudo ubicar la dirección. Puedes seleccionar el punto manualmente.');
         } finally {
             geocoding = false;
+            if (geocodeButton) geocodeButton.disabled = !addressInput.value.trim();
         }
     };
 
     if (addressInput) {
-        addressInput.addEventListener('blur', geocodificarDireccion);
+        const syncAddressButton = () => {
+            if (geocodeButton) geocodeButton.disabled = !addressInput.value.trim() || geocoding;
+            if (addressInput.value.trim() !== lastGeocodedAddress) {
+                if (lastGeocodedAddress) setStatus('La dirección cambió. Pulsa «Ubicar dirección» para actualizar el punto.');
+            }
+        };
+        addressInput.addEventListener('input', syncAddressButton);
         addressInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 geocodificarDireccion();
             }
         });
+        if (geocodeButton) geocodeButton.addEventListener('click', geocodificarDireccion);
+        syncAddressButton();
     }
 
     map.on('click', (event) => setValue(event.latlng.lat, event.latlng.lng));
