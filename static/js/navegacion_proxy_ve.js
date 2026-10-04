@@ -1,96 +1,61 @@
 /**
- * Motor de rutas de producción para CobijoVzla.
+ * Proxy de routing para CobijoVzla.
  *
- * El cliente consulta /api/publico/ruta/ (mismo origen) y recibe una ruta
- * compatible con Leaflet Routing Machine. El navegador no consulta ningún
- * motor externo de routing.
+ * Mantiene el flujo de navegación existente de mapa_publico.html y de los
+ * módulos UX/GPS/voz. La única responsabilidad de este archivo es impedir
+ * que Leaflet Routing Machine consulte directamente un motor externo.
+ *
+ * El router histórico L.Routing.osrmv1() queda adaptado a /api/publico/ruta/.
  */
 (() => {
     'use strict';
 
-    // Django puede probar dos motores con hasta 7 s por intento.
     const TIMEOUT_MS = 16000;
-    let calculando = false;
 
-    function escapar(valor) {
-        return String(valor ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    function mostrarEstado(titulo, mensaje) {
-        const card = document.getElementById('info-card');
-        const title = document.getElementById('info-card-title');
-        const body = document.getElementById('info-card-body');
-        if (!card || !title || !body) return;
-        title.textContent = titulo;
-        body.innerHTML = `<div style="padding:8px 0;display:flex;gap:10px;align-items:center;"><i class="fas fa-spinner fa-spin"></i><span>${escapar(mensaje)}</span></div>`;
-        card.style.display = 'block';
-    }
-
-    function mostrarError(mensaje) {
-        const card = document.getElementById('info-card');
-        const title = document.getElementById('info-card-title');
-        const body = document.getElementById('info-card-body');
-        if (!card || !title || !body) return;
-        title.textContent = 'No se pudo calcular la ruta';
-        body.innerHTML = `<p style="margin:0 0 12px;">${escapar(mensaje)}</p><button type="button" class="btn-como-llegar" id="btn-reintentar-ruta-ve"><i class="fas fa-rotate-right"></i> Reintentar</button>`;
-        body.querySelector('#btn-reintentar-ruta-ve')?.addEventListener('click', () => card.style.display = 'none');
-        card.style.display = 'block';
-    }
-
-    function obtenerPosicion() {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject(new Error('Tu navegador no admite geolocalización.'));
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 8000,
-                maximumAge: 30000,
-            });
-        });
-    }
-
-    async function solicitarRuta(origen, destino) {
+    function solicitarRuta(origen, destino) {
         const parametros = new URLSearchParams({
-            origen_lat: origen.lat.toFixed(6),
-            origen_lng: origen.lng.toFixed(6),
-            destino_lat: destino.lat.toFixed(6),
-            destino_lng: destino.lng.toFixed(6),
+            origen_lat: Number(origen.lat).toFixed(6),
+            origen_lng: Number(origen.lng).toFixed(6),
+            destino_lat: Number(destino.lat).toFixed(6),
+            destino_lng: Number(destino.lng).toFixed(6),
         });
+
         const controller = new AbortController();
         const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
-        try {
-            const respuesta = await fetch(`/api/publico/ruta/?${parametros.toString()}`, {
-                method: 'GET',
-                headers: { Accept: 'application/json' },
-                credentials: 'same-origin',
-                cache: 'no-store',
-                signal: controller.signal,
-            });
-            let datos = null;
-            try { datos = await respuesta.json(); } catch (_) {}
-            if (!respuesta.ok || !datos?.ok || !datos?.ruta) {
-                throw new Error(datos?.error || 'El servidor de rutas no respondió correctamente.');
-            }
-            return datos.ruta;
-        } catch (error) {
-            if (error?.name === 'AbortError') {
-                throw new Error('El cálculo de la ruta tardó demasiado. Inténtalo nuevamente.');
-            }
-            throw error;
-        } finally {
-            window.clearTimeout(timer);
-        }
+
+        return fetch(`/api/publico/ruta/?${parametros.toString()}`, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+            cache: 'no-store',
+            signal: controller.signal,
+        })
+            .then(async respuesta => {
+                let datos = null;
+                try {
+                    datos = await respuesta.json();
+                } catch (_) {
+                    // El mensaje genérico de abajo evita dejar la navegación
+                    // esperando si el servidor devuelve HTML o una respuesta vacía.
+                }
+                if (!respuesta.ok || !datos?.ok || !datos?.ruta) {
+                    throw new Error(datos?.error || 'El servidor de rutas no respondió correctamente.');
+                }
+                return datos.ruta;
+            })
+            .catch(error => {
+                if (error?.name === 'AbortError') {
+                    throw new Error('El cálculo de la ruta tardó demasiado. Inténtalo nuevamente.');
+                }
+                throw error;
+            })
+            .finally(() => window.clearTimeout(timer));
     }
 
-    function prepararRuta(datos) {
+    function prepararRuta(datos, waypoints) {
         const coordenadas = (datos.coordinates || []).map(([lat, lng]) => L.latLng(lat, lng));
+        const puntos = Array.isArray(waypoints) ? waypoints : [];
+
         return {
             name: 'Ruta CobijoVzla',
             summary: datos.summary || { totalDistance: 0, totalTime: 0 },
@@ -104,115 +69,13 @@
                 modifier: paso.modifier || '',
                 road: paso.road || '',
             })),
+            inputWaypoints: puntos,
+            waypoints: puntos,
         };
     }
 
-    function crearControlRuta(ruta, origen, destino, nombre) {
-        if (typeof rutaControl !== 'undefined' && rutaControl) {
-            try { mapaPrincipal.removeControl(rutaControl); } catch (_) {}
-            rutaControl = null;
-        }
-
-        // Leaflet Routing Machine sigue gestionando la UI, los marcadores y
-        // los eventos, pero este router no realiza ninguna petición externa.
-        const routerLocal = {
-            route(waypoints, callback, context) {
-                window.setTimeout(() => callback.call(context || this, null, [ruta]), 0);
-            },
-        };
-
-        const control = L.Routing.control({
-            waypoints: [L.latLng(origen.lat, origen.lng), L.latLng(destino.lat, destino.lng)],
-            routeWhileDragging: false,
-            addWaypoints: false,
-            show: true,
-            language: 'es',
-            router: routerLocal,
-            lineOptions: {
-                styles: [
-                    { color: '#00ffff', opacity: 0.9, weight: 6 },
-                    { color: '#0066cc', opacity: 0.4, weight: 10 },
-                ],
-            },
-            createMarker(i, waypoint, total) {
-                if (i === 0) {
-                    return L.marker(waypoint.latLng, {
-                        icon: L.divIcon({
-                            html: '<div style="background:#28a745;border-radius:50%;width:18px;height:18px;border:3px solid white;box-shadow:0 0 10px rgba(40,167,69,.8);"></div>',
-                            className: 'ruta-origen-icon', iconSize: [24, 24], iconAnchor: [12, 12],
-                        }),
-                    });
-                }
-                if (i === total - 1) {
-                    return L.marker(waypoint.latLng, {
-                        icon: L.divIcon({
-                            html: '<div style="background:#dc3545;border-radius:50%;width:24px;height:24px;border:3px solid white;box-shadow:0 0 10px rgba(220,53,69,.8);display:flex;align-items:center;justify-content:center;"><i class="fas fa-flag" style="color:white;font-size:11px;"></i></div>',
-                            className: 'ruta-destino-icon', iconSize: [30, 30], iconAnchor: [15, 15],
-                        }),
-                    });
-                }
-                return null;
-            },
-        });
-
-        rutaControl = control;
-        control.on('routesfound', event => {
-            calculando = false;
-            if (!event.routes?.[0]) {
-                mostrarError('El servidor no devolvió una ruta válida.');
-                return;
-            }
-            if (typeof procesarRutaCalculada === 'function') {
-                procesarRutaCalculada(event, nombre, destino.lat, destino.lng);
-            }
-        });
-        control.on('routingerror', () => {
-            calculando = false;
-            mostrarError('No se pudo mostrar la ruta calculada. Inténtalo nuevamente.');
-        });
-        control.addTo(mapaPrincipal);
-    }
-
-    async function calcularRutaProduccion(destLat, destLng, destNombre) {
-        if (calculando) return;
-        if (!window.isSecureContext) {
-            mostrarError('La navegación requiere HTTPS.');
-            return;
-        }
-
-        const destino = { lat: Number(destLat), lng: Number(destLng) };
-        if (!Number.isFinite(destino.lat) || !Number.isFinite(destino.lng)) {
-            mostrarError('El destino no tiene coordenadas válidas.');
-            return;
-        }
-
-        calculando = true;
-        mostrarEstado('Calculando ruta', 'Obteniendo tu ubicación…');
-        try {
-            const posicion = await obtenerPosicion();
-            const origen = { lat: posicion.coords.latitude, lng: posicion.coords.longitude };
-            mostrarEstado('Calculando ruta', 'Buscando la mejor ruta…');
-            const datos = await solicitarRuta(origen, destino);
-            const ruta = prepararRuta(datos);
-            if (ruta.coordinates.length < 2) {
-                throw new Error('La ruta recibida no tiene suficiente información.');
-            }
-            crearControlRuta(ruta, origen, destino, destNombre || 'Refugio');
-        } catch (error) {
-            calculando = false;
-            console.error('[CobijoVzla] Error de ruta:', error);
-            mostrarError(error?.message || 'No fue posible calcular la ruta.');
-        }
-    }
-
-    /**
-     * Compatibilidad con el calcularRuta() histórico de mapa_publico.html.
-     * Ese código todavía construye L.Routing.osrmv1(), pero al instalar este
-     * adaptador la llamada queda convertida en una petición al proxy Django.
-     * No se permite que el router histórico llegue a ningún host externo.
-     */
-    function instalarRouterLegacySeguro() {
-        if (!window.L?.Routing) return;
+    function instalarRouterProxy() {
+        if (!window.L?.Routing?.osrmv1) return;
 
         const routerProxy = function() {
             return {
@@ -220,18 +83,21 @@
                     const puntos = Array.isArray(waypoints) ? waypoints : [];
                     const origen = puntos[0]?.latLng;
                     const destino = puntos[puntos.length - 1]?.latLng;
+                    const responder = typeof callback === 'function' ? callback : () => {};
+                    const contexto = context || this;
+
                     if (!origen || !destino) {
-                        callback.call(context || this, { status: -1, message: 'Waypoints inválidos.' });
+                        responder.call(contexto, {
+                            status: -1,
+                            message: 'No se recibieron puntos válidos para calcular la ruta.',
+                        });
                         return;
                     }
 
-                    solicitarRuta(
-                        { lat: Number(origen.lat), lng: Number(origen.lng) },
-                        { lat: Number(destino.lat), lng: Number(destino.lng) },
-                    )
-                        .then(prepararRuta)
-                        .then(ruta => callback.call(context || this, null, [ruta]))
-                        .catch(error => callback.call(context || this, {
+                    solicitarRuta(origen, destino)
+                        .then(datos => prepararRuta(datos, puntos))
+                        .then(ruta => responder.call(contexto, null, [ruta]))
+                        .catch(error => responder.call(contexto, {
                             status: -1,
                             message: error?.message || 'No fue posible calcular la ruta.',
                         }));
@@ -243,10 +109,8 @@
         window.L.Routing.osrmv1 = routerProxy;
     }
 
-    instalarRouterLegacySeguro();
-
-    // La plantilla histórica define calcularRuta antes de cargar este archivo.
-    // Reemplazamos esa referencia global por el motor de producción para que
-    // el botón "Cómo llegar" utilice exclusivamente el proxy Django.
-    window.calcularRuta = calcularRutaProduccion;
+    // No sobrescribimos window.calcularRuta. La función histórica conserva
+    // toda la lógica de HUD, voz, GPS, llegada y controles de navegación.
+    // Solo sustituimos el transporte de routing por el proxy Django.
+    instalarRouterProxy();
 })();
