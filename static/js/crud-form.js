@@ -49,7 +49,6 @@
         const address = addressInput.value.trim();
         if (!address || address === lastGeocodedAddress) return;
 
-        lastGeocodedAddress = address;
         geocoding = true;
         setStatus('Buscando la dirección en Venezuela…');
 
@@ -62,10 +61,12 @@
             const result = await response.json();
 
             if (!response.ok || !result.ok || !result.found) {
+                lastGeocodedAddress = address;
                 setStatus(result.detail || 'No encontramos la dirección. Puedes colocar el punto manualmente en el mapa.');
                 return;
             }
 
+            lastGeocodedAddress = address;
             setValue(Number(result.lat), Number(result.lng), true, 'Dirección ubicada automáticamente');
         } catch (error) {
             setStatus('No se pudo ubicar la dirección automáticamente. Puedes seleccionar el punto en el mapa.');
