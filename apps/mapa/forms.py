@@ -85,7 +85,18 @@ class RefugioExistenteForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'refugio-servicios-list'}),
         label='Servicios e insumos disponibles',
-        help_text='Marca solo lo que el refugio tiene disponible actualmente. Puedes cambiarlo después.',
+        help_text='Marca lo habitual y, si necesitas algo más, escríbelo abajo separado por comas.',
+    )
+    otros_servicios = forms.CharField(
+        required=False,
+        label='Otros servicios o insumos',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'maxlength': 500,
+            'placeholder': 'Ej.: alimentos secos, colchonetas, pañales, agua potable',
+            'autocomplete': 'off',
+        }),
+        help_text='Opcional. Puedes escribir varios separados por comas.',
     )
 
     class Meta:
@@ -106,7 +117,9 @@ class RefugioExistenteForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
             valores = self.instance.servicios if isinstance(self.instance.servicios, list) else []
-            self.initial['servicios'] = [str(v) for v in valores]
+            conocidos = {valor for valor, _ in SERVICIOS_REFUGIO}
+            self.initial['servicios'] = [str(v) for v in valores if str(v) in conocidos]
+            self.initial['otros_servicios'] = ', '.join(str(v) for v in valores if str(v) not in conocidos)
 
     def clean_telefono(self):
         value = self.cleaned_data.get('telefono', '').strip()
@@ -125,6 +138,20 @@ class RefugioExistenteForm(forms.ModelForm):
         disponible = cleaned.get('capacidad_disponible') or 0
         if disponible > total:
             self.add_error('capacidad_disponible', f'La capacidad disponible ({disponible}) no puede superar la capacidad total ({total}).')
+
+        otros = cleaned.get('otros_servicios', '') or ''
+        otros = otros.replace(';', ',').replace('\n', ',')
+        extras = []
+        vistos = set(cleaned.get('servicios') or [])
+        for item in otros.split(','):
+            item = ' '.join(item.split()).strip()
+            if not item:
+                continue
+            clave = item.casefold()
+            if clave not in {str(v).casefold() for v in vistos}:
+                extras.append(item)
+                vistos.add(clave)
+        cleaned['servicios'] = list(cleaned.get('servicios') or []) + extras
         return cleaned
 
 
