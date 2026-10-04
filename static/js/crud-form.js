@@ -1,26 +1,10 @@
-/* Selector de ubicación y geometría compartido para formularios CRUD. */
+/* CobijoVzla — comportamiento compartido de formularios CRUD. */
 (function () {
     'use strict';
 
-    const mapElement = document.getElementById('crud-location-map');
-    const geometryElement = document.getElementById('crud-geometry-map');
-    const input = document.querySelector('.crud-location-value input');
-    const geometryInput = document.querySelector('.crud-geometry-value input, .crud-geometry-field input[type="hidden"]');
-    const geocodeButtons = document.querySelectorAll('[data-location-action="geocode"]');
     const defaultCenter = window.CobijoMap ? window.CobijoMap.center : [8.5, -66.0];
-
-    /*
-     * GEOCODIFICACIÓN
-     *
-     * Este bloque no depende de que Leaflet haya podido crear el mapa.
-     * Antes estaba dentro de la inicialización del mapa y un fallo de esta
-     * última impedía registrar el click/Enter del botón de geocodificación.
-     * El formulario puede geocodificar primero y representar el resultado
-     * en el mapa después.
-     */
     let locationMap = null;
     let locationMarker = null;
-    let lastGeocodedAddress = '';
     let geocoding = false;
 
     const status = document.getElementById('crud-location-status');
@@ -28,13 +12,27 @@
         if (status) status.textContent = message;
     };
 
-    const setLocationValue = (lat, lng, zoom = true, message = 'Ubicación seleccionada correctamente') => {
-        if (!input) return false;
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    function getGeocodeButton(target) {
+        if (!target) return null;
+        if (target.matches && target.matches('[data-location-action="geocode"]')) return target;
+        return target.closest ? target.closest('[data-location-action="geocode"]') : null;
+    }
+
+    function getSourceInput(button) {
+        if (!button) return null;
+        const id = button.getAttribute('data-location-input');
+        if (!id) return null;
+        return document.getElementById(id);
+    }
+
+    function setLocationValue(lat, lng, zoom = true, message = 'Ubicación seleccionada correctamente') {
+        const input = document.querySelector('.crud-location-value input');
+        if (!input || !Number.isFinite(lat) || !Number.isFinite(lng)) {
             setStatus('La ubicación encontrada no es válida.');
             return false;
         }
 
+        /* El formulario espera explícitamente lng,lat. */
         input.value = `${lng.toFixed(6)},${lat.toFixed(6)}`;
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -47,51 +45,48 @@
 
         setStatus(message);
         return true;
-    };
+    }
 
-    const geocodificar = async (sourceInput, button) => {
-        if (!sourceInput || geocoding) return;
+    async function geocode(button) {
+        if (!button || geocoding) return;
+        const sourceInput = getSourceInput(button);
+        const endpoint = button.getAttribute('data-geocode-url');
+        const texto = sourceInput ? sourceInput.value.trim() : '';
 
-        const texto = sourceInput.value.trim();
+        if (!sourceInput) {
+            setStatus('No se encontró el campo que se desea ubicar.');
+            console.error('CobijoVzla: data-location-input no apunta a un campo existente.', button);
+            return;
+        }
+        if (!endpoint) {
+            setStatus('No está disponible el servicio de ubicación.');
+            console.error('CobijoVzla: falta data-geocode-url.', button);
+            return;
+        }
         if (!texto) {
             setStatus('Escribe el nombre o dirección para ubicarlo en el mapa.');
             sourceInput.focus();
             return;
         }
 
-        const endpoint = button?.dataset.geocodeUrl;
-        if (!endpoint) {
-            setStatus('No está disponible el servicio de ubicación.');
-            console.error('CobijoVzla: falta data-geocode-url en el botón de ubicación.');
-            return;
-        }
-
         geocoding = true;
-        geocodeButtons.forEach(item => {
-            item.setAttribute('aria-busy', 'true');
-            item.classList.add('is-loading');
-        });
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
         setStatus(`Buscando «${texto}» en Venezuela…`);
 
         try {
-            const params = new URLSearchParams({ direccion: texto });
-            const response = await fetch(`${endpoint}?${params.toString()}`, {
+            const url = new URL(endpoint, window.location.origin);
+            url.searchParams.set('direccion', texto);
+            const response = await fetch(url.toString(), {
                 method: 'GET',
-                headers: { Accept: 'application/json' },
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin',
-                cache: 'no-store',
+                cache: 'no-store'
             });
 
-            let result = null;
-            try {
-                result = await response.json();
-            } catch (_) {
-                result = null;
-            }
-
-            if (!response.ok || !result?.ok || !result?.found) {
-                const detail = result?.detail || `No encontramos «${texto}». Puedes seleccionar el punto manualmente.`;
-                setStatus(detail);
+            const result = await response.json().catch(() => null);
+            if (!response.ok || !result || !result.ok || !result.found) {
+                setStatus(result && result.detail ? result.detail : `No encontramos «${texto}». Puedes seleccionar el punto manualmente.`);
                 console.warn('CobijoVzla: geocodificación sin resultado', response.status, result);
                 return;
             }
@@ -103,97 +98,83 @@
                 return;
             }
 
-            lastGeocodedAddress = texto;
-            setLocationValue(
-                lat,
-                lng,
-                true,
-                result.display_name ? `Ubicado: ${result.display_name}` : 'Lugar ubicado automáticamente'
-            );
+            setLocationValue(lat, lng, true, result.display_name ? `Ubicado: ${result.display_name}` : 'Lugar ubicado automáticamente');
         } catch (error) {
-            console.error('Error al geocodificar ubicación:', error);
+            console.error('CobijoVzla: error de geocodificación', error);
             setStatus('No se pudo consultar el servicio de ubicación. Puedes seleccionar el punto manualmente.');
         } finally {
             geocoding = false;
-            geocodeButtons.forEach(item => {
-                item.removeAttribute('aria-busy');
-                item.classList.remove('is-loading');
-            });
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
         }
-    };
+    }
 
-    /* Los botones quedan operativos aunque el mapa tenga algún problema. */
-    geocodeButtons.forEach(button => {
-        const sourceInput = document.getElementById(button.dataset.locationInput);
-        if (!sourceInput) {
-            console.error('CobijoVzla: no se encontró el campo', button.dataset.locationInput);
-            return;
-        }
+    /*
+     * Un único listener delegado. Así funciona aunque el HTML sea generado
+     * dinámicamente y evita depender del orden en que otros scripts carguen.
+     */
+    document.addEventListener('click', function (event) {
+        const button = getGeocodeButton(event.target);
+        if (!button) return;
+        event.preventDefault();
+        event.stopPropagation();
+        geocode(button);
+    }, true);
 
+    document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter') return;
+        const sourceInput = event.target;
+        const control = sourceInput && sourceInput.closest ? sourceInput.closest('.crud-address-control') : null;
+        if (!control) return;
+        const button = getGeocodeButton(control);
+        if (!button) return;
+        event.preventDefault();
+        event.stopPropagation();
+        geocode(button);
+    }, true);
+
+    /* Elimina cualquier estado disabled residual dejado por otro script. */
+    document.querySelectorAll('[data-location-action="geocode"]').forEach(button => {
         button.disabled = false;
         button.removeAttribute('disabled');
-
-        sourceInput.addEventListener('input', () => {
-            const texto = sourceInput.value.trim();
-            if (texto && texto !== lastGeocodedAddress) {
-                setStatus('Pulsa «Ubicar en el mapa» para localizar este lugar.');
-            }
-        });
-
-        sourceInput.addEventListener('keydown', (event) => {
-            if (event.key !== 'Enter') return;
-            event.preventDefault();
-            event.stopPropagation();
-            geocodificar(sourceInput, button);
-        });
-
-        button.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            geocodificar(sourceInput, button);
-        });
     });
 
-    /* MAPA DE UBICACIÓN: independiente de la geocodificación. */
+    /* Mapa de ubicación. No condiciona ni bloquea la geocodificación. */
+    const mapElement = document.getElementById('crud-location-map');
+    const input = document.querySelector('.crud-location-value input');
     if (input && mapElement && typeof L !== 'undefined') {
         locationMap = window.CobijoMap
             ? window.CobijoMap.create('crud-location-map', { zoom: 6, minZoom: 5, maxZoom: 19 })
             : L.map(mapElement).setView(defaultCenter, 6);
 
         if (locationMap) {
-            const initial = (input.value || '').match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
-            if (initial) {
-                const a = Number(initial[1]);
-                const b = Number(initial[2]);
-                const lat = Math.abs(a) <= 90 ? a : b;
-                const lng = Math.abs(a) <= 90 ? b : a;
-                if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-                    setLocationValue(lat, lng, false, 'Ubicación cargada');
-                }
+            const raw = input.value || '';
+            const parts = raw.replace(',', ' ').trim().split(/\s+/).map(Number);
+            if (parts.length >= 2 && parts.every(Number.isFinite)) {
+                const lng = parts[0];
+                const lat = parts[1];
+                if (Math.abs(lng) <= 180 && Math.abs(lat) <= 90) setLocationValue(lat, lng, false, 'Ubicación cargada');
             }
+            locationMap.on('click', event => setLocationValue(event.latlng.lat, event.latlng.lng));
+        }
 
-            locationMap.on('click', event => {
-                setLocationValue(event.latlng.lat, event.latlng.lng);
+        const locate = document.querySelector('[data-location-action="locate"]');
+        if (locate && navigator.geolocation) {
+            locate.addEventListener('click', event => {
+                event.preventDefault();
+                setStatus('Obteniendo ubicación…');
+                navigator.geolocation.getCurrentPosition(
+                    position => setLocationValue(position.coords.latitude, position.coords.longitude),
+                    () => setStatus('No se pudo obtener tu ubicación. Selecciona un punto en el mapa.'),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+                );
             });
-
-            const locate = document.querySelector('[data-location-action="locate"]');
-            if (locate && navigator.geolocation) {
-                locate.addEventListener('click', () => {
-                    setStatus('Obteniendo ubicación…');
-                    navigator.geolocation.getCurrentPosition(
-                        position => setLocationValue(position.coords.latitude, position.coords.longitude),
-                        () => {
-                            setStatus('No se pudo obtener tu ubicación. Selecciona un punto en el mapa.');
-                            locationMap.setView(defaultCenter, 8);
-                        },
-                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-                    );
-                });
-            }
         }
     }
 
-    /* MAPA DE GEOMETRÍA PARA ZONAS AFECTADAS. */
+    /* Mapa de geometría para zonas afectadas. */
+    const geometryElement = document.getElementById('crud-geometry-map');
+    const geometryInput = document.querySelector('.crud-geometry-value input, .crud-geometry-field input[type="hidden"]');
     if (geometryElement && geometryInput && typeof L !== 'undefined') {
         const geometryStatus = document.getElementById('crud-geometry-status');
         const drawButton = document.querySelector('[data-geometry-action="draw"]');
@@ -201,97 +182,47 @@
         const map = window.CobijoMap
             ? window.CobijoMap.create('crud-geometry-map', { zoom: 6, minZoom: 5, maxZoom: 19 })
             : L.map(geometryElement).setView(defaultCenter, 6);
-        if (!map) return;
-
         let drawing = false;
         let points = [];
         let polygon = null;
         let vertices = [];
 
-        const setGeometryStatus = (message) => {
-            if (geometryStatus) geometryStatus.textContent = message;
-        };
-
+        const gstatus = message => { if (geometryStatus) geometryStatus.textContent = message; };
         const clearVisual = () => {
-            if (polygon) {
-                map.removeLayer(polygon);
-                polygon = null;
-            }
+            if (polygon) map.removeLayer(polygon);
+            polygon = null;
             vertices.forEach(marker => map.removeLayer(marker));
             vertices = [];
         };
-
-        const toWkt = (coords) => {
+        const wkt = coords => {
             const closed = coords.concat([coords[0]]);
             return `SRID=4326;POLYGON ((${closed.map(([lat, lng]) => `${lng.toFixed(6)} ${lat.toFixed(6)}`).join(', ')}))`;
         };
-
         const render = () => {
             clearVisual();
-            if (points.length) vertices = points.map(([lat, lng]) => L.circleMarker([lat, lng], { radius: 5 }).addTo(map));
+            vertices = points.map(([lat, lng]) => L.circleMarker([lat, lng], { radius: 5 }).addTo(map));
             if (points.length >= 3) {
                 polygon = L.polygon(points, { weight: 3, fillOpacity: 0.2 }).addTo(map);
-                geometryInput.value = toWkt(points);
+                geometryInput.value = wkt(points);
                 geometryInput.dispatchEvent(new Event('change', { bubbles: true }));
-                setGeometryStatus(`Zona definida · ${points.length} puntos`);
-            } else if (points.length) {
-                geometryInput.value = '';
-                setGeometryStatus(`${points.length} punto(s) · agrega al menos uno más para cerrar la zona`);
-            } else {
-                geometryInput.value = '';
-                setGeometryStatus('Dibuja la zona sobre el mapa');
-            }
+                gstatus(`Zona definida · ${points.length} puntos`);
+            } else gstatus(points.length ? `${points.length} punto(s) · agrega otro para cerrar` : 'Dibuja la zona sobre el mapa');
         };
-
-        const loadExisting = () => {
-            const value = geometryInput.value || '';
-            const match = value.match(/POLYGON\s*\(\((.+)\)\)/i);
-            if (!match) return;
-            const parsed = match[1].split(',').map(pair => pair.trim().split(/\s+/).map(Number));
-            const coords = parsed.slice(0, -1).filter(pair => pair.length >= 2 && pair.every(Number.isFinite));
-            if (coords.length < 3) return;
-            points = coords.map(([lng, lat]) => [lat, lng]);
-            render();
-            map.fitBounds(points, { padding: [30, 30] });
-            setGeometryStatus('Zona cargada · puedes limpiarla y dibujarla de nuevo');
-        };
-
-        const stopDrawing = () => {
-            drawing = false;
-            if (drawButton) drawButton.classList.remove('active');
-            setGeometryStatus(points.length >= 3 ? 'Zona definida' : 'Dibuja la zona sobre el mapa');
-        };
-
-        const startDrawing = () => {
-            drawing = true;
-            points = [];
-            clearVisual();
-            geometryInput.value = '';
-            if (drawButton) drawButton.classList.add('active');
-            setGeometryStatus('Haz clic en el mapa para marcar los vértices. Pulsa sobre el primer punto para cerrar.');
-        };
-
         map.on('click', event => {
             if (!drawing) return;
-            const point = [event.latlng.lat, event.latlng.lng];
             if (points.length >= 3 && map.distance(event.latlng, L.latLng(points[0])) < 100) {
+                drawing = false;
                 render();
-                stopDrawing();
                 return;
             }
-            points.push(point);
+            points.push([event.latlng.lat, event.latlng.lng]);
             render();
         });
-
-        if (drawButton) drawButton.addEventListener('click', startDrawing);
-        if (clearButton) clearButton.addEventListener('click', () => {
-            drawing = false;
-            points = [];
-            geometryInput.value = '';
-            clearVisual();
-            setGeometryStatus('Zona eliminada. Puedes dibujar una nueva.');
+        if (drawButton) drawButton.addEventListener('click', () => {
+            drawing = true; points = []; clearVisual(); geometryInput.value = ''; gstatus('Haz clic en el mapa para marcar los vértices y cierra sobre el primer punto.');
         });
-
-        loadExisting();
+        if (clearButton) clearButton.addEventListener('click', () => {
+            drawing = false; points = []; geometryInput.value = ''; clearVisual(); gstatus('Zona eliminada. Puedes dibujar una nueva.');
+        });
     }
 })();
