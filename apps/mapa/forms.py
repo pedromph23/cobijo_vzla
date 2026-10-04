@@ -83,8 +83,9 @@ class RefugioExistenteForm(forms.ModelForm):
     servicios = forms.MultipleChoiceField(
         choices=SERVICIOS_REFUGIO,
         required=False,
-        widget=forms.CheckboxSelectMultiple,
-        label='Servicios disponibles',
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'refugio-servicios-list'}),
+        label='Servicios e insumos disponibles',
+        help_text='Marca solo lo que el refugio tiene disponible actualmente. Puedes cambiarlo después.',
     )
 
     class Meta:
