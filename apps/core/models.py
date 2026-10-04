@@ -367,7 +367,7 @@ class RegistroAuditoria(models.Model):
         indexes = [
             models.Index(fields=['usuario', '-fecha'], name='core_regis_usuario_8d5c8a_idx'),
             models.Index(fields=['accion', '-fecha'], name='core_regis_accion_6bcbf2_idx'),
-            models.Index(fields=['resultado', '-fecha'], name='core_regis_resultado_8f7e0d_idx'),
+            models.Index(fields=['resultado', '-fecha'], name='core_regis_resultado_idx'),
         ]
 
     def __str__(self):
