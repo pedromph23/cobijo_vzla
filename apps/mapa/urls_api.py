@@ -5,11 +5,13 @@ Organizadas por categoría para facilitar su lectura.
 """
 from django.urls import path
 from . import views
+from .geocoding import api_geocodificar_direccion
 
 urlpatterns = [
     # --- Mapa ---
     path('datos-mapa/', views.api_datos_mapa, name='datos_mapa'),
     path('estadisticas/', views.api_estadisticas, name='estadisticas'),
+    path('geocodificar/', api_geocodificar_direccion, name='geocodificar_direccion'),
 
     # --- Optimización ---
     path('ejecutar-optimizacion/', views.api_ejecutar_optimizacion, name='ejecutar_optimizacion'),
