@@ -95,24 +95,34 @@ class FormsTest(TestCase):
         with self.assertRaises(Exception):
             _parsear_punto('abc')
 
+    def test_punto_demanda_acepta_ubicacion_del_mapa(self):
+        form = PuntoDemandaForm(data={
+            'nombre': 'Punto GPS', 'ubicacion': '-66.9036,10.4806',
+            'poblacion': 10, 'vulnerabilidad': 0.5, 'descripcion': '',
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertAlmostEqual(form.cleaned_data['ubicacion'].x, -66.9036, places=4)
+        self.assertAlmostEqual(form.cleaned_data['ubicacion'].y, 10.4806, places=4)
+
+    def test_punto_demanda_acepta_ubicacion_generada_por_mi_ubicacion(self):
+        form = PuntoDemandaForm(data={
+            'nombre': 'Mi ubicación', 'ubicacion': '-66.903600,10.480600',
+            'poblacion': 10, 'vulnerabilidad': 0.5, 'descripcion': '',
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+
     def test_nombre_de_punto_acepta_numero_si_es_parte_del_nombre(self):
         """Los topónimos pueden contener números: Sector 23, 5 de Julio, etc."""
         form = PuntoDemandaForm(data={
-            'nombre': 'Sector 23',
-            'ubicacion': '-66.9,10.5',
-            'poblacion': 10,
-            'vulnerabilidad': 0.5,
-            'descripcion': '',
+            'nombre': 'Sector 23', 'ubicacion': '-66.9,10.5',
+            'poblacion': 10, 'vulnerabilidad': 0.5, 'descripcion': '',
         })
         self.assertNotIn('nombre', form.errors)
 
     def test_nombre_acepta_acentos(self):
         form = PuntoDemandaForm(data={
-            'nombre': 'José Pérez',
-            'ubicacion': '-66.9,10.5',
-            'poblacion': 10,
-            'vulnerabilidad': 0.5,
-            'descripcion': '',
+            'nombre': 'José Pérez', 'ubicacion': '-66.9,10.5',
+            'poblacion': 10, 'vulnerabilidad': 0.5, 'descripcion': '',
         })
         self.assertNotIn('nombre', form.errors)
 
