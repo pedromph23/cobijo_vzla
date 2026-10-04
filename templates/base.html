@@ -8,16 +8,13 @@
     <meta name="theme-color" content="#f2eee7" id="meta-theme-color">
     <title>{% block title %}CobijoVzla{% endblock %}</title>
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="{% static 'css/leaflet.css' %}">
     <link rel="stylesheet" href="{% static 'css/MarkerCluster.css' %}">
     <link rel="stylesheet" href="{% static 'css/MarkerCluster.Default.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
     <link rel="stylesheet" href="{% static 'css/main.css' %}?v=10">
     <link rel="stylesheet" href="{% static 'css/map.css' %}?v=10">
     <link rel="stylesheet" href="{% static 'css/clusters.css' %}?v=9">
@@ -26,95 +23,25 @@
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=2">
     <link rel="stylesheet" href="{% static 'css/ui-refactor.css' %}?v=6">
     <link rel="stylesheet" href="{% static 'css/ui-palette.css' %}?v=4">
-
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <header class="app-header" role="banner">
         <div class="header-container">
-            <div class="header-left">
-                <button id="btn-toggle-sidebar" class="hamburger-btn" type="button" aria-label="Abrir menú lateral" aria-controls="sidebar" aria-expanded="false">
-                    <i class="fas fa-bars" aria-hidden="true"></i>
-                </button>
-            </div>
-            <div class="header-center">
-                <h1 class="app-logo app-logo-optimized">
-                    <a href="{% url 'mapa_publico' %}" aria-label="Ir al mapa principal de CobijoVzla">
-                        <span class="logo-mark"><img src="{% static 'img/logo.png' %}" alt="Logo institucional CobijoVzla" class="logo-img" width="64" height="64" decoding="async"></span>
-                        <span class="logo-text">CobijoVzla</span>
-                    </a>
-                </h1>
-            </div>
+            <div class="header-left"><button id="btn-toggle-sidebar" class="hamburger-btn" type="button" aria-label="Abrir menú lateral" aria-controls="sidebar" aria-expanded="false"><i class="fas fa-bars" aria-hidden="true"></i></button></div>
+            <div class="header-center"><h1 class="app-logo app-logo-optimized"><a href="{% url 'mapa_publico' %}" aria-label="Ir al mapa principal de CobijoVzla"><span class="logo-mark"><img src="{% static 'img/logo.png' %}" alt="Logo institucional CobijoVzla" class="logo-img" width="64" height="64" decoding="async"></span><span class="logo-text">CobijoVzla</span></a></h1></div>
             <nav class="main-nav" role="navigation" aria-label="Navegación principal">
                 <a href="{% url 'mapa_publico' %}" class="nav-link{% if request.resolver_match.url_name == 'mapa_publico' %} active{% endif %}" {% if request.resolver_match.url_name == 'mapa_publico' %}aria-current="page"{% endif %}><i class="fas fa-map-marked-alt" aria-hidden="true"></i><span class="nav-label">Mapa</span></a>
                 {% if user.is_authenticated %}
-                    {% if user.is_superuser or user.is_staff %}
-                        <a href="{% url 'panel_admin' %}" class="nav-link{% if request.resolver_match.url_name == 'panel_admin' %} active{% endif %}" {% if request.resolver_match.url_name == 'panel_admin' %}aria-current="page"{% endif %}><i class="fas fa-user-shield" aria-hidden="true"></i><span class="nav-label">Admin</span></a>
-                    {% else %}
-                        <a href="{% url 'panel_gestor' %}" class="nav-link{% if request.resolver_match.url_name == 'panel_gestor' %} active{% endif %}" {% if request.resolver_match.url_name == 'panel_gestor' %}aria-current="page"{% endif %}><i class="fas fa-user-tie" aria-hidden="true"></i><span class="nav-label">Panel</span></a>
-                    {% endif %}
-                    <form method="post" action="{% url 'logout' %}" class="form-logout">
-                        {% csrf_token %}
-                        <button type="submit" class="nav-link btn-logout" aria-label="Cerrar sesión"><i class="fas fa-sign-out-alt" aria-hidden="true"></i><span class="nav-label">Salir</span></button>
-                    </form>
-                {% else %}
-                    <a href="{% url 'login' %}" class="nav-link{% if request.resolver_match.url_name == 'login' %} active{% endif %}" {% if request.resolver_match.url_name == 'login' %}aria-current="page"{% endif %}><i class="fas fa-sign-in-alt" aria-hidden="true"></i><span class="nav-label">Entrar</span></a>
-                {% endif %}
+                    {% if user.is_superuser or user.is_staff %}<a href="{% url 'panel_admin' %}" class="nav-link"><i class="fas fa-user-shield" aria-hidden="true"></i><span class="nav-label">Admin</span></a>{% else %}<a href="{% url 'panel_gestor' %}" class="nav-link"><i class="fas fa-user-tie" aria-hidden="true"></i><span class="nav-label">Panel</span></a>{% endif %}
+                    <form method="post" action="{% url 'logout' %}" class="form-logout"><button type="submit" class="nav-link btn-logout" aria-label="Cerrar sesión"><i class="fas fa-sign-out-alt" aria-hidden="true"></i><span class="nav-label">Salir</span></button></form>
+                {% else %}<a href="{% url 'login' %}" class="nav-link"><i class="fas fa-sign-in-alt" aria-hidden="true"></i><span class="nav-label">Entrar</span></a>{% endif %}
                 <button id="btn-theme-toggle" class="theme-toggle" type="button" aria-label="Activar modo oscuro" aria-pressed="false" title="Cambiar a modo oscuro"><i class="fas fa-moon" aria-hidden="true"></i><span class="theme-label">Tema</span></button>
             </nav>
         </div>
     </header>
-
     <main role="main">{% block content %}{% endblock %}</main>
-
-
-    <footer class="app-footer" role="contentinfo">
-        <div class="footer-container">
-            <div class="footer-brand">
-                <span class="footer-title">CobijoVzla</span>
-                <span class="footer-description">Información y apoyo para la gestión de emergencias.</span>
-            </div>
-
-            <div class="footer-social" aria-label="Redes sociales">
-                <span class="footer-social-label">Síguenos</span>
-                <div class="footer-social-list">
-                    <span class="footer-social-item" title="Facebook">
-                        <i class="fab fa-facebook-f" aria-hidden="true"></i>
-                        <span>Facebook</span>
-                    </span>
-                    <span class="footer-social-item" title="Instagram">
-                        <i class="fab fa-instagram" aria-hidden="true"></i>
-                        <span>Instagram</span>
-                    </span>
-                    <span class="footer-social-item" title="TikTok">
-                        <i class="fab fa-tiktok" aria-hidden="true"></i>
-                        <span>TikTok</span>
-                    </span>
-                    <span class="footer-social-item" title="WhatsApp">
-                        <i class="fab fa-whatsapp" aria-hidden="true"></i>
-                        <span>WhatsApp</span>
-                    </span>
-                </div>
-            </div>
-
-            <div class="footer-contact">
-                <span class="footer-social-label">Contacto y emergencias</span>
-                <div class="footer-contact-list">
-                    <a href="tel:911" aria-label="Llamar al 911">
-                        <i class="fas fa-phone-alt" aria-hidden="true"></i>
-                        911
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            <span>© {% now "Y" %} CobijoVzla. Todos los derechos reservados.</span>
-            <span class="footer-separator" aria-hidden="true">•</span>
-            <span>Creado para apoyar la respuesta y coordinación ante emergencias.</span>
-        </div>
-    </footer>
-
+    <footer class="app-footer" role="contentinfo"><div class="footer-container"><div class="footer-brand"><span class="footer-title">CobijoVzla</span><span class="footer-description">Información y apoyo para la gestión de emergencias.</span></div><div class="footer-social" aria-label="Redes sociales"><span class="footer-social-label">Síguenos</span><div class="footer-social-list"><span class="footer-social-item" title="Facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i><span>Facebook</span></span><span class="footer-social-item" title="Instagram"><i class="fab fa-instagram" aria-hidden="true"></i><span>Instagram</span></span><span class="footer-social-item" title="TikTok"><i class="fab fa-tiktok" aria-hidden="true"></i><span>TikTok</span></span><span class="footer-social-item" title="WhatsApp"><i class="fab fa-whatsapp" aria-hidden="true"></i><span>WhatsApp</span></div></div><div class="footer-contact"><span class="footer-social-label">Contacto y emergencias</span><div class="footer-contact-list"><a href="tel:911" aria-label="Llamar al 911"><i class="fas fa-phone-alt" aria-hidden="true"></i>911</a></div></div></div><div class="footer-bottom"><span>© {% now "Y" %} CobijoVzla. Todos los derechos reservados.</span><span class="footer-separator" aria-hidden="true">•</span><span>Creado para apoyar la respuesta y coordinación ante emergencias.</span></div></footer>
     <script src="{% static 'js/leaflet.js' %}"></script>
     <script src="{% static 'js/leaflet.markercluster.js' %}"></script>
     <script src="{% static 'js/leaflet.heat.js' %}"></script>
@@ -123,5 +50,13 @@
     <script src="{% static 'js/responsive.js' %}?v=1"></script>
     <script src="{% static 'js/main.js' %}?v=11"></script>
     {% block extra_js %}{% endblock %}
+    {% if request.resolver_match.url_name == 'mapa_publico' %}
+    <script src="{% static 'js/navegacion_localizacion_ve.js' %}?v=4"></script>
+    <script src="{% static 'js/navegacion_venezuela.js' %}?v=4"></script>
+    <script src="{% static 'js/navegacion_geoguard_ve.js' %}?v=2"></script>
+    <script src="{% static 'js/navegacion_ux_ve.js' %}?v=2"></script>
+    <script src="{% static 'js/navegacion_traduccion_ve.js' %}?v=1"></script>
+    <script src="{% static 'js/navegacion_enlace_ve.js' %}?v=2"></script>
+    {% endif %}
 </body>
 </html>
