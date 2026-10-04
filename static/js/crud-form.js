@@ -7,6 +7,7 @@
     if (!input || !mapElement || typeof L === 'undefined') return;
 
     const status = document.getElementById('crud-location-status');
+    const addressInput = document.getElementById('id_direccion');
     const defaultCenter = window.CobijoMap ? window.CobijoMap.center : [8.5, -66.0];
     const map = window.CobijoMap
         ? window.CobijoMap.create('crud-location-map', { zoom: 6, minZoom: 5, maxZoom: 19 })
@@ -14,18 +15,20 @@
     if (!map) return;
 
     let marker = null;
+    let lastGeocodedAddress = '';
+    let geocoding = false;
 
     const setStatus = (message) => {
         if (status) status.textContent = message;
     };
 
-    const setValue = (lat, lng, zoom = true) => {
+    const setValue = (lat, lng, zoom = true, message = 'Ubicación seleccionada correctamente') => {
         input.value = `${lng.toFixed(6)},${lat.toFixed(6)}`;
         input.dispatchEvent(new Event('change', { bubbles: true }));
         if (!marker) marker = L.marker([lat, lng]).addTo(map);
         else marker.setLatLng([lat, lng]);
         if (zoom) map.setView([lat, lng], Math.max(map.getZoom(), 14));
-        setStatus('Ubicación seleccionada correctamente');
+        setStatus(message);
     };
 
     const initial = (input.value || '').match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
@@ -38,6 +41,63 @@
             setValue(lat, lng, false);
             setStatus('Ubicación cargada');
         }
+    }
+
+    const geocodificarDireccion = async () => {
+        if (!addressInput || geocoding) return;
+
+        const address = addressInput.value.trim();
+        if (!address || address === lastGeocodedAddress) return;
+
+        lastGeocodedAddress = address;
+        geocoding = true;
+        setStatus('Buscando la dirección en Venezuela…');
+
+        try {
+            const params = new URLSearchParams({
+                q: address,
+                format: 'jsonv2',
+                limit: '1',
+                countrycodes: 've',
+                'accept-language': 'es',
+            });
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+                { headers: { Accept: 'application/json' } }
+            );
+
+            if (!response.ok) throw new Error('geocoding-request');
+
+            const results = await response.json();
+            const result = results[0];
+            if (!result) {
+                setStatus('No encontramos la dirección. Puedes colocar el punto manualmente en el mapa.');
+                return;
+            }
+
+            const lat = Number(result.lat);
+            const lng = Number(result.lon);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                setStatus('No pudimos obtener una ubicación válida. Selecciona el punto en el mapa.');
+                return;
+            }
+
+            setValue(lat, lng, true, 'Dirección ubicada automáticamente');
+        } catch (error) {
+            setStatus('No se pudo ubicar la dirección automáticamente. Puedes seleccionar el punto en el mapa.');
+        } finally {
+            geocoding = false;
+        }
+    };
+
+    if (addressInput) {
+        addressInput.addEventListener('blur', geocodificarDireccion);
+        addressInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                geocodificarDireccion();
+            }
+        });
     }
 
     map.on('click', (event) => setValue(event.latlng.lat, event.latlng.lng));
