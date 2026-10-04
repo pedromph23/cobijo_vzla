@@ -79,11 +79,31 @@ class Parroquia(models.Model):
         return c[1] if c else None
 
 
+class UbicacionParroquiaMixin:
+    """Asigna una parroquia a partir de la geometría del punto."""
+
+    def asignar_parroquia(self):
+        if not getattr(self, 'ubicacion', None):
+            return None
+        from apps.core.models import Parroquia
+        return (
+            Parroquia.objects
+            .filter(geom__intersects=self.ubicacion)
+            .select_related('estado')
+            .first()
+        )
+
+    def save(self, *args, **kwargs):
+        if hasattr(self, 'parroquia') and self.ubicacion:
+            self.parroquia = self.asignar_parroquia()
+        super().save(*args, **kwargs)
+
+
 # ============================================================
 # PUNTO DE DEMANDA
 # ============================================================
 
-class PuntoDemanda(models.Model):
+class PuntoDemanda(UbicacionParroquiaMixin, models.Model):
     nombre = models.CharField(max_length=200)
     parroquia = models.ForeignKey(Parroquia, on_delete=models.SET_NULL, null=True, blank=True, related_name='puntos_demanda')
     ubicacion = models.PointField(srid=4326, verbose_name="Ubicación")
@@ -127,8 +147,9 @@ class PuntoDemanda(models.Model):
 # SITIO CANDIDATO
 # ============================================================
 
-class SitioCandidato(models.Model):
+class SitioCandidato(UbicacionParroquiaMixin, models.Model):
     nombre = models.CharField(max_length=200)
+    parroquia = models.ForeignKey(Parroquia, on_delete=models.SET_NULL, null=True, blank=True, related_name='sitios_candidatos')
     ubicacion = models.PointField(srid=4326, verbose_name="Ubicación")
     capacidad_maxima = models.IntegerField(default=100, validators=[MinValueValidator(1)], help_text="Personas que puede albergar")
     costo_apertura = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)], verbose_name="Costo de apertura")
@@ -141,7 +162,7 @@ class SitioCandidato(models.Model):
         verbose_name = "Sitio candidato"
         verbose_name_plural = "Sitios candidatos"
         ordering = ['nombre']
-        indexes = [models.Index(fields=['disponible'])]
+        indexes = [models.Index(fields=['disponible']), models.Index(fields=['parroquia'])]
         constraints = [
             models.CheckConstraint(condition=models.Q(capacidad_maxima__gte=1), name='sitio_candidato_capacidad_gte_1'),
             models.CheckConstraint(condition=models.Q(costo_apertura__gte=0), name='sitio_candidato_costo_apertura_gte_0'),
@@ -164,9 +185,10 @@ class SitioCandidato(models.Model):
 # REFUGIO EXISTENTE
 # ============================================================
 
-class RefugioExistente(models.Model):
+class RefugioExistente(UbicacionParroquiaMixin, models.Model):
     nombre = models.CharField(max_length=200)
     direccion = models.CharField(max_length=300)
+    parroquia = models.ForeignKey(Parroquia, on_delete=models.SET_NULL, null=True, blank=True, related_name='refugios_existentes')
     ubicacion = models.PointField(srid=4326, verbose_name="Ubicación")
     capacidad_total = models.IntegerField(validators=[MinValueValidator(0)], verbose_name="Capacidad total")
     capacidad_disponible = models.IntegerField(validators=[MinValueValidator(0)], verbose_name="Capacidad disponible")
@@ -179,7 +201,7 @@ class RefugioExistente(models.Model):
         verbose_name = "Refugio existente"
         verbose_name_plural = "Refugios existentes"
         ordering = ['nombre']
-        indexes = [models.Index(fields=['operativo'])]
+        indexes = [models.Index(fields=['operativo']), models.Index(fields=['parroquia'])]
         constraints = [
             models.CheckConstraint(condition=models.Q(capacidad_total__gte=0), name='refugio_capacidad_total_gte_0'),
             models.CheckConstraint(condition=models.Q(capacidad_disponible__gte=0), name='refugio_capacidad_disponible_gte_0'),
@@ -278,130 +300,3 @@ class ParametrosModelo(models.Model):
         ('capacidades', 'Localización con Capacidades'),
     ]
     nombre_escenario = models.CharField(max_length=200)
-    tipo_modelo = models.CharField(max_length=30, choices=TIPO_MODELO_CHOICES)
-    p = models.IntegerField(default=3, validators=[MinValueValidator(1)], help_text="Número de centros a abrir")
-    presupuesto = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
-    radio_cobertura = models.FloatField(default=5000, validators=[MinValueValidator(0)], help_text="Radio de cobertura en metros")
-    ponderador_vulnerabilidad = models.FloatField(default=1.0, validators=[MinValueValidator(0)])
-    ponderador_heridos = models.FloatField(default=1.0, validators=[MinValueValidator(0)])
-    ponderador_fallecidos = models.FloatField(default=1.0, validators=[MinValueValidator(0)])
-    ponderador_damnificados = models.FloatField(default=1.0, validators=[MinValueValidator(0)])
-    filtro_estado = models.ForeignKey(Estado, on_delete=models.SET_NULL, null=True, blank=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Parámetros de modelo"
-        verbose_name_plural = "Parámetros de modelo"
-        ordering = ['-fecha_creacion']
-
-    def __str__(self):
-        return self.nombre_escenario
-
-    @property
-    def radio_cobertura_km(self) -> float:
-        return round(self.radio_cobertura / 1000, 2)
-
-
-# ============================================================
-# RESULTADO DE OPTIMIZACIÓN
-# ============================================================
-
-class ResultadoOptimizacion(models.Model):
-    parametros = models.ForeignKey(ParametrosModelo, on_delete=models.CASCADE, related_name='resultados')
-    fecha_ejecucion = models.DateTimeField(auto_now_add=True)
-    datos_json = models.JSONField()
-
-    class Meta:
-        verbose_name = "Resultado de optimización"
-        verbose_name_plural = "Resultados de optimización"
-        ordering = ['-fecha_ejecucion']
-
-    def __str__(self):
-        return f"Resultado #{self.id} — {self.parametros.nombre_escenario}"
-
-    @property
-    def total_centros(self) -> int:
-        return len((self.datos_json or {}).get('centros', []))
-
-    @property
-    def porcentaje_cubierto(self) -> float:
-        return (self.datos_json or {}).get('porcentaje_cubierto', 0.0)
-
-    @property
-    def poblacion_atendida(self) -> int:
-        return (self.datos_json or {}).get('poblacion_atendida', 0)
-
-    @property
-    def resumen(self) -> str:
-        return (f"{self.total_centros} centros · {self.porcentaje_cubierto}% cobertura · {self.poblacion_atendida:,} personas").replace(',', '.')
-
-
-# ============================================================
-# HISTORIAL VERSIONADO
-# ============================================================
-
-class RegistroVersion(models.Model):
-    """Instantánea histórica de entidades operativas para reconstruir estados anteriores."""
-    OPERACIONES = [
-        ('creado', 'Creado'),
-        ('actualizado', 'Actualizado'),
-        ('eliminado', 'Eliminado'),
-    ]
-
-    fecha_version = models.DateTimeField(default=timezone.now, db_index=True)
-    modelo = models.CharField(max_length=150, db_index=True)
-    objeto_id = models.CharField(max_length=100, db_index=True)
-    operacion = models.CharField(max_length=20, choices=OPERACIONES)
-    datos = models.JSONField()
-    ruta = models.CharField(max_length=500, blank=True)
-    ip = models.GenericIPAddressField(null=True, blank=True)
-    usuario = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='versiones_registradas')
-
-    class Meta:
-        verbose_name = "Versión histórica"
-        verbose_name_plural = "Versiones históricas"
-        ordering = ['-fecha_version']
-        indexes = [
-            models.Index(fields=['modelo', 'objeto_id', '-fecha_version']),
-            models.Index(fields=['modelo', '-fecha_version']),
-        ]
-
-    def __str__(self):
-        actor = self.usuario.get_username() if self.usuario else 'SISTEMA'
-        return f"{self.fecha_version:%Y-%m-%d %H:%M} · {actor} · {self.modelo} #{self.objeto_id} · {self.operacion}"
-
-
-# ============================================================
-# AUDITORÍA CENTRAL DEL SISTEMA
-# ============================================================
-
-class RegistroAuditoria(models.Model):
-    """Registro central de acciones relevantes realizadas en CobijoVzla."""
-    RESULTADOS = [('exitoso', 'Exitoso'), ('error', 'Error'), ('rechazado', 'Rechazado')]
-    usuario = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='registros_auditoria')
-    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
-    accion = models.CharField(max_length=80, db_index=True)
-    metodo = models.CharField(max_length=10)
-    ruta = models.CharField(max_length=500)
-    modelo = models.CharField(max_length=150, blank=True)
-    objeto_id = models.CharField(max_length=100, blank=True)
-    resultado = models.CharField(max_length=20, choices=RESULTADOS, default='exitoso', db_index=True)
-    detalle = models.TextField(blank=True)
-    datos_anteriores = models.JSONField(null=True, blank=True)
-    datos_nuevos = models.JSONField(null=True, blank=True)
-    ip = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.CharField(max_length=500, blank=True)
-
-    class Meta:
-        verbose_name = "Registro de auditoría"
-        verbose_name_plural = "Bitácora del sistema"
-        ordering = ['-fecha']
-        indexes = [
-            models.Index(fields=['usuario', '-fecha']),
-            models.Index(fields=['accion', '-fecha']),
-            models.Index(fields=['resultado', '-fecha']),
-        ]
-
-    def __str__(self):
-        actor = self.usuario.get_username() if self.usuario else 'SISTEMA'
-        return f"{self.fecha:%Y-%m-%d %H:%M} · {actor} · {self.accion}"
