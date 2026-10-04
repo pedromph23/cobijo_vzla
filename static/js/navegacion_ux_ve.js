@@ -86,23 +86,17 @@
         const style = document.createElement('style');
         style.id = 'nav-ve-ux-styles';
         style.textContent = `
-            .nav-ruta-panel-ve{width:min(360px,calc(100% - 28px));max-height:min(68vh,650px);right:14px;top:68px}
             .nav-ruta-header-ve{gap:5px}
             .nav-ruta-header-ve>div:first-child{flex:1;min-width:0}
             .nav-ruta-kicker-ve{display:block;font-size:.64rem}
             .nav-ruta-progreso-ve{letter-spacing:0;text-transform:none;font-size:.61rem;font-weight:600;opacity:.75}
             .nav-ruta-minimizar-ve{order:1!important;border:0;background:rgba(22,143,114,.09)!important;color:#168f72!important;width:30px!important;height:30px!important;border-radius:8px!important;cursor:pointer;margin-right:2px}
             .nav-ruta-header-ve button#nav-ruta-cerrar-ve{order:2}
-            .nav-ruta-panel-ve.colapsado{max-height:62px}
             .nav-ruta-panel-ve.colapsado .nav-ruta-resumen-ve,
             .nav-ruta-panel-ve.colapsado .nav-ruta-estado-ve,
             .nav-ruta-panel-ve.colapsado .nav-ruta-pasos-ve,
             .nav-ruta-panel-ve.colapsado .nav-ruta-acciones-ve{display:none}
             .nav-ruta-panel-ve.colapsado .nav-ruta-header-ve{border-bottom:0;padding-bottom:15px}
-            @media(max-width:768px){
-                .nav-ruta-panel-ve{left:10px;right:10px;bottom:72px;top:auto;width:auto;max-height:50vh}
-                .nav-ruta-panel-ve.colapsado{max-height:58px}
-            }
         `;
         document.head.appendChild(style);
     }
