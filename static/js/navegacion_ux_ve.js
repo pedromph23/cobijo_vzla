@@ -22,6 +22,12 @@
         }
     }
 
+    function sincronizarEspacioInterfaz() {
+        const panel = document.getElementById('nav-ruta-panel-ve');
+        const activo = Boolean(panel && !panel.classList.contains('oculto') && !panel.hidden);
+        document.documentElement.classList.toggle('nav-ruta-activa', activo);
+    }
+
     function alternarPanel() {
         const panel = document.getElementById('nav-ruta-panel-ve');
         if (!panel) return;
@@ -35,11 +41,15 @@
             boton.setAttribute('aria-label', panelColapsado ? 'Mostrar indicaciones' : 'Minimizar indicaciones');
             boton.title = panelColapsado ? 'Mostrar indicaciones' : 'Minimizar indicaciones';
         }
+        sincronizarEspacioInterfaz();
     }
 
     function mejorarPanelVisual() {
         const panel = document.getElementById('nav-ruta-panel-ve');
-        if (!panel) return;
+        if (!panel) {
+            sincronizarEspacioInterfaz();
+            return;
+        }
         if (panel.dataset.uxVe !== '1') {
             panel.dataset.uxVe = '1';
             const header = panel.querySelector('.nav-ruta-header-ve');
@@ -64,6 +74,7 @@
             }
         }
         marcarPasoActual();
+        sincronizarEspacioInterfaz();
     }
 
     function observarInterfaz() {
@@ -77,7 +88,7 @@
                 mejorarPanelVisual();
             });
         });
-        observer.observe(objetivo, { childList: true, subtree: true });
+        observer.observe(objetivo, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style'] });
         mejorarPanelVisual();
     }
 
@@ -97,6 +108,12 @@
             .nav-ruta-panel-ve.colapsado .nav-ruta-pasos-ve,
             .nav-ruta-panel-ve.colapsado .nav-ruta-acciones-ve{display:none}
             .nav-ruta-panel-ve.colapsado .nav-ruta-header-ve{border-bottom:0;padding-bottom:15px}
+            @media (max-width:768px){
+                html.nav-ruta-activa .info-card{max-height:18vh!important}
+                html.nav-ruta-activa .info-card-body{max-height:11vh!important}
+                html.nav-ruta-activa .info-card-header{min-height:38px!important}
+                html.nav-ruta-activa .btn-como-llegar{min-height:34px!important;margin-top:4px!important}
+            }
         `;
         document.head.appendChild(style);
     }
