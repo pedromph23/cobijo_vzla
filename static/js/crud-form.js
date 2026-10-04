@@ -54,35 +54,19 @@
         setStatus('Buscando la dirección en Venezuela…');
 
         try {
-            const params = new URLSearchParams({
-                q: address,
-                format: 'jsonv2',
-                limit: '1',
-                countrycodes: 've',
-                'accept-language': 'es',
+            const params = new URLSearchParams({ direccion: address });
+            const response = await fetch(`/api/geocodificar/?${params.toString()}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
             });
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?${params.toString()}`,
-                { headers: { Accept: 'application/json' } }
-            );
+            const result = await response.json();
 
-            if (!response.ok) throw new Error('geocoding-request');
-
-            const results = await response.json();
-            const result = results[0];
-            if (!result) {
-                setStatus('No encontramos la dirección. Puedes colocar el punto manualmente en el mapa.');
+            if (!response.ok || !result.ok || !result.found) {
+                setStatus(result.detail || 'No encontramos la dirección. Puedes colocar el punto manualmente en el mapa.');
                 return;
             }
 
-            const lat = Number(result.lat);
-            const lng = Number(result.lon);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-                setStatus('No pudimos obtener una ubicación válida. Selecciona el punto en el mapa.');
-                return;
-            }
-
-            setValue(lat, lng, true, 'Dirección ubicada automáticamente');
+            setValue(Number(result.lat), Number(result.lng), true, 'Dirección ubicada automáticamente');
         } catch (error) {
             setStatus('No se pudo ubicar la dirección automáticamente. Puedes seleccionar el punto en el mapa.');
         } finally {
