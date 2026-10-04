@@ -24,6 +24,15 @@ SERVICIOS_REFUGIO = (
     ('internet', 'Internet'),
 )
 
+TIPOS_TERRENO_SITIO = (
+    ('terreno', 'Terreno'),
+    ('edificio', 'Edificio'),
+    ('cancha', 'Cancha deportiva'),
+    ('escuela', 'Escuela'),
+    ('iglesia', 'Iglesia'),
+    ('otro', 'Otro'),
+)
+
 
 def _parsear_punto(valor) -> Point:
     """Convierte el valor simple del mapa (lng,lat) en Point WGS84."""
@@ -83,18 +92,62 @@ class PuntoDemandaForm(forms.ModelForm):
 
 
 class SitioCandidatoForm(forms.ModelForm):
-    ubicacion = UbicacionInputField()
+    """Formulario operativo para registrar un sitio candidato sin coordenadas técnicas."""
+
+    ubicacion = UbicacionInputField(
+        help_text='Selecciona el lugar en el mapa. La parroquia se determina automáticamente a partir de la geometría territorial.',
+    )
 
     class Meta:
         model = SitioCandidato
         fields = ['nombre', 'ubicacion', 'capacidad_maxima', 'costo_apertura', 'costo_operacion', 'tipo_terreno', 'disponible']
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
-            'capacidad_maxima': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'step': 1, 'inputmode': 'numeric'}),
-            'costo_apertura': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal'}),
-            'costo_operacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal'}),
-            'tipo_terreno': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 50}),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': 200,
+                'autocomplete': 'organization',
+                'placeholder': 'Ej.: Escuela Bolivariana de La Pastora',
+            }),
+            'capacidad_maxima': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1,
+                'step': 1,
+                'inputmode': 'numeric',
+                'placeholder': 'Ej.: 250',
+            }),
+            'costo_apertura': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0,
+                'step': '0.01',
+                'inputmode': 'decimal',
+                'placeholder': '0.00',
+            }),
+            'costo_operacion': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0,
+                'step': '0.01',
+                'inputmode': 'decimal',
+                'placeholder': '0.00',
+            }),
+            'tipo_terreno': forms.Select(
+                choices=TIPOS_TERRENO_SITIO,
+                attrs={'class': 'form-select'},
+            ),
             'disponible': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'capacidad_maxima': 'Capacidad máxima',
+            'costo_apertura': 'Costo de apertura',
+            'costo_operacion': 'Costo de operación',
+            'tipo_terreno': 'Tipo de sitio',
+            'disponible': 'Disponible para selección',
+        }
+        help_texts = {
+            'capacidad_maxima': 'Cantidad máxima de personas que podría albergar.',
+            'costo_apertura': 'Costo estimado para habilitar el sitio.',
+            'costo_operacion': 'Costo estimado de operación del sitio.',
+            'tipo_terreno': 'Ayuda a identificar rápidamente qué tipo de espacio es.',
+            'disponible': 'Si está activo, el modelo de optimización puede considerarlo como alternativa.',
         }
 
     def clean_ubicacion(self):
