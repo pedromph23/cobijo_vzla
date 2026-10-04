@@ -1,123 +1,51 @@
 /* ============================================================
-   COBIJOVZLA · RESPONSIVE (media queries específicas)
+   COBIJOVZLA · RESPONSIVE
    ============================================================
-   Se complementa con las media queries de main.css y map.css.
+   Reglas específicas para pantallas pequeñas y para el mapa
+   público. Se mantienen los contratos/IDs existentes de JS.
    ============================================================ */
 
-/* ------------------------------------------------------------
-   MÓVIL PEQUEÑO (320px - 480px)
-   ------------------------------------------------------------ */
 @media (max-width: 480px) {
-    .header-container {
-        padding: 0.25rem 0.5rem;
-    }
-
-    .app-logo a {
-        font-size: 1rem;
-    }
-
-    .main-nav .nav-link {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.8rem;
-    }
-
-    .main-map {
-        min-height: 300px;
-    }
-
-    .minimap-container {
-        width: 100px;
-        height: 75px;
-        bottom: 5px;
-        right: 5px;
-    }
-
-    .btn-primary,
-    .btn-secondary {
-        padding: 0.5rem;
-        font-size: 0.8rem;
-    }
+    .header-container { padding: .25rem .5rem; }
+    .app-logo a { font-size: 1rem; }
+    .main-nav .nav-link { padding: .25rem .5rem; font-size: .8rem; }
+    .main-map { min-height: 300px; }
+    .minimap-container { width: 100px; height: 75px; bottom: 5px; right: 5px; }
+    .btn-primary, .btn-secondary { padding: .5rem; font-size: .8rem; }
 }
 
-/* ------------------------------------------------------------
-   TABLET (481px - 768px)
-   ------------------------------------------------------------ */
 @media (min-width: 481px) and (max-width: 768px) {
-    .sidebar {
-        width: 250px;
-    }
-
-    .main-map {
-        min-height: 400px;
-    }
-
-    .minimap-container {
-        width: 150px;
-        height: 110px;
-    }
+    .sidebar { width: 250px; }
+    .main-map { min-height: 400px; }
+    .minimap-container { width: 150px; height: 110px; }
 }
 
-/* ------------------------------------------------------------
-   DESKTOP (769px+)
-   ------------------------------------------------------------ */
 @media (min-width: 769px) {
-    .sidebar {
-        width: 320px;
-    }
-
-    .sidebar.collapsed {
-        width: 0;
-    }
-
-    .main-map {
-        min-height: 500px;
-    }
-
-    .minimap-container {
-        width: 220px;
-        height: 160px;
-    }
+    .sidebar { width: 320px; }
+    .sidebar.collapsed { width: 0; }
+    .main-map { min-height: 500px; }
+    .minimap-container { width: 220px; height: 160px; }
 }
 
-/* ------------------------------------------------------------
-   LANDSCAPE BAJO (móvil tumbado)
-   ------------------------------------------------------------ */
 @media (max-height: 500px) and (orientation: landscape) {
-    :root {
-        --header-height: 48px;
-    }
-
-    .sidebar {
-        width: 260px;
-    }
-
-    .sidebar-content {
-        padding: 0.5rem;
-    }
-
-    .sidebar-section {
-        margin-bottom: 0.75rem;
-    }
-
-    .logo-img {
-        height: 26px;
-    }
+    :root { --header-height: 48px; }
+    .sidebar { width: 260px; }
+    .sidebar-content { padding: .5rem; }
+    .sidebar-section { margin-bottom: .75rem; }
+    .logo-img { height: 26px; }
 }
 
 /* ============================================================
-   MAPA PÚBLICO · AJUSTE COMPACTO Y RESPONSIVE
-   ============================================================
-   Se mantiene la lógica JS intacta. Estas reglas solo controlan
-   dimensiones, espacios y capas visuales para que el mapa no
-   bloquee el footer y los paneles no se recorten en pantallas
-   pequeñas.
+   MAPA PÚBLICO · COMPACTO / RESPONSIVE
    ============================================================ */
 
 .map-layout {
     box-sizing: border-box;
 }
 
-/* Escritorio: deja espacio real debajo del mapa para el footer. */
+/* ------------------------------------------------------------
+   ESCRITORIO
+   ------------------------------------------------------------ */
 @media (min-width: 769px) {
     .map-layout {
         height: calc(100vh - var(--header-height, 78px) - 90px) !important;
@@ -127,30 +55,75 @@
 
     .nav-ruta-panel-ve {
         width: min(380px, calc(100% - 28px)) !important;
-        max-height: min(58vh, 560px) !important;
+        max-height: min(54vh, 520px) !important;
         right: 14px !important;
-        top: 64px !important;
+        top: 60px !important;
         bottom: auto !important;
+        border-radius: 14px !important;
+        overflow: hidden !important;
+    }
+
+    .nav-ruta-header-ve {
+        min-height: 52px !important;
+        padding: 8px 10px !important;
+    }
+
+    .nav-ruta-resumen-ve {
+        padding: 9px 11px !important;
+        gap: 8px !important;
+    }
+
+    .nav-ruta-estado-ve,
+    .nav-ruta-acciones-ve {
+        padding-inline: 11px !important;
+    }
+
+    .nav-ruta-pasos-ve {
+        max-height: 30vh !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nav-ruta-paso-ve {
+        padding: 7px 11px !important;
+        min-height: 46px !important;
     }
 
     .info-card {
+        left: 15px !important;
+        bottom: 15px !important;
         width: min(320px, calc(100% - 30px)) !important;
-        max-height: min(48vh, 420px);
+        max-height: min(42vh, 360px) !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+    }
+
+    .info-card-header {
+        min-height: 44px !important;
+        padding: .55rem .75rem !important;
+        font-size: .9rem !important;
     }
 
     .info-card-body {
-        max-height: min(34vh, 300px) !important;
-        overflow-y: auto;
+        max-height: min(29vh, 240px) !important;
+        padding: .75rem .8rem !important;
+        overflow-y: auto !important;
     }
 }
 
-/* Móvil/tablet: el mapa deja de secuestrar el viewport completo. */
+/* ------------------------------------------------------------
+   TABLET / MÓVIL
+   ------------------------------------------------------------ */
 @media (max-width: 768px) {
+    /* El mapa ya no ocupa todo el viewport: el documento conserva
+       espacio para el contenido y el footer de base.html. */
     .map-layout {
-        height: 78svh !important;
-        min-height: 520px !important;
-        max-height: 780px !important;
-        overflow: hidden;
+        height: 70svh !important;
+        min-height: 440px !important;
+        max-height: 680px !important;
+        overflow: hidden !important;
+        margin-bottom: 1rem !important;
     }
 
     .map-main-container,
@@ -160,197 +133,268 @@
     }
 
     .map-floating-controls {
-        top: 10px !important;
-        right: 10px !important;
-        gap: 6px !important;
+        top: 8px !important;
+        right: 8px !important;
+        gap: 5px !important;
     }
 
     .map-action-btn {
-        width: 40px !important;
-        height: 40px !important;
-        border-radius: 10px !important;
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 9px !important;
     }
 
-    /* Panel de ruta: siempre completamente visible dentro del mapa. */
+    /* --------------------------------------------------------
+       PANEL DE RUTA
+       -------------------------------------------------------- */
     .nav-ruta-panel-ve {
-        left: 10px !important;
-        right: 10px !important;
-        top: 10px !important;
+        left: 8px !important;
+        right: 8px !important;
+        top: 8px !important;
         bottom: auto !important;
         width: auto !important;
         max-width: none !important;
-        max-height: 46vh !important;
-        border-radius: 16px !important;
+        max-height: 40vh !important;
+        border-radius: 14px !important;
         overflow: hidden !important;
-    }
-
-    .nav-ruta-panel-ve .nav-ruta-pasos-ve {
-        max-height: 30vh !important;
-        overflow-y: auto !important;
-        overscroll-behavior: contain;
-        -webkit-overflow-scrolling: touch;
+        box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
     }
 
     .nav-ruta-header-ve {
-        min-height: 56px !important;
-        padding: 10px 12px !important;
+        min-height: 48px !important;
+        padding: 7px 9px !important;
+        gap: 4px !important;
+    }
+
+    .nav-ruta-header-ve > div:first-child {
+        min-width: 0 !important;
     }
 
     .nav-ruta-kicker-ve {
-        font-size: .62rem !important;
-        line-height: 1.2 !important;
+        font-size: .58rem !important;
+        line-height: 1.15 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .nav-ruta-progreso-ve {
+        font-size: .56rem !important;
     }
 
     .nav-ruta-header-ve h2,
     .nav-ruta-header-ve h3,
     .nav-ruta-header-ve strong {
-        font-size: .98rem !important;
-        line-height: 1.2 !important;
-    }
-
-    .nav-ruta-resumen-ve {
-        padding: 10px 12px !important;
-        gap: 8px !important;
-    }
-
-    .nav-ruta-estado-ve,
-    .nav-ruta-acciones-ve {
-        padding-inline: 12px !important;
-    }
-
-    .nav-ruta-paso-ve {
-        padding: 8px 12px !important;
-        min-height: 48px !important;
-    }
-
-    .nav-ruta-panel-ve.colapsado {
-        max-height: 58px !important;
-    }
-
-    /* Tarjeta del refugio: compacta, scrollable y sin quedar debajo del mapa. */
-    .info-card {
-        left: 10px !important;
-        right: 10px !important;
-        bottom: 10px !important;
-        width: auto !important;
-        max-width: none !important;
-        max-height: 31vh !important;
-        border-radius: 14px !important;
-        overflow: hidden !important;
-    }
-
-    .info-card-header {
-        min-height: 46px !important;
-        padding: .55rem .75rem !important;
-        font-size: .9rem !important;
-    }
-
-    .info-card-body {
-        max-height: 23vh !important;
-        padding: .7rem .8rem !important;
-        font-size: .78rem !important;
-        line-height: 1.35 !important;
-        overflow-y: auto !important;
-        overscroll-behavior: contain;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .info-card-body p {
-        margin: 0 0 .45rem !important;
-    }
-
-    .btn-como-llegar {
-        min-height: 42px !important;
-        margin-top: 8px !important;
-        padding: 8px 10px !important;
-        border-radius: 9px !important;
-        font-size: .82rem !important;
-    }
-
-    /* El panel nativo de Leaflet Routing también queda limitado si aparece. */
-    .leaflet-routing-container {
-        max-width: calc(100vw - 20px) !important;
-        max-height: 44vh !important;
-        overflow-y: auto !important;
-        font-size: .78rem !important;
-        border-radius: 14px !important;
-    }
-
-    .leaflet-routing-alt {
-        max-height: 30vh !important;
-        overflow-y: auto !important;
-    }
-
-    .leaflet-control-attribution {
-        max-width: 72vw;
-        font-size: 9px !important;
+        font-size: .92rem !important;
         line-height: 1.15 !important;
-    }
-
-    .leaflet-control-zoom {
-        margin-bottom: 8px !important;
-        margin-right: 8px !important;
-    }
-}
-
-/* Teléfonos estrechos: prioriza lectura sobre densidad visual. */
-@media (max-width: 480px) {
-    .map-layout {
-        height: 76svh !important;
-        min-height: 500px !important;
-        max-height: 720px !important;
-    }
-
-    .nav-ruta-panel-ve {
-        max-height: 45vh !important;
-        border-radius: 14px !important;
-    }
-
-    .nav-ruta-panel-ve .nav-ruta-pasos-ve {
-        max-height: 29vh !important;
-    }
-
-    .info-card {
-        max-height: 30vh !important;
-    }
-
-    .info-card-body {
-        max-height: 22vh !important;
+        max-width: 70vw;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .nav-ruta-minimizar-ve,
     .nav-ruta-header-ve button#nav-ruta-cerrar-ve {
-        width: 32px !important;
-        height: 32px !important;
-        flex: 0 0 32px;
-    }
-}
-
-/* Móvil tumbado: evita que los paneles tapen todo el mapa. */
-@media (max-height: 560px) and (orientation: landscape) {
-    .map-layout {
-        height: calc(100svh - var(--header-height, 48px) - 20px) !important;
-        min-height: 360px !important;
+        width: 31px !important;
+        height: 31px !important;
+        min-width: 31px !important;
+        flex: 0 0 31px !important;
+        border-radius: 8px !important;
     }
 
-    .nav-ruta-panel-ve {
-        max-height: 72vh !important;
+    .nav-ruta-resumen-ve {
+        padding: 7px 9px !important;
+        gap: 6px !important;
     }
 
-    .nav-ruta-panel-ve .nav-ruta-pasos-ve {
-        max-height: 45vh !important;
+    .nav-ruta-resumen-ve > * {
+        min-width: 0;
     }
 
+    .nav-ruta-estado-ve,
+    .nav-ruta-acciones-ve {
+        padding-inline: 9px !important;
+    }
+
+    .nav-ruta-estado-ve {
+        padding-block: 6px !important;
+        font-size: .74rem !important;
+        line-height: 1.25 !important;
+    }
+
+    .nav-ruta-pasos-ve {
+        max-height: 21vh !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .nav-ruta-paso-ve {
+        padding: 6px 9px !important;
+        min-height: 43px !important;
+        gap: 7px !important;
+    }
+
+    .nav-ruta-paso-ve strong,
+    .nav-ruta-paso-ve b {
+        font-size: .76rem !important;
+        line-height: 1.2 !important;
+    }
+
+    .nav-ruta-paso-ve small {
+        font-size: .66rem !important;
+    }
+
+    .nav-ruta-acciones-ve {
+        padding-block: 6px !important;
+        gap: 6px !important;
+    }
+
+    .nav-ruta-panel-ve.colapsado {
+        max-height: 54px !important;
+    }
+
+    /* --------------------------------------------------------
+       TARJETA DEL REFUGIO
+       -------------------------------------------------------- */
     .info-card {
-        max-height: 42vh !important;
+        left: 8px !important;
+        right: 8px !important;
+        bottom: 8px !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: 26vh !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,.24) !important;
+    }
+
+    .info-card-header {
+        min-height: 42px !important;
+        padding: .45rem .65rem !important;
+        font-size: .84rem !important;
+        line-height: 1.15 !important;
     }
 
     .info-card-body {
-        max-height: 30vh !important;
+        max-height: 19vh !important;
+        padding: .55rem .65rem !important;
+        font-size: .72rem !important;
+        line-height: 1.25 !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .info-card-body p {
+        margin: 0 0 .32rem !important;
+    }
+
+    .btn-como-llegar {
+        min-height: 38px !important;
+        margin-top: 5px !important;
+        padding: 7px 9px !important;
+        border-radius: 8px !important;
+        font-size: .76rem !important;
+    }
+
+    /* --------------------------------------------------------
+       CONTROLES LEAFLET
+       -------------------------------------------------------- */
+    .leaflet-routing-container {
+        max-width: calc(100vw - 16px) !important;
+        max-height: 40vh !important;
+        overflow-y: auto !important;
+        font-size: .74rem !important;
+        border-radius: 12px !important;
+    }
+
+    .leaflet-routing-alt {
+        max-height: 25vh !important;
+        overflow-y: auto !important;
+    }
+
+    .leaflet-control-attribution {
+        max-width: 68vw;
+        padding: 1px 3px !important;
+        font-size: 8px !important;
+        line-height: 1.1 !important;
+    }
+
+    .leaflet-control-zoom {
+        margin-right: 7px !important;
+        margin-bottom: 7px !important;
     }
 }
 
-/* Accesibilidad: evita animaciones innecesarias durante scroll/táctil. */
+/* ------------------------------------------------------------
+   TELÉFONOS ESTRECHOS
+   ------------------------------------------------------------ */
+@media (max-width: 480px) {
+    .map-layout {
+        height: 68svh !important;
+        min-height: 420px !important;
+        max-height: 620px !important;
+    }
+
+    .nav-ruta-panel-ve {
+        max-height: 39vh !important;
+    }
+
+    .nav-ruta-pasos-ve {
+        max-height: 20vh !important;
+    }
+
+    .info-card {
+        max-height: 25vh !important;
+    }
+
+    .info-card-body {
+        max-height: 18vh !important;
+    }
+
+    .info-card-header {
+        min-height: 40px !important;
+    }
+
+    .btn-como-llegar {
+        min-height: 36px !important;
+    }
+}
+
+/* ------------------------------------------------------------
+   MÓVIL HORIZONTAL
+   ------------------------------------------------------------ */
+@media (max-height: 560px) and (orientation: landscape) {
+    .map-layout {
+        height: calc(100svh - var(--header-height, 48px) - 16px) !important;
+        min-height: 330px !important;
+        max-height: none !important;
+    }
+
+    .nav-ruta-panel-ve {
+        max-height: 68vh !important;
+        top: 6px !important;
+    }
+
+    .nav-ruta-pasos-ve {
+        max-height: 38vh !important;
+    }
+
+    .info-card {
+        max-height: 34vh !important;
+        bottom: 6px !important;
+    }
+
+    .info-card-body {
+        max-height: 24vh !important;
+    }
+}
+
+/* Respeta preferencias de movimiento reducido. */
 @media (prefers-reduced-motion: reduce) {
     .nav-ruta-panel-ve,
     .info-card {
