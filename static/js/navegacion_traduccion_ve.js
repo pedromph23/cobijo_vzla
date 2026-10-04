@@ -30,8 +30,8 @@
         [/^continue\s+left\s+onto\s+(.+)$/i, (_, via) => `Continúe hacia la izquierda por ${via}`],
         [/^continue\s+right\s+onto\s+(.+)$/i, (_, via) => `Continúe hacia la derecha por ${via}`],
         [/^continue\s+straight\s+onto\s+(.+)$/i, (_, via) => `Continúe recto por ${via}`],
-        [/^continue\s+towards\s+(.+)$/i, (_, destino) => `Continúe hacia ${destino}`],
         [/^continue\s+straight\s+towards\s+(.+)$/i, (_, destino) => `Continúe recto hacia ${destino}`],
+        [/^continue\s+towards\s+(.+)$/i, (_, destino) => `Continúe hacia ${destino}`],
         [/^go\s+straight\s+towards\s+(.+)$/i, (_, destino) => `Continúe recto hacia ${destino}`],
         [/^go\s+straight\s+(.+)$/i, (_, resto) => `Continúe recto ${resto}`],
         [/^head\s+(north|south|east|west|northeast|northwest|southeast|southwest)(?:\s+towards\s+(.+))?$/i, (_, dir, destino) => `Siga hacia ${direccion(dir)}${destino ? `, hacia ${destino}` : ''}`],
@@ -83,11 +83,10 @@
     }
 
     function traducirElemento(elemento) {
-        if (!elemento || elemento.dataset.navTraduccionVe === '1') return;
+        if (!elemento) return;
         const actual = elemento.textContent || '';
         const traducido = traducir(actual);
         if (traducido && traducido !== actual) elemento.textContent = traducido;
-        elemento.dataset.navTraduccionVe = '1';
     }
 
     function traducirInterfaz() {
