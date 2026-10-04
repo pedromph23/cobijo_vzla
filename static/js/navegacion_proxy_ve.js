@@ -205,6 +205,46 @@
         }
     }
 
+    /**
+     * Compatibilidad con el calcularRuta() histórico de mapa_publico.html.
+     * Ese código todavía construye L.Routing.osrmv1(), pero al instalar este
+     * adaptador la llamada queda convertida en una petición al proxy Django.
+     * No se permite que el router histórico llegue a ningún host externo.
+     */
+    function instalarRouterLegacySeguro() {
+        if (!window.L?.Routing) return;
+
+        const routerProxy = function() {
+            return {
+                route(waypoints, callback, context) {
+                    const puntos = Array.isArray(waypoints) ? waypoints : [];
+                    const origen = puntos[0]?.latLng;
+                    const destino = puntos[puntos.length - 1]?.latLng;
+                    if (!origen || !destino) {
+                        callback.call(context || this, { status: -1, message: 'Waypoints inválidos.' });
+                        return;
+                    }
+
+                    solicitarRuta(
+                        { lat: Number(origen.lat), lng: Number(origen.lng) },
+                        { lat: Number(destino.lat), lng: Number(destino.lng) },
+                    )
+                        .then(prepararRuta)
+                        .then(ruta => callback.call(context || this, null, [ruta]))
+                        .catch(error => callback.call(context || this, {
+                            status: -1,
+                            message: error?.message || 'No fue posible calcular la ruta.',
+                        }));
+                },
+            };
+        };
+
+        routerProxy.__cobijoProxy = true;
+        window.L.Routing.osrmv1 = routerProxy;
+    }
+
+    instalarRouterLegacySeguro();
+
     // La plantilla histórica define calcularRuta antes de cargar este archivo.
     // Reemplazamos esa referencia global por el motor de producción para que
     // el botón "Cómo llegar" utilice exclusivamente el proxy Django.
