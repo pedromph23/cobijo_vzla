@@ -6,6 +6,7 @@ de demanda, sitios candidatos, refugios y zonas afectadas.
 
 Todas las geometrías usan SRID 4326 (WGS84 / GPS estándar).
 """
+from django.conf import settings
 from django.contrib.gis.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
@@ -86,9 +87,6 @@ class UbicacionParroquiaMixin:
         ubicacion = getattr(self, 'ubicacion', None)
         if not ubicacion or not hasattr(self, 'parroquia'):
             return None
-
-        # `covers` incluye puntos que caen exactamente sobre el límite.
-        # El orden por PK hace determinista cualquier caso excepcional de solapamiento.
         return (
             Parroquia.objects
             .filter(geom__covers=ubicacion)
@@ -242,7 +240,7 @@ class RefugioExistente(UbicacionParroquiaMixin, models.Model):
 
 
 # ============================================================
-# ZONAS AFECTADAS
+# ZONA AFECTADA
 # ============================================================
 
 class ZonaAfectada(models.Model):
@@ -270,3 +268,135 @@ class ZonaAfectada(models.Model):
     def esta_activa(self) -> bool:
         ahora = timezone.now()
         return self.fecha_inicio <= ahora and (self.fecha_fin is None or self.fecha_fin >= ahora)
+
+    @property
+    def total_afectados(self) -> int:
+        return (self.heridos or 0) + (self.fallecidos or 0) + (self.damnificados or 0)
+
+    @property
+    def lat(self):
+        if not self.geom:
+            return None
+        return self.geom.centroid.y
+
+    @property
+    def lng(self):
+        if not self.geom:
+            return None
+        return self.geom.centroid.x
+
+
+# ============================================================
+# PARÁMETROS DE MODELO
+# ============================================================
+
+class ParametrosModelo(models.Model):
+    TIPO_MODELO_CHOICES = [
+        ('pmediana', 'P-Mediana'),
+        ('pcentro', 'P-Centro'),
+        ('cobertura', 'Cobertura Máxima'),
+        ('capacidades', 'Localización con Capacidades'),
+    ]
+    nombre_escenario = models.CharField(max_length=200)
+    tipo_modelo = models.CharField(max_length=30, choices=TIPO_MODELO_CHOICES)
+    p = models.IntegerField(default=3, help_text="Número de centros a abrir")
+    presupuesto = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    radio_cobertura = models.FloatField(default=5000, help_text="Radio de cobertura en metros")
+    ponderador_vulnerabilidad = models.FloatField(default=1.0)
+    ponderador_heridos = models.FloatField(default=1.0)
+    ponderador_fallecidos = models.FloatField(default=1.0)
+    ponderador_damnificados = models.FloatField(default=1.0)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    filtro_estado = models.ForeignKey(Estado, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Parámetros de modelo"
+        verbose_name_plural = "Parámetros de modelo"
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return self.nombre_escenario
+
+    @property
+    def radio_cobertura_km(self) -> float:
+        return self.radio_cobertura / 1000.0
+
+
+class ResultadoOptimizacion(models.Model):
+    fecha_ejecucion = models.DateTimeField(auto_now_add=True)
+    parametros = models.ForeignKey(ParametrosModelo, on_delete=models.CASCADE, related_name='resultados')
+    datos_json = models.JSONField()
+
+    class Meta:
+        verbose_name = "Resultado de optimización"
+        verbose_name_plural = "Resultados de optimización"
+        ordering = ['-fecha_ejecucion']
+
+    def __str__(self):
+        return f"Resultado #{self.pk} — {self.parametros}"
+
+
+# ============================================================
+# AUDITORÍA
+# ============================================================
+
+class RegistroAuditoria(models.Model):
+    ACCION_CHOICES = (
+        ('exitoso', 'Exitoso'),
+        ('error', 'Error'),
+        ('rechazado', 'Rechazado'),
+    )
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+    accion = models.CharField(max_length=80, db_index=True)
+    metodo = models.CharField(max_length=10)
+    ruta = models.CharField(max_length=500)
+    modelo = models.CharField(max_length=150, blank=True)
+    objeto_id = models.CharField(max_length=100, blank=True)
+    resultado = models.CharField(max_length=20, choices=ACCION_CHOICES, default='exitoso', db_index=True)
+    detalle = models.TextField(blank=True)
+    datos_anteriores = models.JSONField(null=True, blank=True)
+    datos_nuevos = models.JSONField(null=True, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='registros_auditoria')
+
+    class Meta:
+        verbose_name = "Registro de auditoría"
+        verbose_name_plural = "Bitácora del sistema"
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['usuario', '-fecha'], name='core_regis_usuario_8d5c8a_idx'),
+            models.Index(fields=['accion', '-fecha'], name='core_regis_accion_6bcbf2_idx'),
+            models.Index(fields=['resultado', '-fecha'], name='core_regis_resultado_8f7e0d_idx'),
+        ]
+
+    def __str__(self):
+        return f"{self.fecha:%Y-%m-%d %H:%M:%S} — {self.accion}"
+
+
+class RegistroVersion(models.Model):
+    OPERACION_CHOICES = (
+        ('creado', 'Creado'),
+        ('actualizado', 'Actualizado'),
+        ('eliminado', 'Eliminado'),
+    )
+    fecha_version = models.DateTimeField(auto_now_add=True, db_index=True)
+    modelo = models.CharField(max_length=150, db_index=True)
+    objeto_id = models.CharField(max_length=100, db_index=True)
+    operacion = models.CharField(max_length=20, choices=OPERACION_CHOICES)
+    datos = models.JSONField()
+    ruta = models.CharField(max_length=500, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='versiones_registradas')
+
+    class Meta:
+        verbose_name = "Versión histórica"
+        verbose_name_plural = "Versiones históricas"
+        ordering = ['-fecha_version']
+        indexes = [
+            models.Index(fields=['modelo', 'objeto_id', '-fecha_version'], name='core_regist_modelo_1a3b3d_idx'),
+            models.Index(fields=['modelo', '-fecha_version'], name='core_regist_modelo_0c5a6a_idx'),
+        ]
+
+    def __str__(self):
+        return f"{self.modelo} #{self.objeto_id} — {self.operacion}"
