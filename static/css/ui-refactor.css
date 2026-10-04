@@ -36,9 +36,6 @@ body {
   color: var(--ui-text) !important;
 }
 
-/* ============================================================
-   HEADER · CLARO POR DEFECTO
-   ============================================================ */
 .app-header {
   background: #e9edf1 !important;
   color: #17202a !important;
@@ -54,9 +51,6 @@ body {
 
 .hamburger-btn { color: #334155 !important; }
 
-/* ============================================================
-   BRANDING · LOGO CENTRAL
-   ============================================================ */
 .app-logo-optimized {
   position: absolute;
   left: 50%;
@@ -108,9 +102,6 @@ body {
   line-height: 1;
 }
 
-/* ============================================================
-   NAVEGACIÓN
-   ============================================================ */
 .main-nav {
   margin-left: auto;
   margin-right: 0;
@@ -149,9 +140,6 @@ body {
   font-weight: 500;
 }
 
-/* ============================================================
-   DARK MODE · GRAFITO / SALVIA / CIRUELA
-   ============================================================ */
 [data-theme="dark"] .app-header {
   background: var(--comfort-header) !important;
   color: var(--comfort-text) !important;
@@ -262,16 +250,9 @@ body {
 .map-action-btn:hover,
 .btn-toolbar:hover { background: var(--ui-surface-2) !important; }
 
-/* ============================================================
-   COMPACTACIÓN RESPONSIVE
-   ============================================================ */
 @media (max-width: 900px) {
   .header-container { min-height: 64px; }
-  .app-logo-optimized .logo-mark {
-    width: 54px;
-    height: 54px;
-    flex-basis: 54px;
-  }
+  .app-logo-optimized .logo-mark { width: 54px; height: 54px; flex-basis: 54px; }
   .app-logo-optimized .logo-img { width: 50px; height: 50px; }
   .app-logo-optimized .logo-text { font-size: 1.06rem !important; }
 }
@@ -310,20 +291,8 @@ body {
   }
 
   .app-logo-optimized a { gap: .35rem !important; }
-
-  .app-logo-optimized .logo-mark {
-    width: 44px;
-    height: 44px;
-    flex-basis: 44px;
-    border-radius: 9px;
-    box-shadow: 0 3px 10px rgba(15,23,42,.12);
-  }
-
-  .app-logo-optimized .logo-img {
-    width: 41px;
-    height: 41px;
-  }
-
+  .app-logo-optimized .logo-mark { width: 44px; height: 44px; flex-basis: 44px; border-radius: 9px; box-shadow: 0 3px 10px rgba(15,23,42,.12); }
+  .app-logo-optimized .logo-img { width: 41px; height: 41px; }
   .app-logo-optimized .logo-text { font-size: .9rem !important; }
   .theme-label { display: none !important; }
 
@@ -339,20 +308,11 @@ body {
     box-shadow: 16px 0 38px rgba(15,23,42,.20) !important;
   }
 
-  .sidebar-header {
-    padding: .65rem .7rem !important;
-    min-height: 48px !important;
-  }
-
+  .sidebar-header { padding: .65rem .7rem !important; min-height: 48px !important; }
   .sidebar-title { gap: .45rem !important; }
   .sidebar-title h2 { font-size: .88rem !important; }
 
-  .btn-close-sidebar {
-    width: 34px !important;
-    height: 34px !important;
-    flex-basis: 34px !important;
-  }
-
+  .btn-close-sidebar { width: 34px !important; height: 34px !important; flex-basis: 34px !important; }
   .sidebar-content { padding: .7rem !important; }
   .sidebar-section { margin-bottom: .85rem !important; }
   .sidebar-section h3 { margin-bottom: .5rem !important; font-size: .66rem !important; }
@@ -363,12 +323,7 @@ body {
     padding-right: 2rem !important;
   }
 
-  .layer-toggle {
-    min-height: 38px !important;
-    padding: .35rem .4rem !important;
-    gap: .4rem !important;
-  }
-
+  .layer-toggle { min-height: 38px !important; padding: .35rem .4rem !important; gap: .4rem !important; }
   .layer-toggle input { width: 16px; height: 16px; }
   .layer-icon { width: 27px; height: 27px; border-radius: 8px; font-size: 11px; }
   .layer-text { font-size: .82rem !important; }
@@ -380,6 +335,61 @@ body {
     font-size: .82rem !important;
     border-radius: 9px !important;
   }
+
+  /* El contenido principal conserva su flujo natural. El mapa no puede
+     crear un segundo scroll interno para toda la página. */
+  main {
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .map-layout {
+    flex: 0 0 auto !important;
+    overflow: hidden !important;
+  }
+
+  .app-footer {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    padding: .9rem .7rem .65rem !important;
+    z-index: 1 !important;
+  }
+
+  .footer-container {
+    width: min(100%, 1200px) !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: .75rem !important;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1 !important;
+    text-align: center;
+    align-items: center;
+  }
+
+  .footer-title { font-size: .88rem !important; }
+  .footer-description { font-size: .7rem !important; line-height: 1.35 !important; }
+  .footer-social,
+  .footer-contact { gap: .3rem !important; }
+  .footer-social-label { font-size: .6rem !important; }
+  .footer-social-list,
+  .footer-contact-list { gap: .3rem !important; }
+  .footer-social-item,
+  .footer-contact-list a {
+    min-height: 31px !important;
+    padding: .32rem .48rem !important;
+    border-radius: 8px !important;
+    font-size: .68rem !important;
+  }
+
+  .footer-bottom {
+    margin-top: .7rem !important;
+    padding-top: .55rem !important;
+    font-size: .61rem !important;
+  }
 }
 
 @media (max-width: 520px) {
@@ -388,6 +398,12 @@ body {
   .app-logo-optimized .logo-mark { width: 42px; height: 42px; flex-basis: 42px; }
   .app-logo-optimized .logo-img { width: 39px; height: 39px; }
   .main-nav { margin-right: .1rem !important; }
+
+  .footer-container { grid-template-columns: 1fr !important; }
+  .footer-social,
+  .footer-contact { align-items: center; text-align: center; }
+  .footer-social-list,
+  .footer-contact-list { justify-content: center; }
 }
 
 @media (max-width: 360px) {
@@ -398,6 +414,7 @@ body {
   .theme-toggle { width: 32px !important; min-height: 32px !important; }
   .app-logo-optimized .logo-mark { width: 40px; height: 40px; flex-basis: 40px; }
   .app-logo-optimized .logo-img { width: 37px; height: 37px; }
+  .app-footer { padding-inline: .55rem !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
