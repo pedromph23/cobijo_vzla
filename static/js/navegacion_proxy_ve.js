@@ -2,15 +2,13 @@
  * Motor de rutas de producción para CobijoVzla.
  *
  * El cliente consulta /api/publico/ruta/ (mismo origen) y recibe una ruta
- * compatible con Leaflet Routing Machine. Así el navegador no depende de
- * CORS ni de una conexión directa a router.project-osrm.org.
+ * compatible con Leaflet Routing Machine. El navegador no consulta ningún
+ * motor externo de routing.
  */
 (() => {
     'use strict';
 
-    // El backend puede probar dos motores (hasta 7 s cada uno). El cliente
-    // debe dar tiempo suficiente para que el fallback termine antes de
-    // declarar la solicitud como agotada.
+    // Django puede probar dos motores con hasta 7 s por intento.
     const TIMEOUT_MS = 16000;
     let calculando = false;
 
@@ -82,7 +80,9 @@
             }
             return datos.ruta;
         } catch (error) {
-            if (error?.name === 'AbortError') throw new Error('El cálculo de la ruta tardó demasiado. Inténtalo nuevamente.');
+            if (error?.name === 'AbortError') {
+                throw new Error('El cálculo de la ruta tardó demasiado. Inténtalo nuevamente.');
+            }
             throw error;
         } finally {
             window.clearTimeout(timer);
@@ -113,6 +113,8 @@
             rutaControl = null;
         }
 
+        // Leaflet Routing Machine sigue gestionando la UI, los marcadores y
+        // los eventos, pero este router no realiza ninguna petición externa.
         const routerLocal = {
             route(waypoints, callback, context) {
                 window.setTimeout(() => callback.call(context || this, null, [ruta]), 0);
@@ -155,13 +157,11 @@
 
         rutaControl = control;
         control.on('routesfound', event => {
-            const encontrada = event.routes?.[0];
-            if (!encontrada) {
-                calculando = false;
+            calculando = false;
+            if (!event.routes?.[0]) {
                 mostrarError('El servidor no devolvió una ruta válida.');
                 return;
             }
-            calculando = false;
             if (typeof procesarRutaCalculada === 'function') {
                 procesarRutaCalculada(event, nombre, destino.lat, destino.lng);
             }
@@ -180,16 +180,23 @@
             return;
         }
 
+        const destino = { lat: Number(destLat), lng: Number(destLng) };
+        if (!Number.isFinite(destino.lat) || !Number.isFinite(destino.lng)) {
+            mostrarError('El destino no tiene coordenadas válidas.');
+            return;
+        }
+
         calculando = true;
         mostrarEstado('Calculando ruta', 'Obteniendo tu ubicación…');
         try {
             const posicion = await obtenerPosicion();
             const origen = { lat: posicion.coords.latitude, lng: posicion.coords.longitude };
-            const destino = { lat: Number(destLat), lng: Number(destLng) };
             mostrarEstado('Calculando ruta', 'Buscando la mejor ruta…');
             const datos = await solicitarRuta(origen, destino);
             const ruta = prepararRuta(datos);
-            if (ruta.coordinates.length < 2) throw new Error('La ruta recibida no tiene suficiente información.');
+            if (ruta.coordinates.length < 2) {
+                throw new Error('La ruta recibida no tiene suficiente información.');
+            }
             crearControlRuta(ruta, origen, destino, destNombre || 'Refugio');
         } catch (error) {
             calculando = false;
@@ -198,50 +205,8 @@
         }
     }
 
-    function instalar() {
-        document.addEventListener('click', event => {
-            const boton = event.target.closest?.('.btn-como-llegar');
-            if (!boton) return;
-            const card = boton.closest('#info-card');
-            if (!card) return;
-            const titulo = document.getElementById('info-card-title')?.textContent || 'Refugio';
-            const body = document.getElementById('info-card-body');
-            const data = body?.dataset?.rutaLat ? {
-                lat: Number(body.dataset.rutaLat),
-                lng: Number(body.dataset.rutaLng),
-                nombre: body.dataset.rutaNombre || titulo,
-            } : null;
-            if (!data || !Number.isFinite(data.lat) || !Number.isFinite(data.lng)) return;
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            calcularRutaProduccion(data.lat, data.lng, data.nombre);
-        }, true);
-    }
-
-    function parchearMostrarInfoCard() {
-        const interval = window.setInterval(() => {
-            if (typeof window.mostrarInfoCard !== 'function') return;
-            window.clearInterval(interval);
-            const original = window.mostrarInfoCard;
-            window.mostrarInfoCard = function(titulo, contenido, opcionesRuta = null) {
-                original.call(this, titulo, contenido, opcionesRuta);
-                const body = document.getElementById('info-card-body');
-                if (body && opcionesRuta) {
-                    body.dataset.rutaLat = String(opcionesRuta.lat);
-                    body.dataset.rutaLng = String(opcionesRuta.lng);
-                    body.dataset.rutaNombre = String(opcionesRuta.nombre || 'Refugio');
-                }
-            };
-        }, 50);
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            instalar();
-            parchearMostrarInfoCard();
-        }, { once: true });
-    } else {
-        instalar();
-        parchearMostrarInfoCard();
-    }
+    // La plantilla histórica define calcularRuta antes de cargar este archivo.
+    // Reemplazamos esa referencia global por el motor de producción para que
+    // el botón "Cómo llegar" utilice exclusivamente el proxy Django.
+    window.calcularRuta = calcularRutaProduccion;
 })();
