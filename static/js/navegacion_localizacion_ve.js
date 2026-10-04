@@ -43,7 +43,6 @@
         let valor = String(texto ?? '').replace(/\s+/g, ' ').trim();
         if (!valor) return valor;
 
-        // Conserva el nombre de la vía y cambia únicamente la orden.
         for (const [regex, reemplazo] of REGLAS) {
             if (regex.test(valor)) {
                 valor = valor.replace(regex, (...args) => {
@@ -58,17 +57,15 @@
             }
         }
 
-        valor = valor
-            .replace(/\bonto\b/gi, 'hacia')
-            .replace(/\bon\b/gi, 'por')
-            .replace(/\btowards\b/gi, 'hacia')
+        return valor
             .replace(/\bto stay on\b/gi, 'para continuar por')
+            .replace(/\bonto\b/gi, 'hacia')
+            .replace(/\btowards\b/gi, 'hacia')
+            .replace(/\bon\b/gi, 'por')
             .replace(/\bgo straight\b/gi, 'continúe recto')
             .replace(/\bthe\b/gi, 'la')
             .replace(/\s{2,}/g, ' ')
             .trim();
-
-        return valor;
     }
 
     function instalarLocalizacion() {
@@ -111,13 +108,20 @@
         if (window.__cobijoLocalizacionVEInstalada) return;
         window.__cobijoLocalizacionVEInstalada = true;
 
+        const traducirElemento = (elemento) => {
+            if (!elemento) return;
+            const actual = elemento.textContent || '';
+            const traducido = traducirTexto(actual);
+            if (traducido && traducido !== actual) elemento.textContent = traducido;
+        };
+
         const traducirNodo = (nodo) => {
             if (!nodo || nodo.nodeType !== Node.ELEMENT_NODE) return;
             if (nodo.matches?.('.nav-ruta-paso-main-ve strong, #nav-hud-text')) {
-                nodo.textContent = traducirTexto(nodo.textContent);
+                traducirElemento(nodo);
             }
             nodo.querySelectorAll?.('.nav-ruta-paso-main-ve strong, #nav-hud-text')
-                .forEach(el => { el.textContent = traducirTexto(el.textContent); });
+                .forEach(traducirElemento);
         };
 
         const observar = () => {
@@ -136,8 +140,6 @@
         if (document.body) observar();
         else document.addEventListener('DOMContentLoaded', observar, { once: true });
 
-        // La capa de navegación usa speechSynthesis. Traducimos únicamente
-        // frases de maniobra; los nombres de calles permanecen intactos.
         if (window.speechSynthesis?.speak) {
             const hablarOriginal = window.speechSynthesis.speak.bind(window.speechSynthesis);
             window.speechSynthesis.speak = function(utterance) {
