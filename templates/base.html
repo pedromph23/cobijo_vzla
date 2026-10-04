@@ -124,7 +124,8 @@
     <script src="{% static 'js/main.js' %}?v=11"></script>
     {% block extra_js %}{% endblock %}
     {% if request.resolver_match.url_name == 'mapa_publico' %}
-    <script src="{% static 'js/navegacion_venezuela.js' %}?v=1"></script>
+    <script src="{% static 'js/navegacion_localizacion_ve.js' %}?v=1"></script>
+    <script src="{% static 'js/navegacion_venezuela.js' %}?v=2"></script>
     {% endif %}
 </body>
 </html>
