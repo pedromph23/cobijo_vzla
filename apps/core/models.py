@@ -80,21 +80,25 @@ class Parroquia(models.Model):
 
 
 class UbicacionParroquiaMixin:
-    """Asigna una parroquia a partir de la geometría del punto."""
+    """Resuelve la parroquia una sola vez al guardar una ubicación."""
 
     def asignar_parroquia(self):
-        if not getattr(self, 'ubicacion', None):
+        ubicacion = getattr(self, 'ubicacion', None)
+        if not ubicacion or not hasattr(self, 'parroquia'):
             return None
-        from apps.core.models import Parroquia
+
+        # `covers` incluye puntos que caen exactamente sobre el límite.
+        # El orden por PK hace determinista cualquier caso excepcional de solapamiento.
         return (
             Parroquia.objects
-            .filter(geom__intersects=self.ubicacion)
+            .filter(geom__covers=ubicacion)
             .select_related('estado')
+            .order_by('pk')
             .first()
         )
 
     def save(self, *args, **kwargs):
-        if hasattr(self, 'parroquia') and self.ubicacion:
+        if hasattr(self, 'parroquia') and getattr(self, 'ubicacion', None):
             self.parroquia = self.asignar_parroquia()
         super().save(*args, **kwargs)
 
@@ -126,11 +130,11 @@ class PuntoDemanda(UbicacionParroquiaMixin, models.Model):
         return self.nombre
 
     @property
-    def lat(self):
+    def lat(self) -> float | None:
         return self.ubicacion.y if self.ubicacion else None
 
     @property
-    def lng(self):
+    def lng(self) -> float | None:
         return self.ubicacion.x if self.ubicacion else None
 
     @property
@@ -173,11 +177,11 @@ class SitioCandidato(UbicacionParroquiaMixin, models.Model):
         return self.nombre
 
     @property
-    def lat(self):
+    def lat(self) -> float | None:
         return self.ubicacion.y if self.ubicacion else None
 
     @property
-    def lng(self):
+    def lng(self) -> float | None:
         return self.ubicacion.x if self.ubicacion else None
 
 
@@ -212,11 +216,11 @@ class RefugioExistente(UbicacionParroquiaMixin, models.Model):
         return self.nombre
 
     @property
-    def lat(self):
+    def lat(self) -> float | None:
         return self.ubicacion.y if self.ubicacion else None
 
     @property
-    def lng(self):
+    def lng(self) -> float | None:
         return self.ubicacion.x if self.ubicacion else None
 
     @property
@@ -238,65 +242,31 @@ class RefugioExistente(UbicacionParroquiaMixin, models.Model):
 
 
 # ============================================================
-# ZONA AFECTADA
+# ZONAS AFECTADAS
 # ============================================================
 
 class ZonaAfectada(models.Model):
+    """Zona geográfica afectada por un evento."""
     evento = models.ForeignKey('emergencias.Evento', on_delete=models.CASCADE, related_name='zonas_afectadas')
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
-    geom = models.GeometryField(srid=4326, help_text="Punto, polígono o multipolígono que delimita la zona")
-    nivel_alerta = models.CharField(max_length=20, choices=[('bajo', 'Bajo'), ('medio', 'Medio'), ('alto', 'Alto')], default='medio')
-    fecha_inicio = models.DateTimeField()
+    geom = models.PolygonField(srid=4326)
+    nivel_alerta = models.CharField(max_length=20, choices=[('bajo', 'Bajo'), ('medio', 'Medio'), ('alto', 'Alto'), ('critico', 'Crítico')], default='medio')
+    fecha_inicio = models.DateTimeField(default=timezone.now)
     fecha_fin = models.DateTimeField(null=True, blank=True)
-    heridos = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-    fallecidos = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-    damnificados = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    heridos = models.PositiveIntegerField(default=0)
+    fallecidos = models.PositiveIntegerField(default=0)
+    damnificados = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = "Zona afectada"
         verbose_name_plural = "Zonas afectadas"
         ordering = ['-fecha_inicio']
-        indexes = [models.Index(fields=['nivel_alerta']), models.Index(fields=['fecha_inicio'])]
-        constraints = [
-            models.CheckConstraint(condition=models.Q(heridos__gte=0), name='zona_heridos_gte_0'),
-            models.CheckConstraint(condition=models.Q(fallecidos__gte=0), name='zona_fallecidos_gte_0'),
-            models.CheckConstraint(condition=models.Q(damnificados__gte=0), name='zona_damnificados_gte_0'),
-        ]
 
     def __str__(self):
         return self.nombre
 
     @property
     def esta_activa(self) -> bool:
-        return self.fecha_fin is None
-
-    @property
-    def total_afectados(self) -> int:
-        return (self.heridos or 0) + (self.fallecidos or 0) + (self.damnificados or 0)
-
-    @property
-    def lat(self):
-        if not self.geom:
-            return None
-        return self.geom.centroid.y
-
-    @property
-    def lng(self):
-        if not self.geom:
-            return None
-        return self.geom.centroid.x
-
-
-# ============================================================
-# PARÁMETROS DE MODELO
-# ============================================================
-
-class ParametrosModelo(models.Model):
-    TIPO_MODELO_CHOICES = [
-        ('pmediana', 'P-Mediana'),
-        ('pcentro', 'P-Centro'),
-        ('cobertura', 'Cobertura Máxima'),
-        ('capacidades', 'Localización con Capacidades'),
-    ]
-    nombre_escenario = models.CharField(max_length=200)
+        ahora = timezone.now()
+        return self.fecha_inicio <= ahora and (self.fecha_fin is None or self.fecha_fin >= ahora)
