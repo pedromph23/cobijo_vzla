@@ -1,9 +1,8 @@
 /**
  * Localización propia de Leaflet Routing Machine para Cobijo VZLA.
  *
- * LRM usa históricamente la clave `sp` para español. La aplicación, sin
- * embargo, solicita `es`; por eso registramos `es` explícitamente y dejamos
- * la navegación independiente del idioma del navegador.
+ * LRM utiliza `sp` como clave histórica para español. Se registra además
+ * `es` como alias para que la aplicación pueda pedir explícitamente español.
  */
 (() => {
     'use strict';
@@ -47,16 +46,14 @@
         };
 
         window.L.Routing.Localization = window.L.Routing.Localization || {};
+        window.L.Routing.Localization.sp = localizacion;
         window.L.Routing.Localization.es = localizacion;
-
-        // Compatibilidad con instalaciones de LRM que solo reconocen `sp`.
-        if (!window.L.Routing.Localization.sp) {
-            window.L.Routing.Localization.sp = localizacion;
-        }
-
         return true;
     }
 
+    // base.html carga este archivo después de Leaflet Routing Machine y antes
+    // de la capa de navegación de Cobijo VZLA. El fallback permite reutilizar
+    // el archivo si se mueve a otra plantilla en el futuro.
     if (!instalarLocalizacion()) {
         document.addEventListener('DOMContentLoaded', instalarLocalizacion, { once: true });
     }
