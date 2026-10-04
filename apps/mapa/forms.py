@@ -26,6 +26,7 @@ SERVICIOS_REFUGIO = (
 
 
 def _parsear_punto(valor) -> Point:
+    """Convierte el valor simple del mapa (lng,lat) en Point WGS84."""
     if isinstance(valor, Point):
         return valor
     if not isinstance(valor, str):
@@ -42,16 +43,36 @@ def _parsear_punto(valor) -> Point:
     return Point(lng, lat, srid=4326)
 
 
-UBICACION_WIDGET = forms.HiddenInput()
+class UbicacionInputField(forms.CharField):
+    """Campo de transporte para coordenadas seleccionadas en el mapa.
+
+    El navegador envía ``lng,lat``. No usamos el GeometryField de Django para
+    el valor oculto porque este campo recibe deliberadamente una representación
+    de interfaz y la conversión a Point se hace una sola vez en ``clean_ubicacion``.
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('required', True)
+        kwargs.setdefault('widget', forms.HiddenInput())
+        kwargs.setdefault('label', 'Ubicación')
+        super().__init__(*args, **kwargs)
+
+    def prepare_value(self, value):
+        if isinstance(value, Point):
+            return f'{value.x:.6f},{value.y:.6f}'
+        if value is not None and hasattr(value, 'x') and hasattr(value, 'y'):
+            return f'{value.x:.6f},{value.y:.6f}'
+        return value
 
 
 class PuntoDemandaForm(forms.ModelForm):
+    ubicacion = UbicacionInputField()
+
     class Meta:
         model = PuntoDemanda
         fields = ['nombre', 'ubicacion', 'poblacion', 'vulnerabilidad', 'descripcion']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
-            'ubicacion': UBICACION_WIDGET,
             'poblacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
             'vulnerabilidad': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': 0, 'max': 1, 'inputmode': 'decimal'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'maxlength': 2000}),
@@ -62,12 +83,13 @@ class PuntoDemandaForm(forms.ModelForm):
 
 
 class SitioCandidatoForm(forms.ModelForm):
+    ubicacion = UbicacionInputField()
+
     class Meta:
         model = SitioCandidato
         fields = ['nombre', 'ubicacion', 'capacidad_maxima', 'costo_apertura', 'costo_operacion', 'tipo_terreno', 'disponible']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
-            'ubicacion': UBICACION_WIDGET,
             'capacidad_maxima': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'step': 1, 'inputmode': 'numeric'}),
             'costo_apertura': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal'}),
             'costo_operacion': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal'}),
@@ -80,6 +102,7 @@ class SitioCandidatoForm(forms.ModelForm):
 
 
 class RefugioExistenteForm(forms.ModelForm):
+    ubicacion = UbicacionInputField()
     servicios = forms.MultipleChoiceField(
         choices=SERVICIOS_REFUGIO,
         required=False,
@@ -105,7 +128,6 @@ class RefugioExistenteForm(forms.ModelForm):
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
             'direccion': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 300}),
-            'ubicacion': UBICACION_WIDGET,
             'capacidad_total': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
             'capacidad_disponible': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
             'operativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
