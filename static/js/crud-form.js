@@ -52,9 +52,11 @@
 
         const geocodificar = async (sourceInput, button) => {
             if (!sourceInput || geocoding) return;
+
             const texto = sourceInput.value.trim();
             if (!texto) {
                 setStatus('Escribe el nombre o dirección para ubicarlo en el mapa.');
+                sourceInput.focus();
                 return;
             }
 
@@ -65,7 +67,9 @@
             }
 
             geocoding = true;
-            geocodeButtons.forEach(item => { item.disabled = true; });
+            geocodeButtons.forEach(item => {
+                item.setAttribute('aria-busy', 'true');
+            });
             setStatus(`Buscando «${texto}» en Venezuela…`);
 
             try {
@@ -103,10 +107,7 @@
                 setStatus('No se pudo consultar el servicio de ubicación. Puedes seleccionar el punto manualmente.');
             } finally {
                 geocoding = false;
-                geocodeButtons.forEach(item => {
-                    const source = document.getElementById(item.dataset.locationInput);
-                    item.disabled = !source || !source.value.trim();
-                });
+                geocodeButtons.forEach(item => item.removeAttribute('aria-busy'));
             }
         };
 
@@ -114,22 +115,30 @@
             const sourceInput = document.getElementById(button.dataset.locationInput);
             if (!sourceInput) return;
 
-            const syncButton = () => {
-                button.disabled = !sourceInput.value.trim() || geocoding;
-                if (sourceInput.value.trim() !== lastGeocodedAddress && lastGeocodedAddress) {
-                    setStatus('El nombre o dirección cambió. Pulsa «Ubicar» para actualizar el punto.');
-                }
-            };
+            // El botón permanece siempre habilitado. La única validación necesaria
+            // se realiza al pulsarlo, evitando que el estado del formulario o del
+            // navegador lo deje bloqueado antes de que el usuario pueda utilizarlo.
+            button.disabled = false;
+            button.removeAttribute('disabled');
 
-            sourceInput.addEventListener('input', syncButton);
+            sourceInput.addEventListener('input', () => {
+                const texto = sourceInput.value.trim();
+                if (texto && texto !== lastGeocodedAddress) {
+                    setStatus('Pulsa «Ubicar en el mapa» para localizar este lugar.');
+                }
+            });
+
             sourceInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     geocodificar(sourceInput, button);
                 }
             });
-            button.addEventListener('click', () => geocodificar(sourceInput, button));
-            syncButton();
+
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                geocodificar(sourceInput, button);
+            });
         });
 
         map.on('click', (event) => setValue(event.latlng.lat, event.latlng.lng));
