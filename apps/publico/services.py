@@ -24,7 +24,9 @@ CACHE_TTL_REFUGIOS = 300
 CACHE_TTL_ZONAS = 180
 CACHE_TTL_BUSQUEDA = 600
 CACHE_KEY_REFUGIOS = 'publico_refugios'
-CACHE_KEY_ZONAS = 'publico_zonas'
+# Versionar esta clave evita que un [] antiguo permanezca en Redis después de
+# corregir la consulta o crear/actualizar zonas desde el panel administrativo.
+CACHE_KEY_ZONAS = 'publico_zonas_v2'
 
 
 def _serializar_refugio(r: RefugioExistente) -> Dict:
@@ -233,6 +235,13 @@ def invalidar_cache_publico():
     """Invalida tanto las claves base como las claves parametrizadas."""
     if hasattr(cache, 'delete_pattern'):
         cache.delete_pattern('publico_*')
-    for clave in (CACHE_KEY_REFUGIOS, CACHE_KEY_REFUGIOS + '_1000', CACHE_KEY_ZONAS, CACHE_KEY_ZONAS + '_500', 'publico_home_stats'):
+    for clave in (
+        CACHE_KEY_REFUGIOS,
+        CACHE_KEY_REFUGIOS + '_1000',
+        CACHE_KEY_ZONAS,
+        CACHE_KEY_ZONAS + '_500',
+        'publico_zonas_500',
+        'publico_home_stats',
+    ):
         cache.delete(clave)
     logger.info("Caché del portal público invalidada")
