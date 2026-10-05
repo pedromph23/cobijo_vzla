@@ -30,13 +30,3 @@
   --ui-danger: var(--comfort-coral);
   --ui-shadow: var(--comfort-shadow);
 }
-
-/*
- * El estado técnico de carga del mapa administrativo no debe convertirse
- * en una alerta persistente para el usuario. El error continúa registrado
- * por el JavaScript del panel para diagnóstico, pero la interfaz conserva
- * limpia la barra de herramientas y el mapa.
- */
-.mapa-estado[data-estado="error"] {
-  display: none !important;
-}
