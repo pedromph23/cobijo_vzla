@@ -29,11 +29,7 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 def obtener_estadisticas() -> Dict[str, int]:
-    """
-    Estadísticas agregadas del sistema.
-
-    Optimizado: usa `count()` en vez de `len(queryset)` cuando posible.
-    """
+    """Estadísticas agregadas del sistema."""
     try:
         hoy = timezone.now().date()
         return {
@@ -111,35 +107,58 @@ def _serializar_refugios(limite: int) -> List[Dict]:
 
 
 def _serializar_zonas(limite: int) -> List[Dict]:
+    """Serializa las zonas registradas para el mapa administrativo.
+
+    El panel administrativo representa el inventario que existe en el sistema,
+    por lo que no debe ocultar una zona solo porque tenga fecha de finalización.
+    La propiedad ``activa`` permite a la interfaz distinguir su estado sin
+    perder el registro del mapa.
+    """
+    ahora = timezone.now()
     qs = (
         ZonaAfectada.objects
-        .filter(fecha_fin__isnull=True)
         .select_related('evento')
-        [:limite]
+        .only(
+            'id', 'nombre', 'descripcion', 'nivel_alerta',
+            'fecha_inicio', 'fecha_fin',
+            'heridos', 'fallecidos', 'damnificados', 'geom',
+            'evento__nombre', 'evento__tipo',
+        )[:limite]
     )
-    return [
-        {
-            'id': z.id,
-            'nombre': z.nombre,
-            'descripcion': z.descripcion,
-            'nivel_alerta': z.nivel_alerta,
-            'heridos': z.heridos,
-            'fallecidos': z.fallecidos,
-            'damnificados': z.damnificados,
-            'geojson': z.geom.geojson if z.geom else None,
-        }
-        for z in qs
-    ]
+
+    data = []
+    for z in qs:
+        if not z.geom:
+            continue
+        try:
+            data.append({
+                'id': z.id,
+                'nombre': z.nombre,
+                'descripcion': z.descripcion,
+                'nivel_alerta': z.nivel_alerta,
+                'heridos': z.heridos,
+                'fallecidos': z.fallecidos,
+                'damnificados': z.damnificados,
+                'fecha_inicio': z.fecha_inicio.isoformat() if z.fecha_inicio else None,
+                'fecha_fin': z.fecha_fin.isoformat() if z.fecha_fin else None,
+                'activa': bool(
+                    z.fecha_inicio <= ahora
+                    and (z.fecha_fin is None or z.fecha_fin >= ahora)
+                ),
+                'geojson': z.geom.geojson,
+            })
+        except Exception:
+            logger.warning(
+                'No se pudo serializar la geometría de la zona %s',
+                z.id,
+                exc_info=True,
+            )
+
+    return data
 
 
 def obtener_datos_mapa(limite_por_capa: int = 500) -> Dict[str, List[Dict]]:
-    """
-    Datos para el mapa administrativo.
-
-    Args:
-        limite_por_capa: máximo de features por capa (default 500).
-                         Evita cargar datasets completos en memoria.
-    """
+    """Datos para el mapa administrativo."""
     try:
         return {
             'puntos_demanda': _serializar_puntos_demanda(limite_por_capa),
