@@ -8,11 +8,14 @@ import logging
 
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework import status
 
 from apps.optimizacion.heatmap import generar_mapa_calor, Pesos
+from apps.core.models import ZonaAfectada
 from . import services
 from .forms import ReporteCiudadanoForm
 
@@ -71,6 +74,35 @@ def api_zonas_afectadas(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAdminUser])
+def api_diagnostico_zonas_publicas(request):
+    """Diagnóstico interno de por qué una zona llega o no al portal público.
+
+    Está restringido a administradores y no expone geometrías ni datos sensibles.
+    """
+    ahora = timezone.now()
+    total = ZonaAfectada.objects.count()
+    con_geom = ZonaAfectada.objects.filter(geom__isnull=False).count()
+    iniciadas = ZonaAfectada.objects.filter(fecha_inicio__lte=ahora).count()
+    vigentes = ZonaAfectada.objects.filter(
+        fecha_inicio__lte=ahora,
+    ).filter(Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=ahora)).count()
+    publicables = ZonaAfectada.objects.filter(
+        fecha_inicio__lte=ahora,
+        geom__isnull=False,
+    ).filter(Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=ahora)).count()
+
+    return JsonResponse({
+        'ahora': ahora.isoformat(),
+        'total': total,
+        'con_geometria': con_geom,
+        'inicio_ya_ocurrido': iniciadas,
+        'vigentes_por_fecha': vigentes,
+        'publicables_por_api': publicables,
+    })
+
+
+@api_view(['GET'])
 @permission_classes([AllowAny])
 def api_mapa_calor_publico(request):
     """Mapa de calor con pesos personalizables (query params)."""
@@ -94,7 +126,7 @@ def api_buscar_lugar(request):
         query = request.GET.get('q', '')
         return JsonResponse(services.buscar_lugares(query), safe=False)
     except Exception as e:
-        logger.error(f"Error en api_buscar_lugar: {e}", exc_info=True)
+        logger.error(f"Error en búsqueda '{query}': {e}", exc_info=True)
         return JsonResponse(
             {'error': 'Error en búsqueda'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
