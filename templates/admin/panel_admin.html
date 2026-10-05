@@ -316,14 +316,17 @@
             actualizarEstado(total + ' elementos cargados', 'success');
         } catch (error) {
             console.error('[panel_admin] Error cargando mapa:', error);
-            actualizarEstado('No fue posible cargar las capas', 'error');
+            if (mapaEstado) {
+                mapaEstado.textContent = '';
+                mapaEstado.hidden = true;
+            }
         }
     }
 
     function inicializarMapa() {
         const contenedor = document.getElementById('mapa-admin');
         if (!contenedor || typeof L === 'undefined') {
-            actualizarEstado('Mapa no disponible', 'error');
+            if (mapaEstado) mapaEstado.hidden = true;
             return;
         }
         window.mapaAdmin = L.map(contenedor, { center: [10.0, -66.0], zoom: 6 });
