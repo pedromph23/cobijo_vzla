@@ -24,6 +24,19 @@ FORMULARIOS_PERSONALIZADOS = {
     'core_zonaafectada': ZonaAfectadaForm,
 }
 
+CAPAS_CACHEABLES = {'core_refugioexistente', 'core_zonaafectada'}
+
+
+def _invalidar_cache_mapa(modelo_key):
+    """Actualiza inmediatamente el mapa público tras un cambio operativo."""
+    if modelo_key not in CAPAS_CACHEABLES:
+        return
+    try:
+        from apps.publico.services import invalidar_cache_publico
+        invalidar_cache_publico()
+    except Exception:
+        logger.warning('No se pudo invalidar la caché pública para %s', modelo_key, exc_info=True)
+
 
 def _contexto_base(request, modelo_key, config):
     return {
@@ -92,6 +105,7 @@ class CrudCreateView(View):
         form = FormClass(request.POST, request.FILES)
         if form.is_valid():
             form.save()
+            _invalidar_cache_mapa(modelo_key)
             messages.success(request, f"{config['verbose_name']} creado.")
             return redirect('crud_list', modelo_key=modelo_key)
         return render(request, 'mapa/crud/crud_form.html', {
@@ -127,6 +141,7 @@ class CrudUpdateView(View):
         form = FormClass(request.POST, request.FILES, instance=obj)
         if form.is_valid():
             form.save()
+            _invalidar_cache_mapa(modelo_key)
             messages.success(request, f"{config['verbose_name']} actualizado.")
             return redirect('crud_list', modelo_key=modelo_key)
         return render(request, 'mapa/crud/crud_form.html', {
@@ -159,6 +174,7 @@ class CrudDeleteView(View):
         nombre = str(obj)
         try:
             obj.delete()
+            _invalidar_cache_mapa(modelo_key)
             messages.success(request, f"{config['verbose_name']} «{nombre}» eliminado.")
         except Exception as e:
             logger.error(f"Error al borrar: {e}", exc_info=True)
