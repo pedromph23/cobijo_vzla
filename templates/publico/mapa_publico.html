@@ -3,7 +3,6 @@
 
 {% block extra_js %}
     {{ block.super }}
-    <script src="{% static 'js/navegacion_avanzada_ve.js' %}?v=2"></script>
     <script>
     (function () {
         'use strict';
@@ -55,38 +54,32 @@
                             onEachFeature: function (_, layer) {
                                 layer.on('click', function () {
                                     if (typeof mostrarInfoCard !== 'function') return;
-
                                     var contenido = document.createElement('div');
-                                    var filas = [
+                                    [
                                         ['Alerta', String(zona.nivel_alerta || 'medio').toUpperCase()],
                                         ['Damnificados', String(zona.damnificados || 0)],
                                         ['Heridos', String(zona.heridos || 0)],
-                                        ['Fallecidos', String(zona.fallecidos || 0)],
-                                    ];
-
-                                    filas.forEach(function (fila) {
+                                        ['Fallecidos', String(zona.fallecidos || 0)]
+                                    ].forEach(function (fila) {
                                         var p = document.createElement('p');
                                         var strong = document.createElement('strong');
                                         strong.textContent = fila[0] + ': ';
                                         p.append(strong, document.createTextNode(fila[1]));
                                         contenido.appendChild(p);
                                     });
-
                                     if (zona.descripcion) {
                                         var descripcion = document.createElement('p');
                                         descripcion.textContent = zona.descripcion;
                                         contenido.appendChild(descripcion);
                                     }
-
                                     mostrarInfoCard(zona.nombre || 'Zona afectada', contenido, {
                                         lat: zona.lat,
                                         lng: zona.lng,
-                                        nombre: zona.nombre || 'Zona afectada',
+                                        nombre: zona.nombre || 'Zona afectada'
                                     });
                                 });
-                            },
+                            }
                         });
-
                         capa.addTo(capaZonas);
                     });
                 })
