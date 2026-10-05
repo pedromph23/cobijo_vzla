@@ -1,0 +1,193 @@
+/* CobijoVzla · Ajustes finales para pantallas internas en dark mode.
+   Capa visual únicamente; no modifica contratos de JS ni lógica. */
+
+[data-theme="dark"] .panel-icon.admin,
+[data-theme="dark"] .panel-icon.gestor,
+[data-theme="dark"] .user-badge.admin,
+[data-theme="dark"] .user-badge.gestor,
+[data-theme="dark"] .tab.active,
+[data-theme="dark"] .crud-menu-item.active,
+[data-theme="dark"] .crud-search button,
+[data-theme="dark"] .btn-primary {
+    color: #fff !important;
+}
+
+[data-theme="dark"] .section-subtitle,
+[data-theme="dark"] .crud-header p,
+[data-theme="dark"] .crud-sidebar h3,
+[data-theme="dark"] .quick-actions h4,
+[data-theme="dark"] .crud-empty,
+[data-theme="dark"] .crud-pagination,
+[data-theme="dark"] .crud-header .help-text {
+    color: var(--a11y-text-muted) !important;
+}
+
+[data-theme="dark"] .mapa-admin,
+[data-theme="dark"] .mapa-resultados-container {
+    background: var(--a11y-surface-soft) !important;
+}
+
+[data-theme="dark"] .crud-search,
+[data-theme="dark"] .crud-field,
+[data-theme="dark"] .crud-service-option,
+[data-theme="dark"] .crud-service-extra,
+[data-theme="dark"] .mensaje-resultado,
+[data-theme="dark"] .mensaje-reporte,
+[data-theme="dark"] .centro-item,
+[data-theme="dark"] .checkbox-item,
+[data-theme="dark"] .mapa-toolbar,
+[data-theme="dark"] .btn-clear {
+    background-color: var(--a11y-surface-raised) !important;
+    color: var(--a11y-text) !important;
+    border-color: var(--a11y-border) !important;
+}
+
+[data-theme="dark"] .crud-search {
+    background: var(--a11y-surface-raised) !important;
+}
+
+[data-theme="dark"] .crud-field input,
+[data-theme="dark"] .crud-field select,
+[data-theme="dark"] .crud-field textarea,
+[data-theme="dark"] .search-wrapper input {
+    background: var(--a11y-surface-soft) !important;
+    color: var(--a11y-text) !important;
+    border-color: var(--a11y-border-strong) !important;
+}
+
+[data-theme="dark"] .crud-field.has-error {
+    background: rgba(240,169,156,.08) !important;
+    border-color: rgba(240,169,156,.38) !important;
+}
+
+[data-theme="dark"] .field-errors,
+[data-theme="dark"] .mensaje-reporte.error,
+[data-theme="dark"] .mapa-estado[data-estado="error"] {
+    color: var(--a11y-danger) !important;
+}
+
+[data-theme="dark"] .mensaje-reporte.success,
+[data-theme="dark"] .mensaje-reporte.loading,
+[data-theme="dark"] .mapa-estado[data-estado="loading"],
+[data-theme="dark"] .mapa-estado[data-estado="success"] {
+    color: var(--a11y-success) !important;
+}
+
+[data-theme="dark"] .tabla-resultados th,
+[data-theme="dark"] .tabla-asignaciones th {
+    color: #fff !important;
+}
+
+[data-theme="dark"] .tabla-resultados td,
+[data-theme="dark"] .tabla-asignaciones td {
+    color: var(--a11y-text-secondary) !important;
+    border-color: var(--a11y-border) !important;
+}
+
+[data-theme="dark"] .badge-mini,
+[data-theme="dark"] .badge {
+    color: #fff !important;
+}
+
+[data-theme="dark"] .badge-edit {
+    background: #d2aa5b !important;
+    color: #241f13 !important;
+}
+
+[data-theme="dark"] .btn-edit {
+    background: #d8b66b !important;
+    color: #241f13 !important;
+}
+
+[data-theme="dark"] .btn-delete {
+    color: #fff !important;
+}
+
+[data-theme="dark"] .crud-location-map {
+    background: var(--a11y-surface-soft) !important;
+    border-color: var(--a11y-border) !important;
+}
+
+[data-theme="dark"] .crud-service-option:hover,
+[data-theme="dark"] .centro-item:hover,
+[data-theme="dark"] .checkbox-item:hover,
+[data-theme="dark"] .crud-menu-item:hover,
+[data-theme="dark"] .accion-item:hover {
+    background: var(--a11y-surface-soft) !important;
+    color: var(--a11y-text) !important;
+}
+
+[data-theme="dark"] .crud-service-content,
+[data-theme="dark"] .crud-service-extra label,
+[data-theme="dark"] .checkbox-item,
+[data-theme="dark"] .accion-item {
+    color: var(--a11y-text-secondary) !important;
+}
+
+[data-theme="dark"] .crud-service-option:has(input:checked) {
+    background: rgba(169,203,183,.12) !important;
+    border-color: var(--a11y-primary) !important;
+}
+
+[data-theme="dark"] .crud-service-option:has(input:checked) .crud-service-content i {
+    background: var(--a11y-primary) !important;
+    color: #17201b !important;
+}
+
+[data-theme="dark"] .login-container,
+[data-theme="dark"] .resultados-container,
+[data-theme="dark"] .reportes-container {
+    color: var(--a11y-text);
+}
+
+[data-theme="dark"] .delete-warning,
+[data-theme="dark"] .reportes-acciones,
+[data-theme="dark"] .reportes-tabla,
+[data-theme="dark"] .optimizacion-form,
+[data-theme="dark"] .optimizacion-resultado {
+    background: var(--a11y-surface) !important;
+    color: var(--a11y-text) !important;
+    border-color: var(--a11y-border) !important;
+}
+
+[data-theme="dark"] .card-label,
+[data-theme="dark"] .crud-location-status,
+[data-theme="dark"] .crud-location-help,
+[data-theme="dark"] .crud-services-help {
+    color: var(--a11y-text-muted) !important;
+}
+
+[data-theme="dark"] .reporte-card,
+[data-theme="dark"] .resultados-header,
+[data-theme="dark"] .selector-section,
+[data-theme="dark"] .mapa-resultados,
+[data-theme="dark"] .centros-lista,
+[data-theme="dark"] .detalle-section {
+    background: var(--a11y-surface) !important;
+    color: var(--a11y-text) !important;
+    border-color: var(--a11y-border) !important;
+}
+
+[data-theme="dark"] .btn-action {
+    background: var(--a11y-surface-raised) !important;
+    color: var(--a11y-text) !important;
+    border-color: var(--a11y-border-strong) !important;
+}
+
+[data-theme="dark"] .btn-action:hover {
+    background: var(--a11y-surface-soft) !important;
+}
+
+[data-theme="dark"] .crud-form-actions {
+    border-color: var(--a11y-border) !important;
+}
+
+[data-theme="dark"] .crud-back-link,
+[data-theme="dark"] .crud-pagination a {
+    color: var(--a11y-primary-strong) !important;
+}
+
+[data-theme="dark"] .crud-back-link:hover,
+[data-theme="dark"] .crud-pagination a:hover {
+    color: #d9eee0 !important;
+}
