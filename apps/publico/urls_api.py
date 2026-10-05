@@ -5,6 +5,7 @@ from .routing_api import api_ruta_publica
 urlpatterns = [
     path('refugios/', views.api_refugios_publicos, name='refugios_publicos'),
     path('zonas-afectadas/', views.api_zonas_afectadas, name='zonas_afectadas_publicas'),
+    path('zonas-afectadas/diagnostico/', views.api_diagnostico_zonas_publicas, name='diagnostico_zonas_publicas'),
     path('mapa-calor/', views.api_mapa_calor_publico, name='mapa_calor_publico'),
     path('buscar-lugar/', views.api_buscar_lugar, name='buscar_lugar'),
     path('ruta/', api_ruta_publica, name='ruta_publica'),
