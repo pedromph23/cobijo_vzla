@@ -1,0 +1,32 @@
+/* CobijoVzla · puente semántico de compatibilidad
+   Une variables históricas de ui-refactor con la paleta Comfort.
+   No altera selectores, HTML ni lógica. */
+:root {
+  --ui-bg: var(--comfort-page);
+  --ui-surface: var(--comfort-surface);
+  --ui-surface-2: var(--comfort-soft);
+  --ui-border: var(--comfort-border);
+  --ui-text: var(--comfort-text);
+  --ui-muted: var(--comfort-muted);
+  --ui-primary: var(--comfort-green);
+  --ui-primary-strong: var(--comfort-green-strong);
+  --ui-success: var(--comfort-green);
+  --ui-danger: var(--comfort-coral);
+  --ui-shadow: var(--comfort-shadow);
+}
+
+/* Los tokens se resuelven según data-theme y mantienen compatibles
+   los componentes antiguos sin duplicar otra paleta de colores. */
+[data-theme="dark"] {
+  --ui-bg: var(--comfort-page);
+  --ui-surface: var(--comfort-surface);
+  --ui-surface-2: var(--comfort-soft);
+  --ui-border: var(--comfort-border);
+  --ui-text: var(--comfort-text);
+  --ui-muted: var(--comfort-muted);
+  --ui-primary: var(--comfort-green);
+  --ui-primary-strong: var(--comfort-green-strong);
+  --ui-success: var(--comfort-green);
+  --ui-danger: var(--comfort-coral);
+  --ui-shadow: var(--comfort-shadow);
+}
