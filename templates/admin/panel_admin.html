@@ -1,201 +1,81 @@
 {% extends 'base.html' %}
 {% load static %}
-
-{% block title %}Panel de Administración - CobijoVzla{% endblock %}
-
+{% block title %}Panel de Administración · CobijoVzla{% endblock %}
 {% block content %}
-<div class="panel-container">
-    <header class="panel-header">
-        <div class="panel-header-left">
-            <div class="panel-icon admin" aria-hidden="true">
-                <i class="fas fa-user-shield"></i>
-            </div>
+<div class="admin-panel" id="admin-panel">
+    <section class="admin-header">
+        <div class="admin-header-content">
             <div>
-                <h2>Panel de Administración</h2>
-                <p>Control total del sistema</p>
+                <h2><i class="fas fa-user-shield"></i> Panel de Administración</h2>
+                <p>Gestión integral del sistema CobijoVzla</p>
+            </div>
+            <div class="admin-user-info"><i class="fas fa-user-circle"></i><span>{{ user.get_full_name|default:user.username }}</span><span class="badge-admin">Administrador</span></div>
+        </div>
+    </section>
+
+    <section class="admin-stats" aria-label="Estadísticas del sistema">
+        <article class="stat-card"><i class="fas fa-map-marker-alt"></i><div><span class="stat-value">{{ estadisticas.puntos_demanda|default:0 }}</span><span class="stat-label">Puntos de demanda</span></div></article>
+        <article class="stat-card"><i class="fas fa-building"></i><div><span class="stat-value">{{ estadisticas.sitios_candidatos|default:0 }}</span><span class="stat-label">Sitios candidatos</span></div></article>
+        <article class="stat-card"><i class="fas fa-home"></i><div><span class="stat-value">{{ estadisticas.refugios|default:0 }}</span><span class="stat-label">Refugios</span></div></article>
+        <article class="stat-card"><i class="fas fa-exclamation-triangle"></i><div><span class="stat-value">{{ estadisticas.zonas_afectadas|default:0 }}</span><span class="stat-label">Zonas afectadas</span></div></article>
+        <article class="stat-card"><i class="fas fa-bell"></i><div><span class="stat-value">{{ estadisticas.eventos_activos|default:0 }}</span><span class="stat-label">Eventos activos</span></div></article>
+        <article class="stat-card"><i class="fas fa-file-alt"></i><div><span class="stat-value">{{ estadisticas.reportes_recientes|default:0 }}</span><span class="stat-label">Reportes hoy</span></div></article>
+    </section>
+
+    <section class="admin-tabs" aria-label="Secciones del panel">
+        <button class="tab active" data-tab="mapa"><i class="fas fa-map"></i> Mapa</button>
+        <button class="tab" data-tab="datos"><i class="fas fa-database"></i> Datos</button>
+        <button class="tab" data-tab="optimizacion"><i class="fas fa-cogs"></i> Optimización</button>
+        <button class="tab" data-tab="reportes"><i class="fas fa-chart-bar"></i> Reportes</button>
+    </section>
+
+    <section class="tab-content active" id="tab-mapa">
+        <div class="mapa-toolbar">
+            <div class="mapa-leyenda">
+                <label><input type="checkbox" id="chk-demandas" checked> <span class="leyenda-dot demanda"></span> Demandas</label>
+                <label><input type="checkbox" id="chk-candidatos" checked> <span class="leyenda-dot candidato"></span> Candidatos</label>
+                <label><input type="checkbox" id="chk-refugios" checked> <span class="leyenda-dot refugio"></span> Refugios</label>
+                <label><input type="checkbox" id="chk-zonas" checked> <span class="leyenda-dot zona"></span> Zonas afectadas</label>
+            </div>
+            <div class="mapa-acciones">
+                <button id="btn-centrar-mapa" class="btn-secondary"><i class="fas fa-crosshairs"></i> Centrar</button>
+                <span id="mapa-estado" class="mapa-estado" aria-live="polite">Preparando mapa...</span>
             </div>
         </div>
+        <div id="mapa-admin" class="mapa-admin" aria-label="Mapa administrativo"></div>
+    </section>
 
-        <div class="panel-header-right">
-            <span class="user-badge admin">
-                <i class="fas fa-crown" aria-hidden="true"></i>
-                {{ user.username }}
-            </span>
-            <button type="button" class="btn-refresh" onclick="location.reload()" aria-label="Actualizar panel" title="Actualizar panel">
-                <i class="fas fa-sync" aria-hidden="true"></i>
-            </button>
+    <section class="tab-content" id="tab-datos">
+        <div class="crud-sidebar">
+            <h3><i class="fas fa-database"></i> Gestión de datos</h3>
+            <p>Administra los registros territoriales y operativos.</p>
+            {% for modelo in menu_modelos %}
+            <a class="crud-menu-item" href="{{ modelo.url }}"><i class="{{ modelo.icono }}"></i><span>{{ modelo.label }}</span></a>
+            {% empty %}<p class="crud-empty">No hay modelos disponibles.</p>{% endfor %}
         </div>
-    </header>
+    </section>
 
-    <nav class="panel-tabs" aria-label="Secciones del panel">
-        <button type="button" class="tab active" data-tab="mapa" aria-controls="tab-mapa" aria-selected="true">
-            <i class="fas fa-map" aria-hidden="true"></i>
-            <span>Mapa</span>
-        </button>
-        <button type="button" class="tab" data-tab="datos" aria-controls="tab-datos" aria-selected="false">
-            <i class="fas fa-database" aria-hidden="true"></i>
-            <span>Datos</span>
-        </button>
-        <button type="button" class="tab" data-tab="reportes" aria-controls="tab-reportes" aria-selected="false">
-            <i class="fas fa-chart-bar" aria-hidden="true"></i>
-            <span>Reportes</span>
-        </button>
-    </nav>
+    <section class="tab-content" id="tab-optimizacion">
+        <div class="quick-actions">
+            <h3><i class="fas fa-cogs"></i> Optimización</h3>
+            <p>Ejecuta y consulta modelos de optimización territorial.</p>
+            {% for parametro in parametros %}<a class="btn-primary" href="{% url 'resultados_view' %}?parametros={{ parametro.id }}"><i class="fas fa-play"></i> {{ parametro.nombre_escenario }}</a>{% empty %}<p class="crud-empty">No hay parámetros configurados.</p>{% endfor %}
+        </div>
+    </section>
 
-    <div class="panel-content">
-        <section id="tab-mapa" class="tab-content active" role="tabpanel">
-            <div class="mapa-admin-wrapper">
-                <div class="mapa-toolbar">
-                    <div class="toolbar-group">
-                        <span class="toolbar-label">Capas:</span>
-
-                        <label class="checkbox-item">
-                            <input type="checkbox" id="chk-demandas" checked>
-                            <span><i class="fas fa-users" aria-hidden="true"></i> Demandas</span>
-                        </label>
-
-                        <label class="checkbox-item">
-                            <input type="checkbox" id="chk-candidatos" checked>
-                            <span><i class="fas fa-building" aria-hidden="true"></i> Candidatos</span>
-                        </label>
-
-                        <label class="checkbox-item">
-                            <input type="checkbox" id="chk-refugios" checked>
-                            <span><i class="fas fa-home" aria-hidden="true"></i> Refugios</span>
-                        </label>
-
-                        <label class="checkbox-item">
-                            <input type="checkbox" id="chk-zonas" checked>
-                            <span><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Zonas</span>
-                        </label>
-                    </div>
-                    <span id="mapa-estado" class="mapa-estado" role="status" aria-live="polite">Cargando datos...</span>
-                </div>
-
-                <div id="mapa-admin" class="mapa-admin" aria-label="Mapa administrativo"></div>
-            </div>
-        </section>
-
-        <section id="tab-datos" class="tab-content" role="tabpanel" hidden>
-            <h3 class="section-title">
-                <i class="fas fa-database" aria-hidden="true"></i>
-                Gestión de Datos
-            </h3>
-            <p class="section-subtitle">Seleccione un modelo para gestionar sus registros</p>
-
-            <div class="crud-menu-grid">
-                {% for m in menu_modelos %}
-                    <a href="{% url 'crud_list' m.key %}" class="crud-card">
-                        <i class="fas {{ m.icon }}" aria-hidden="true"></i>
-                        <h4>{{ m.verbose_name_plural }}</h4>
-                        <p>
-                            {% if 'crear' in m.acciones %}
-                                <span class="badge-mini badge-create">Crear</span>
-                            {% endif %}
-                            {% if 'editar' in m.acciones %}
-                                <span class="badge-mini badge-edit">Editar</span>
-                            {% endif %}
-                            {% if 'borrar' in m.acciones %}
-                                <span class="badge-mini badge-delete">Borrar</span>
-                            {% endif %}
-                        </p>
-                    </a>
-                {% empty %}
-                    <div class="crud-empty">
-                        <i class="fas fa-inbox fa-3x" aria-hidden="true"></i>
-                        <p>No tiene acceso a ningún modelo.</p>
-                    </div>
-                {% endfor %}
-            </div>
-
-            <div class="quick-actions">
-                <h4>Acciones rápidas</h4>
-                <a href="{% url 'carga_datos' %}" class="accion-item">
-                    <i class="fas fa-upload" aria-hidden="true"></i>
-                    <span>Cargar datos masivos</span>
-                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                </a>
-                <a href="{% url 'admin:core_registroauditoria_changelist' %}" class="accion-item">
-                    <i class="fas fa-clipboard-list" aria-hidden="true"></i>
-                    <span>Bitácora del sistema</span>
-                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                </a>
-            </div>
-        </section>
-
-        <section id="tab-reportes" class="tab-content" role="tabpanel" hidden>
-            <div class="reportes-layout">
-                <div class="reportes-acciones">
-                    <h3>
-                        <i class="fas fa-download" aria-hidden="true"></i>
-                        Reportes Estadísticos
-                    </h3>
-
-                    <button type="button" class="btn-export" onclick="generarReporte('excel', 'zonas')">
-                        <i class="fas fa-file-excel" aria-hidden="true"></i>
-                        Excel - Zonas Afectadas
-                    </button>
-                    <button type="button" class="btn-export" onclick="generarReporte('pdf', 'zonas')">
-                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
-                        PDF - Zonas Afectadas
-                    </button>
-                    <button type="button" class="btn-export" onclick="generarReporte('excel', 'general')">
-                        <i class="fas fa-file-excel" aria-hidden="true"></i>
-                        Excel - Estadísticas Generales
-                    </button>
-                    <button type="button" class="btn-export" onclick="generarReporte('pdf', 'general')">
-                        <i class="fas fa-file-pdf" aria-hidden="true"></i>
-                        PDF - Estadísticas Generales
-                    </button>
-
-                    <div id="mensaje-reporte" class="mensaje-reporte" hidden></div>
-                </div>
-            </div>
-        </section>
-    </div>
+    <section class="tab-content" id="tab-reportes"><div class="reportes-container"><p>Consulta los reportes operativos del sistema.</p></div></section>
 </div>
 {% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=2">
-<link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">
-{% endblock %}
-
 {% block extra_js %}
 <script>
 (function () {
     'use strict';
 
-    const tabs = document.querySelectorAll('.panel-tabs .tab');
-    const contents = document.querySelectorAll('.panel-content .tab-content');
-    const mapaEstado = document.getElementById('mapa-estado');
-
-    function activarTab(tab) {
-        const nombre = tab.dataset.tab;
-        tabs.forEach((item) => {
-            const activo = item === tab;
-            item.classList.toggle('active', activo);
-            item.setAttribute('aria-selected', String(activo));
-        });
-        contents.forEach((content) => {
-            const activo = content.id === 'tab-' + nombre;
-            content.classList.toggle('active', activo);
-            content.hidden = !activo;
-        });
-        if (nombre === 'mapa' && window.mapaAdmin) {
-            setTimeout(() => window.mapaAdmin.invalidateSize(), 300);
-        }
-        if (nombre === 'reportes' && typeof window.cargarResultados === 'function') {
-            window.cargarResultados();
-        }
-    }
-
-    tabs.forEach((tab) => tab.addEventListener('click', () => activarTab(tab)));
-
-    function actualizarEstado(texto, tipo) {
-        if (!mapaEstado) return;
-        mapaEstado.textContent = texto;
-        mapaEstado.dataset.estado = tipo || '';
+    function actualizarEstado(texto, estado) {
+        const el = document.getElementById('mapa-estado');
+        if (!el) return;
+        el.textContent = texto;
+        el.dataset.estado = estado || '';
     }
 
     function escaparHtml(valor) {
@@ -209,83 +89,47 @@
     }
 
     function crearCapasMapa(datos) {
+        if (!datos || typeof datos !== 'object') throw new Error('La API devolvió una respuesta que no es un objeto JSON.');
         const grupos = {
             demandas: L.layerGroup(),
             candidatos: L.layerGroup(),
             refugios: L.layerGroup(),
             zonas: L.layerGroup()
         };
-
         function coordenadasValidas(item) {
             const lat = Number(item.lat);
             const lng = Number(item.lng);
             return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
         }
-
         (datos.puntos_demanda || []).forEach((item) => {
-            const coords = coordenadasValidas(item);
-            if (!coords) return;
-            L.circleMarker(coords, { radius: 7, weight: 2, fillOpacity: 0.75 })
-                .bindPopup(popupPunto(item,
-                    '<br>Población: ' + escaparHtml(item.poblacion ?? 0) +
-                    '<br>Vulnerabilidad: ' + escaparHtml(item.vulnerabilidad ?? 'No especificada')))
-                .addTo(grupos.demandas);
+            const coords = coordenadasValidas(item); if (!coords) return;
+            L.circleMarker(coords, { radius: 7, weight: 2, fillOpacity: 0.75 }).bindPopup(popupPunto(item, '<br>Población: ' + escaparHtml(item.poblacion ?? 0) + '<br>Vulnerabilidad: ' + escaparHtml(item.vulnerabilidad ?? 'No especificada'))).addTo(grupos.demandas);
         });
-
         (datos.sitios_candidatos || []).forEach((item) => {
-            const coords = coordenadasValidas(item);
-            if (!coords) return;
-            L.marker(coords)
-                .bindPopup(popupPunto(item,
-                    '<br>Capacidad máxima: ' + escaparHtml(item.capacidad_maxima ?? 0)))
-                .addTo(grupos.candidatos);
+            const coords = coordenadasValidas(item); if (!coords) return;
+            L.marker(coords).bindPopup(popupPunto(item, '<br>Capacidad máxima: ' + escaparHtml(item.capacidad_maxima ?? 0))).addTo(grupos.candidatos);
         });
-
         (datos.refugios || []).forEach((item) => {
-            const coords = coordenadasValidas(item);
-            if (!coords) return;
-            L.marker(coords)
-                .bindPopup(popupPunto(item,
-                    '<br>Capacidad disponible: ' + escaparHtml(item.capacidad_disponible ?? 0) +
-                    '<br>Estado: ' + (item.operativo ? 'Operativo' : 'No operativo')))
-                .addTo(grupos.refugios);
+            const coords = coordenadasValidas(item); if (!coords) return;
+            L.marker(coords).bindPopup(popupPunto(item, '<br>Capacidad disponible: ' + escaparHtml(item.capacidad_disponible ?? 0) + '<br>Estado: ' + (item.operativo ? 'Operativo' : 'No operativo'))).addTo(grupos.refugios);
         });
-
         (datos.zonas_afectadas || []).forEach((item) => {
             if (!item.geojson) return;
             try {
                 const geojson = typeof item.geojson === 'string' ? JSON.parse(item.geojson) : item.geojson;
                 const capa = L.geoJSON(geojson, { weight: 2, fillOpacity: 0.25 });
-                capa.bindPopup(
-                    '<strong>' + escaparHtml(item.nombre || 'Zona afectada') + '</strong>' +
-                    '<br>Nivel de alerta: ' + escaparHtml(item.nivel_alerta ?? 'No especificado') +
-                    '<br>Heridos: ' + escaparHtml(item.heridos ?? 0) +
-                    '<br>Fallecidos: ' + escaparHtml(item.fallecidos ?? 0) +
-                    '<br>Damnificados: ' + escaparHtml(item.damnificados ?? 0)
-                );
+                capa.bindPopup('<strong>' + escaparHtml(item.nombre || 'Zona afectada') + '</strong><br>Nivel de alerta: ' + escaparHtml(item.nivel_alerta ?? 'No especificado') + '<br>Heridos: ' + escaparHtml(item.heridos ?? 0) + '<br>Fallecidos: ' + escaparHtml(item.fallecidos ?? 0) + '<br>Damnificados: ' + escaparHtml(item.damnificados ?? 0));
                 grupos.zonas.addLayer(capa);
-            } catch (error) {
-                console.warn('[panel_admin] Geometría inválida:', item.id, error);
-            }
+            } catch (error) { console.warn('[panel_admin] Geometría inválida:', item.id, error); }
         });
-
         return grupos;
     }
 
     function configurarControlesCapas(grupos) {
-        [
-            ['chk-demandas', grupos.demandas],
-            ['chk-candidatos', grupos.candidatos],
-            ['chk-refugios', grupos.refugios],
-            ['chk-zonas', grupos.zonas]
-        ].forEach(([id, grupo]) => {
-            const checkbox = document.getElementById(id);
-            if (!checkbox) return;
+        [['chk-demandas', grupos.demandas], ['chk-candidatos', grupos.candidatos], ['chk-refugios', grupos.refugios], ['chk-zonas', grupos.zonas]].forEach(([id, grupo]) => {
+            const checkbox = document.getElementById(id); if (!checkbox) return;
             if (checkbox.checked) grupo.addTo(window.mapaAdmin);
-            checkbox.addEventListener('change', () => {
-                if (checkbox.checked) grupo.addTo(window.mapaAdmin);
-                else window.mapaAdmin.removeLayer(grupo);
-            });
+            checkbox.addEventListener('change', () => checkbox.checked ? grupo.addTo(window.mapaAdmin) : window.mapaAdmin.removeLayer(grupo));
         });
     }
 
@@ -293,125 +137,48 @@
         if (!window.mapaAdmin) return;
         actualizarEstado('Cargando datos...', 'loading');
         try {
-            const response = await fetch('/api/datos-mapa/', {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin'
-            });
-            if (!response.ok) throw new Error('No se pudieron cargar las capas.');
-            const datos = await response.json();
+            const response = await fetch('/api/datos-mapa/', { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+            const raw = await response.text();
+            let datos = null;
+            try { datos = raw ? JSON.parse(raw) : null; } catch (parseError) { throw new Error('La API respondió con contenido no JSON (HTTP ' + response.status + ').'); }
+            if (!response.ok) {
+                const detalle = datos && (datos.error || datos.detail) ? String(datos.error || datos.detail) : 'sin detalle';
+                throw new Error('API /api/datos-mapa/ respondió HTTP ' + response.status + ': ' + detalle);
+            }
             const grupos = crearCapasMapa(datos);
             configurarControlesCapas(grupos);
-
-            const todas = L.featureGroup([
-                grupos.demandas, grupos.candidatos, grupos.refugios, grupos.zonas
-            ]);
-            if (todas.getLayers().length) {
-                const bounds = todas.getBounds();
-                if (bounds.isValid()) window.mapaAdmin.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
-            }
-
-            const total = [datos.puntos_demanda, datos.sitios_candidatos, datos.refugios, datos.zonas_afectadas]
-                .reduce((sum, capa) => sum + (Array.isArray(capa) ? capa.length : 0), 0);
+            const todas = L.featureGroup([grupos.demandas, grupos.candidatos, grupos.refugios, grupos.zonas]);
+            if (todas.getLayers().length) { const bounds = todas.getBounds(); if (bounds.isValid()) window.mapaAdmin.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 }); }
+            const total = [datos.puntos_demanda, datos.sitios_candidatos, datos.refugios, datos.zonas_afectadas].reduce((sum, capa) => sum + (Array.isArray(capa) ? capa.length : 0), 0);
             actualizarEstado(total + ' elementos cargados', 'success');
         } catch (error) {
             console.error('[panel_admin] Error cargando mapa:', error);
-            actualizarEstado('No fue posible cargar las capas', 'error');
+            actualizarEstado('Error al cargar el mapa: ' + (error && error.message ? error.message : 'error desconocido'), 'error');
         }
     }
 
     function inicializarMapa() {
         const contenedor = document.getElementById('mapa-admin');
-        if (!contenedor || typeof L === 'undefined') {
-            actualizarEstado('Mapa no disponible', 'error');
-            return;
-        }
+        if (!contenedor || typeof L === 'undefined') { actualizarEstado('Mapa no disponible', 'error'); return; }
         window.mapaAdmin = L.map(contenedor, { center: [10.0, -66.0], zoom: 6 });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
-            referrerPolicy: 'strict-origin-when-cross-origin',
-            maxZoom: 19
-        }).addTo(window.mapaAdmin);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(window.mapaAdmin);
+        const btnCentrar = document.getElementById('btn-centrar-mapa');
+        if (btnCentrar) btnCentrar.addEventListener('click', () => window.mapaAdmin.setView([10.0, -66.0], 6));
         cargarDatosMapa();
     }
 
-    window.cargarResultados = async function () {
-        const tbody = document.querySelector('#tabla-resultados tbody');
-        if (!tbody) return;
-        try {
-            const response = await fetch('/api/listar-resultados/', {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin'
-            });
-            if (!response.ok) throw new Error('No se pudo obtener el historial.');
-            const data = await response.json();
-            tbody.innerHTML = '';
-            if (!Array.isArray(data) || !data.length) {
-                const fila = document.createElement('tr');
-                const celda = document.createElement('td');
-                celda.colSpan = 6;
-                celda.textContent = 'Sin actividad';
-                fila.appendChild(celda);
-                tbody.appendChild(fila);
-                return;
-            }
-            data.forEach((resultado) => {
-                const fila = document.createElement('tr');
-                const valores = [
-                    resultado.id ?? '',
-                    String(resultado.fecha || '').substring(0, 10),
-                    resultado.escenario ?? '',
-                    ((resultado.resumen || {}).distancia_total ?? 0) + ' km',
-                    (resultado.resumen || {}).poblacion_atendida ?? 0,
-                    ((resultado.resumen || {}).porcentaje_cubierto ?? 0) + '%'
-                ];
-                valores.forEach((valor) => {
-                    const celda = document.createElement('td');
-                    celda.textContent = valor;
-                    fila.appendChild(celda);
-                });
-                tbody.appendChild(fila);
-            });
-        } catch (error) {
-            console.error('[panel_admin] Error cargando historial:', error);
-            tbody.innerHTML = '';
-            const fila = document.createElement('tr');
-            const celda = document.createElement('td');
-            celda.colSpan = 6;
-            celda.textContent = 'No fue posible cargar el historial.';
-            fila.appendChild(celda);
-            tbody.appendChild(fila);
-        }
-    };
+    function configurarTabs() {
+        document.querySelectorAll('.admin-tabs .tab').forEach((tab) => tab.addEventListener('click', () => {
+            document.querySelectorAll('.admin-tabs .tab').forEach((t) => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+            tab.classList.add('active');
+            const panel = document.getElementById('tab-' + tab.dataset.tab);
+            if (panel) panel.classList.add('active');
+            if (tab.dataset.tab === 'mapa' && window.mapaAdmin) setTimeout(() => window.mapaAdmin.invalidateSize(), 100);
+        }));
+    }
 
-    window.generarReporte = async function (tipo, contenido) {
-        const mensaje = document.getElementById('mensaje-reporte');
-        if (!mensaje) return;
-        mensaje.hidden = false;
-        mensaje.className = 'mensaje-reporte loading';
-        mensaje.textContent = 'Generando...';
-        try {
-            const params = new URLSearchParams({ tipo: tipo, contenido: contenido });
-            const response = await fetch('/api/reportes/generar/?' + params.toString(), {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin'
-            });
-            if (!response.ok) throw new Error('No fue posible generar el reporte.');
-            const data = await response.json();
-            if (!data.success) throw new Error(data.error || 'Error al generar el reporte.');
-            mensaje.className = 'mensaje-reporte success';
-            mensaje.textContent = data.mensaje || 'Reporte generado correctamente.';
-            if (data.archivo) {
-                window.location.href = '/api/reportes/descargar/' + encodeURIComponent(data.archivo) + '/';
-            }
-        } catch (error) {
-            console.error('[panel_admin] Error generando reporte:', error);
-            mensaje.className = 'mensaje-reporte error';
-            mensaje.textContent = error.message;
-        }
-    };
-
-    inicializarMapa();
+    document.addEventListener('DOMContentLoaded', () => { configurarTabs(); inicializarMapa(); });
 })();
 </script>
 {% endblock %}
