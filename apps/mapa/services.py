@@ -107,13 +107,7 @@ def _serializar_refugios(limite: int) -> List[Dict]:
 
 
 def _serializar_zonas(limite: int) -> List[Dict]:
-    """Serializa las zonas registradas para el mapa administrativo.
-
-    El panel administrativo representa el inventario que existe en el sistema,
-    por lo que no debe ocultar una zona solo porque tenga fecha de finalización.
-    La propiedad ``activa`` permite a la interfaz distinguir su estado sin
-    perder el registro del mapa.
-    """
+    """Serializa las zonas registradas para el mapa administrativo."""
     ahora = timezone.now()
     qs = (
         ZonaAfectada.objects
@@ -157,23 +151,41 @@ def _serializar_zonas(limite: int) -> List[Dict]:
     return data
 
 
-def obtener_datos_mapa(limite_por_capa: int = 500) -> Dict[str, List[Dict]]:
-    """Datos para el mapa administrativo."""
+def _cargar_capa(nombre: str, serializador, limite: int) -> tuple[List[Dict], str | None]:
+    """Carga una capa sin permitir que su fallo rompa las demás."""
     try:
-        return {
-            'puntos_demanda': _serializar_puntos_demanda(limite_por_capa),
-            'sitios_candidatos': _serializar_sitios_candidatos(limite_por_capa),
-            'refugios': _serializar_refugios(limite_por_capa),
-            'zonas_afectadas': _serializar_zonas(min(limite_por_capa, 200)),
-        }
-    except Exception as e:
-        logger.error(f"Error obteniendo datos del mapa: {e}", exc_info=True)
-        return {
-            'puntos_demanda': [],
-            'sitios_candidatos': [],
-            'refugios': [],
-            'zonas_afectadas': [],
-        }
+        return serializador(limite), None
+    except Exception as exc:
+        logger.error('Error cargando capa %s: %s', nombre, exc, exc_info=True)
+        return [], nombre
+
+
+def obtener_datos_mapa(limite_por_capa: int = 500) -> Dict[str, List[Dict]]:
+    """Devuelve las capas del mapa de forma independiente.
+
+    Un problema en una capa no debe convertir todo el endpoint en HTTP 500.
+    La capa problemática queda vacía y el error queda registrado para
+    diagnóstico en servidor.
+    """
+    capas = (
+        ('puntos_demanda', _serializar_puntos_demanda, limite_por_capa),
+        ('sitios_candidatos', _serializar_sitios_candidatos, limite_por_capa),
+        ('refugios', _serializar_refugios, limite_por_capa),
+        ('zonas_afectadas', _serializar_zonas, min(limite_por_capa, 200)),
+    )
+
+    datos: Dict[str, List[Dict]] = {}
+    errores: List[str] = []
+
+    for nombre, serializador, limite in capas:
+        datos[nombre], error = _cargar_capa(nombre, serializador, limite)
+        if error:
+            errores.append(error)
+
+    if errores:
+        logger.warning('Capas con error en mapa administrativo: %s', ', '.join(errores))
+
+    return datos
 
 
 # ============================================================
@@ -181,7 +193,7 @@ def obtener_datos_mapa(limite_por_capa: int = 500) -> Dict[str, List[Dict]]:
 # ============================================================
 
 def construir_geojson_centros(datos_json: Dict) -> Dict:
-    """Convierte los centros de un resultado en un FeatureCollection GeoJSON."""
+    """Convierte los centros de un resultado en GeoJSON."""
     features = []
     for centro in datos_json.get('centros', []):
         lat = centro.get('lat')
