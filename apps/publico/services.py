@@ -95,7 +95,13 @@ def obtener_refugios_publicos(limite: int = 1000) -> List[Dict]:
 
 
 def obtener_zonas_activas(limite: int = 500) -> List[Dict]:
-    """Devuelve únicamente zonas vigentes y con geometría válida."""
+    """Devuelve únicamente zonas vigentes y con geometría válida.
+
+    Una zona sigue activa mientras su inicio ya haya ocurrido y su fecha de
+    finalización sea nula o todavía no haya vencido. No se debe filtrar por
+    ``fecha_fin IS NULL`` porque eso ocultaría zonas que tienen una fecha de
+    finalización futura.
+    """
     cache_key = f'{CACHE_KEY_ZONAS}_{limite}'
     cached = cache.get(cache_key)
     if cached is not None:
@@ -106,9 +112,9 @@ def obtener_zonas_activas(limite: int = 500) -> List[Dict]:
             ZonaAfectada.objects
             .filter(
                 fecha_inicio__lte=ahora,
-                fecha_fin__isnull=True,
                 geom__isnull=False,
             )
+            .filter(Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=ahora))
             .select_related('evento')
             .only(
                 'id', 'nombre', 'descripcion', 'nivel_alerta',
@@ -119,9 +125,16 @@ def obtener_zonas_activas(limite: int = 500) -> List[Dict]:
         )
         data = []
         for z in qs:
-            serializada = _serializar_zona(z)
-            if serializada:
-                data.append(serializada)
+            try:
+                serializada = _serializar_zona(z)
+                if serializada:
+                    data.append(serializada)
+            except Exception:
+                logger.warning(
+                    'No se pudo serializar la geometría de la zona pública %s',
+                    z.id,
+                    exc_info=True,
+                )
         cache.set(cache_key, data, CACHE_TTL_ZONAS)
         logger.info(f"Zonas activas: {len(data)} cacheadas por {CACHE_TTL_ZONAS}s")
         return data
@@ -201,10 +214,13 @@ def obtener_estadisticas_home() -> Dict[str, int]:
         return cached
     from apps.emergencias.models import Evento
     try:
+        ahora = timezone.now()
         stats = {
             'eventos_activos': Evento.objects.filter(activo=True).count(),
             'total_refugios': RefugioExistente.objects.filter(operativo=True).count(),
-            'zonas_activas': ZonaAfectada.objects.filter(fecha_fin__isnull=True).count(),
+            'zonas_activas': ZonaAfectada.objects.filter(
+                fecha_inicio__lte=ahora,
+            ).filter(Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=ahora)).count(),
         }
         cache.set(cache_key, stats, CACHE_TTL_REFUGIOS)
         return stats
@@ -214,8 +230,9 @@ def obtener_estadisticas_home() -> Dict[str, int]:
 
 
 def invalidar_cache_publico():
+    """Invalida tanto las claves base como las claves parametrizadas."""
     if hasattr(cache, 'delete_pattern'):
         cache.delete_pattern('publico_*')
-    for clave in (CACHE_KEY_REFUGIOS, CACHE_KEY_ZONAS, 'publico_home_stats'):
+    for clave in (CACHE_KEY_REFUGIOS, CACHE_KEY_REFUGIOS + '_1000', CACHE_KEY_ZONAS, CACHE_KEY_ZONAS + '_500', 'publico_home_stats'):
         cache.delete(clave)
     logger.info("Caché del portal público invalidada")
