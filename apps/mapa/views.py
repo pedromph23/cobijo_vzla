@@ -19,6 +19,7 @@ import logging
 import sys
 from io import StringIO
 
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
 from django.core.management import call_command
@@ -119,10 +120,16 @@ def resultados_view(request):
 # APIs DE MAPA ADMINISTRATIVO
 # ============================================================
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@login_required
 def api_datos_mapa(request):
-    """Datos completos para el mapa administrativo."""
+    """Datos completos para el mapa administrativo.
+
+    Usa la misma sesión Django que protege el panel. Esto evita que el
+    navegador esté autenticado en el panel pero DRF no reconozca la sesión.
+    """
+    if not es_gestor(request.user):
+        return JsonResponse({'error': 'Se requieren permisos de gestor'}, status=403)
+
     try:
         return JsonResponse(services.obtener_datos_mapa(), safe=False)
     except Exception as e:
