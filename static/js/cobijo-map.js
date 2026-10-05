@@ -18,6 +18,20 @@
         attribution: '&copy; OpenStreetMap contributors'
     };
 
+    function configureDefaultMarkerIcon() {
+        if (typeof L === 'undefined' || !L.divIcon) return;
+        if (L.Icon.Default.prototype._cobijoConfigured) return;
+
+        L.Marker.prototype.options.icon = L.divIcon({
+            className: 'cobijo-default-marker',
+            html: '<span aria-hidden="true"><i class="fas fa-location-dot"></i></span>',
+            iconSize: [34, 42],
+            iconAnchor: [17, 42],
+            popupAnchor: [0, -38]
+        });
+        L.Icon.Default.prototype._cobijoConfigured = true;
+    }
+
     function createBaseLayer(map, settings) {
         const existing = map._cobijoBaseLayer;
         if (existing) map.removeLayer(existing);
@@ -40,12 +54,15 @@
 
     window.CobijoMap = window.CobijoMap || {};
     Object.assign(window.CobijoMap, config, {
+        configureDefaultMarkerIcon,
+
         create(containerId, options) {
             const container = document.getElementById(containerId);
             if (!container || typeof L === 'undefined') return null;
             if (container._cobijoMap) return container._cobijoMap;
             if (container._leaflet_id) return null;
 
+            configureDefaultMarkerIcon();
             const settings = Object.assign({}, config, options || {});
             const map = L.map(container, {
                 center: settings.center,
@@ -65,6 +82,7 @@
 
         adopt(map, options) {
             if (!map || typeof L === 'undefined') return map;
+            configureDefaultMarkerIcon();
             const settings = Object.assign({}, config, options || {});
             map.setMinZoom(settings.minZoom);
             map.setMaxZoom(settings.maxZoom);
@@ -86,4 +104,6 @@
             return true;
         }
     });
+
+    configureDefaultMarkerIcon();
 })();
