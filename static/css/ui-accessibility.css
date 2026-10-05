@@ -1,0 +1,280 @@
+/* ============================================================
+   COBIJOVZLA · ACCESIBILIDAD VISUAL Y CONTRASTE
+   Capa final de presentación. No modifica lógica ni componentes.
+   ============================================================ */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --a11y-bg: #171a1d;
+  --a11y-surface: #252a27;
+  --a11y-surface-raised: #2c322e;
+  --a11y-surface-soft: #303631;
+  --a11y-text: #f4f2eb;
+  --a11y-text-secondary: #d0d4ce;
+  --a11y-text-muted: #b8beb7;
+  --a11y-border: rgba(230,235,229,.22);
+  --a11y-border-strong: rgba(230,235,229,.34);
+  --a11y-primary: #a9cbb7;
+  --a11y-primary-strong: #c1dfcc;
+  --a11y-success: #a8d2b8;
+  --a11y-info: #acd0d3;
+  --a11y-warning: #f0d58f;
+  --a11y-danger: #f0a99c;
+}
+
+[data-theme="dark"] body,
+[data-theme="dark"] main {
+  color: var(--a11y-text);
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] li,
+[data-theme="dark"] label,
+[data-theme="dark"] dt,
+[data-theme="dark"] dd,
+[data-theme="dark"] small,
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .muted,
+[data-theme="dark"] .help-text,
+[data-theme="dark"] .form-help,
+[data-theme="dark"] .form-text {
+  color: var(--a11y-text-secondary) !important;
+}
+
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .muted,
+[data-theme="dark"] small,
+[data-theme="dark"] .help-text,
+[data-theme="dark"] .form-help,
+[data-theme="dark"] .form-text {
+  color: var(--a11y-text-muted) !important;
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6,
+[data-theme="dark"] .section-title,
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .panel-title {
+  color: var(--a11y-text) !important;
+}
+
+/* Superficies */
+[data-theme="dark"] .card,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .dropdown-menu,
+[data-theme="dark"] .popover,
+[data-theme="dark"] .tooltip-inner,
+[data-theme="dark"] .info-card,
+[data-theme="dark"] .report-card,
+[data-theme="dark"] .data-card,
+[data-theme="dark"] .panel-content,
+[data-theme="dark"] .panel-header,
+[data-theme="dark"] .crud-main,
+[data-theme="dark"] .crud-sidebar,
+[data-theme="dark"] .crud-table-wrapper,
+[data-theme="dark"] .login-card,
+[data-theme="dark"] .resumen-card,
+[data-theme="dark"] .data-card-item {
+  background: var(--a11y-surface) !important;
+  border-color: var(--a11y-border) !important;
+  color: var(--a11y-text) !important;
+}
+
+/* Formularios: evita texto invisible en controles nativos */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select,
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .selector-control {
+  background-color: var(--a11y-surface-raised) !important;
+  color: var(--a11y-text) !important;
+  border-color: var(--a11y-border-strong) !important;
+  caret-color: var(--a11y-primary-strong);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] .form-control::placeholder {
+  color: var(--a11y-text-muted) !important;
+  opacity: 1;
+}
+
+[data-theme="dark"] option,
+[data-theme="dark"] optgroup {
+  background: #252a27 !important;
+  color: #f4f2eb !important;
+}
+
+[data-theme="dark"] input:disabled,
+[data-theme="dark"] textarea:disabled,
+[data-theme="dark"] select:disabled,
+[data-theme="dark"] button:disabled {
+  color: #929a92 !important;
+  background-color: #202521 !important;
+  border-color: rgba(230,235,229,.12) !important;
+  opacity: 1;
+}
+
+[data-theme="dark"] input[type="checkbox"],
+[data-theme="dark"] input[type="radio"] {
+  accent-color: var(--a11y-primary);
+}
+
+/* Enlaces */
+[data-theme="dark"] a:not(.btn-primary):not(.btn-secondary):not(.btn-danger) {
+  color: var(--a11y-primary-strong);
+}
+
+[data-theme="dark"] a:not(.btn-primary):not(.btn-secondary):not(.btn-danger):hover {
+  color: #d9eee0;
+}
+
+/* Tablas */
+[data-theme="dark"] table,
+[data-theme="dark"] .crud-table {
+  color: var(--a11y-text) !important;
+}
+
+[data-theme="dark"] .crud-table th,
+[data-theme="dark"] thead th {
+  background: var(--a11y-surface-soft) !important;
+  color: var(--a11y-text) !important;
+  border-color: var(--a11y-border) !important;
+}
+
+[data-theme="dark"] .crud-table td,
+[data-theme="dark"] tbody td {
+  color: var(--a11y-text-secondary) !important;
+  border-color: var(--a11y-border) !important;
+}
+
+[data-theme="dark"] .crud-table tr:hover td,
+[data-theme="dark"] tbody tr:hover td {
+  background: rgba(169,203,183,.09) !important;
+  color: var(--a11y-text) !important;
+}
+
+/* Estados: color + texto legible */
+[data-theme="dark"] .badge-success,
+[data-theme="dark"] .status-success,
+[data-theme="dark"] .estado-activo {
+  color: var(--a11y-success) !important;
+  background: rgba(168,210,184,.14) !important;
+  border-color: rgba(168,210,184,.28) !important;
+}
+
+[data-theme="dark"] .badge-info,
+[data-theme="dark"] .status-info {
+  color: var(--a11y-info) !important;
+  background: rgba(172,208,211,.14) !important;
+  border-color: rgba(172,208,211,.28) !important;
+}
+
+[data-theme="dark"] .badge-warning,
+[data-theme="dark"] .status-warning,
+[data-theme="dark"] .estado-pendiente {
+  color: var(--a11y-warning) !important;
+  background: rgba(240,213,143,.14) !important;
+  border-color: rgba(240,213,143,.28) !important;
+}
+
+[data-theme="dark"] .badge-danger,
+[data-theme="dark"] .status-danger,
+[data-theme="dark"] .estado-inactivo {
+  color: var(--a11y-danger) !important;
+  background: rgba(240,169,156,.14) !important;
+  border-color: rgba(240,169,156,.28) !important;
+}
+
+/* Alertas existentes */
+[data-theme="dark"] .crud-alert-success,
+[data-theme="dark"] .alert-success {
+  color: var(--a11y-success) !important;
+  background: rgba(168,210,184,.13) !important;
+  border-color: rgba(168,210,184,.28) !important;
+}
+
+[data-theme="dark"] .crud-alert-error,
+[data-theme="dark"] .alert-danger,
+[data-theme="dark"] .errorlist {
+  color: var(--a11y-danger) !important;
+  background: rgba(240,169,156,.13) !important;
+  border-color: rgba(240,169,156,.28) !important;
+}
+
+[data-theme="dark"] .crud-alert-warning,
+[data-theme="dark"] .alert-warning {
+  color: var(--a11y-warning) !important;
+  background: rgba(240,213,143,.13) !important;
+  border-color: rgba(240,213,143,.28) !important;
+}
+
+/* Botones secundarios y herramientas */
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] .btn-toolbar,
+[data-theme="dark"] .btn-refresh,
+[data-theme="dark"] .btn-export,
+[data-theme="dark"] .btn-clear,
+[data-theme="dark"] .map-action-btn {
+  background: var(--a11y-surface-raised) !important;
+  color: var(--a11y-text) !important;
+  border-color: var(--a11y-border-strong) !important;
+}
+
+[data-theme="dark"] .btn-secondary:hover,
+[data-theme="dark"] .btn-toolbar:hover,
+[data-theme="dark"] .btn-refresh:hover,
+[data-theme="dark"] .btn-export:hover,
+[data-theme="dark"] .btn-clear:hover,
+[data-theme="dark"] .map-action-btn:hover {
+  background: var(--a11y-surface-soft) !important;
+  color: #ffffff !important;
+}
+
+/* Leaflet: controles legibles en ambos temas */
+[data-theme="dark"] .leaflet-control,
+[data-theme="dark"] .leaflet-bar a,
+[data-theme="dark"] .leaflet-control-layers,
+[data-theme="dark"] .leaflet-control-attribution {
+  background: rgba(37,42,39,.96) !important;
+  color: var(--a11y-text-secondary) !important;
+  border-color: var(--a11y-border) !important;
+}
+
+[data-theme="dark"] .leaflet-bar a {
+  color: var(--a11y-text) !important;
+}
+
+[data-theme="dark"] .leaflet-bar a:hover {
+  background: var(--a11y-surface-soft) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .leaflet-control-attribution a {
+  color: var(--a11y-primary-strong) !important;
+}
+
+/* Separadores y bordes tenues */
+[data-theme="dark"] hr,
+[data-theme="dark"] .divider,
+[data-theme="dark"] .section-divider {
+  border-color: var(--a11y-border) !important;
+}
+
+/* Focus accesible y consistente */
+[data-theme="dark"] :focus-visible {
+  outline: 3px solid rgba(193,223,204,.72) !important;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="dark"] *,
+  [data-theme="dark"] *::before,
+  [data-theme="dark"] *::after {
+    scroll-behavior: auto !important;
+  }
+}
