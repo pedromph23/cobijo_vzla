@@ -62,3 +62,7 @@ backup_*.dump
 
 # Cache de Django
 .cache/
+
+# === Residuos locales ===
+howmigrations
+myvenv_linux/
