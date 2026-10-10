@@ -302,5 +302,63 @@ Comportamiento validado con 3 tests:
 El heatmap tiene el N+1 de C11 (`calcular_indice_necesidad` ejecuta 1 query
 por parroquia, ~1122 queries por generación). Se mitiga en FASE 5.
 
+### FASE 5 — Rendimiento (5 bloques completados)
+
+**Commits:** `7faf4b1`, `9ed4c55`, `8cea2d6`, más los intermedios.
+
+**Bloque 1 — N+1 en heatmap (CRÍTICO C11):**
+- `calcular_indice_necesidad` hacía ~2 queries por parroquia (~2242 total).
+- Nueva función `_precalcular_datos_parroquias` con 2 queries SQL agregadas.
+- **Antes: >120s. Después: 8.11s. Mejora: 15x.**
+
+**Bloque 2 — N+1 en optimizer (_ponderacion_demanda):**
+- 1 query espacial por cada punto de demanda.
+- Nueva `_precalcular_zonas_por_demanda` con 1 query agregada (ST_Contains + GROUP BY).
+
+**Bloque 3 — N+1 en reportes (_historicos):**
+- 1 + N queries (una por objeto_id).
+- Reemplazado por 1 query SQL con `DISTINCT ON (objeto_id)`.
+- **Antes: ~8s (149 registros). Después: query pura 0.227ms + latencia de red.**
+
+**Bloque 4 — N+1 en reportes (df_por_estado):**
+- 1 query espacial por cada zona afectada.
+- Reemplazado por JOIN a la jerarquía FK `ZonaAfectada → Parroquia → Estado`.
+- Bug detectado: las geometrías de estados (`.gdb` simplificado) y parroquias
+  (otra fuente) no coinciden espacialmente → `ST_Intersects` daba falsos negativos.
+- Solución: usar la FK construida en FASE 2 en lugar de operaciones espaciales.
+
+**Bloque 5 — Cache robusto + cache-busting (CRÍTICOS C12, C17):**
+- `FileBasedCache` → `DatabaseCache` (tabla `cobijo_cache` en Supabase).
+  - Cache compartida entre los 2 workers de gunicorn.
+  - Throttles con rate real (no rate × workers).
+  - Invalidaciones coherentes.
+- Cuantización de pesos en `Pesos.from_request`:
+  - Pesos redondeados a múltiplos de 0.5 (STEP), topados en 10.0 (MAX).
+  - Reduce el espacio de claves de caché de "infinito" a 21^7.
+  - Inalcanzable con el throttle de 30/min por IP.
+
+**Bloque 6 — Índices adicionales:**
+- **No fue necesario.**
+- `EXPLAIN ANALYZE` mostró que la query de `_historicos` ya usa el índice
+  óptimo (`core_regist_modelo_1a3b3d_idx` sobre `(modelo, objeto_id,
+  fecha_version DESC)`).
+- Execution Time: **0.227ms** en Postgres. La latencia percibida es
+  round-trip de red, no cómputo.
+
+**Resumen de mejoras medibles:**
+
+| Componente | Antes | Después | Mejora |
+|---|---|---|---|
+| Heatmap | >120s | 8.1s | 15x |
+| _historicos (149 reg) | ~8s | ~0.2s (query pura) | ~40x |
+| df_por_estado | N queries | 1 query FK | ~lineal |
+| Throttle efectivo | rate × 2 | rate real | Correcto |
+| Cache-busting | Infinitas claves | 21^7 | Acotado |
+
+**Pendiente para FASE 6 (limpieza):**
+- Recargar `Estado.geom` y `Parroquia.geom` de la misma fuente con la misma
+  simplificación. Actualmente hay gaps que producen falsos negativos con
+  ST_Contains/ST_Intersects entre niveles territoriales.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
