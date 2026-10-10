@@ -190,5 +190,44 @@ Los 149 registros eliminados quedan en `RegistroVersion` con
 `ruta='migration:0017_limpiar_parroquias_duplicadas'` para restauración
 manual si fuera necesario.
 
+### FASE 2 — Bloque B: estructura territorial completa
+
+**Modelo:** `Municipio` creado.
+
+**Migraciones:**
+- `0018_create_municipio`: nueva tabla con nombre, estado (FK), codigo_ine,
+  geom (MultiPolygon), poblacion, densidad_poblacional, indice_vulnerabilidad.
+- `0019_parroquia_municipio_fk`: FK `Parroquia.municipio` (SET_NULL, nullable).
+- `0020_zonaafectada_parroquia_fk`: FK `ZonaAfectada.parroquia` (SET_NULL, nullable).
+- `0021_poblar_municipios`: 336 municipios desde `.gdb` (capa ven_admin2).
+- `0022_asignar_municipio_parroquias`: asignación por geometría.
+- `reportes/0003_rename_indexes_django61`: renombrado de índices por cambio
+  de hashing en Django 6.1 (inocuo).
+
+**Datos cargados:**
+- 336 municipios con código INE del `.gdb` (ej: VE1501).
+- 336 con geometría simplificada (`-simplify 0.005` → 533 KB en JSON).
+
+**Asignación de parroquias a municipios:**
+- Algoritmo 1: `ST_Contains(municipio.geom, ST_PointOnSurface(parroquia.geom))`.
+- Algoritmo 2 (fallback): municipio con mayor área de intersección.
+- Filtro: solo municipios del mismo estado de la parroquia.
+
+**Resultado:**
+- 1121 / 1122 parroquias con municipio asignado (99.9%).
+- 1 parroquia sin asignar: `Inmaculada Concepción` (Distrito Capital)
+  porque no tiene geometría cargada. Pendiente resolución manual.
+- 0 inconsistencias territoriales (municipio de estado ≠ parroquia).
+
+**Verificación cruzada:**
+- Baruta (Miranda): 3 parroquias correctas.
+- Chacao (Miranda): 1 parroquia correcta.
+- Distribución por estado coherente con la división territorial real.
+
+**Preparado para futuras fases:**
+- `UbicacionParroquiaMixin` con override y caché (FASE 2 Bloque C).
+- Filtrado territorial en `ZonaAfectada` por parroquia.
+- Agregaciones por municipio en reportes.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
