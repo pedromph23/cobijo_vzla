@@ -659,10 +659,18 @@ class MunicipioForm(forms.ModelForm):
             }),
         }
         help_texts = {
-            'indice_vulnerabilidad': 'Valor entre 0 (baja) y 1 (alta).',
-            'densidad_poblacional': 'Habitantes por km².',
+            'indice_vulnerabilidad': 'Valor entre 0 (baja) y 1 (alta). Por defecto 0.5.',
+            'densidad_poblacional': 'Habitantes por km². Por defecto 0.',
             'codigo_ine': 'Código INE del municipio (formato VE + 4 dígitos).',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Campos con default en el modelo: no obligatorios en el form.
+        self.fields['densidad_poblacional'].required = False
+        self.fields['indice_vulnerabilidad'].required = False
+        self.fields['poblacion'].required = False
+        self.fields['codigo_ine'].required = False
 
     def clean_nombre(self):
         return validar_nombre_operativo(self.cleaned_data.get('nombre'))
