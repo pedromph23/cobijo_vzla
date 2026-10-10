@@ -150,5 +150,45 @@ esperados y la app fallará.
 **Resuelve:** CRÍTICO C18 (migrate en cada arranque), ALTOS A3, A4, A14 del
 Plan Maestro v2.
 
+### FASE 2 — Limpieza de parroquias duplicadas
+
+**Commit pendiente**
+**Migración:** `0017_limpiar_parroquias_duplicadas`
+
+**Problema detectado:**
+La BD tenía 149 grupos de parroquias duplicadas (298 registros afectados),
+producto de dos importaciones sucesivas con diferente formato de
+capitalización:
+  - `id=82   'Boca De Chávez'` (primera importación)
+  - `id=1132 'Boca de Chávez'` (segunda importación)
+
+Ambos registros eran idénticos salvo la capitalización: misma geometría,
+misma población, mismo estado.
+
+**Verificaciones previas:**
+- 149 grupos duplicados confirmados.
+- Ambos registros con geometría en los 149 grupos.
+- Poblaciones idénticas en los 149 grupos.
+- Cero `PuntoDemanda` apuntaban a parroquias duplicadas → sin riesgo de
+  romper FKs.
+
+**Estrategia aplicada:**
+- Normalización de nombre (sin acentos, minúsculas, espacios normalizados).
+- Agrupación por `(estado_id, nombre_normalizado)`.
+- Conservación del registro con ID MENOR.
+- Snapshot del eliminado en `RegistroVersion` para trazabilidad.
+- Eliminación del registro con ID MAYOR.
+
+**Resultado:**
+- Parroquias: 1271 → 1122.
+- Grupos duplicados restantes: 0.
+- Snapshots en auditoría: 149.
+- Distribución por estado coherente con división territorial real.
+
+**Reversibilidad:**
+Los 149 registros eliminados quedan en `RegistroVersion` con
+`ruta='migration:0017_limpiar_parroquias_duplicadas'` para restauración
+manual si fuera necesario.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
