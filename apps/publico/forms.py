@@ -4,7 +4,10 @@ from django.core.validators import FileExtensionValidator
 
 from apps.emergencias.models import Reporte
 from apps.core.models import ZonaAfectada, PuntoDemanda
-from apps.core.validators import validar_texto_sin_numeros_ni_especiales
+from apps.core.validators import (
+    validar_imagen_real,
+    validar_texto_sin_numeros_ni_especiales,
+)
 
 TAMANO_MAX_IMAGEN_MB = 5
 EXTENSIONES_IMAGEN = ['jpg', 'jpeg', 'png', 'gif', 'webp']
@@ -68,8 +71,18 @@ class ReporteCiudadanoForm(forms.ModelForm):
 
     def clean_imagen(self):
         imagen = self.cleaned_data.get('imagen')
-        if imagen and imagen.size > TAMANO_MAX_IMAGEN_MB * 1024 * 1024:
+        if not imagen:
+            return imagen
+        # 1. Tamaño máximo
+        if imagen.size > TAMANO_MAX_IMAGEN_MB * 1024 * 1024:
             raise forms.ValidationError(f'La imagen no debe superar los {TAMANO_MAX_IMAGEN_MB} MB.')
+        # 2. Verificar que es una imagen real (no solo extensión)
+        validar_imagen_real(
+            imagen,
+            min_ancho=100,
+            min_alto=100,
+            max_bytes=TAMANO_MAX_IMAGEN_MB * 1024 * 1024,
+        )
         return imagen
 
 

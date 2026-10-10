@@ -20,6 +20,7 @@ from apps.core.models import (
 )
 from apps.emergencias.models import Evento, Reporte
 from apps.core.validators import (
+    validar_imagen_real,
     validar_nombre_operativo,
     validar_telefono,
     validar_texto_sin_numeros_ni_especiales,
@@ -670,6 +671,20 @@ class ReporteForm(forms.ModelForm):
         if autor:
             validar_texto_sin_numeros_ni_especiales(autor)
         return autor[:100]
+
+    def clean_imagen(self):
+        imagen = self.cleaned_data.get('imagen')
+        if not imagen:
+            return imagen
+        if hasattr(imagen, 'size') and imagen.size > 5 * 1024 * 1024:
+            raise forms.ValidationError('La imagen no debe superar los 5 MB.')
+        validar_imagen_real(
+            imagen,
+            min_ancho=100,
+            min_alto=100,
+            max_bytes=5 * 1024 * 1024,
+        )
+        return imagen
 
 
 class MunicipioForm(forms.ModelForm):
