@@ -229,5 +229,40 @@ manual si fuera necesario.
 - Filtrado territorial en `ZonaAfectada` por parroquia.
 - Agregaciones por municipio en reportes.
 
+### FASE 2 — Bloques C, D, E: cierre territorial
+
+**Commits:** `a58e4b1`, `6d9dcd2`, `0b0a258`
+
+**Bloque C — UbicacionParroquiaMixin mejorado (`a58e4b1`):**
+- Nuevo flag `_auto_asignar_parroquia` (default True) para desactivar
+  auto-asignación por subclase.
+- En `save()`: solo auto-asigna si `parroquia_id` está vacío.
+  Respeta asignaciones manuales previas.
+- Sin migración (solo métodos Python).
+
+Comportamiento validado con 3 tests:
+1. Creación → auto-asigna por geometría.
+2. Actualización con parroquia previa → la respeta.
+3. Override manual → respeta la asignación.
+
+**Bloque D — unique_together corregido (`6d9dcd2`):**
+- `Parroquia.unique_together` cambia de `(nombre, estado)` a
+  `(nombre, municipio)`. Refleja la jerarquía territorial real.
+- Nuevo índice `(municipio, nombre)`.
+- Test: crear parroquia duplicada en el mismo municipio → IntegrityError.
+- Sin conflictos previos: 0 grupos afectados.
+
+**Bloque E — ZonaAfectada.parroquia asignada (`0b0a258`):**
+- Migración 0023 asigna parroquia a la zona "Hospital Dr. Ricardo".
+- Resultado: Sucre → Libertador → Distrito Capital.
+- Jerarquía completa operativa: `ZonaAfectada → Parroquia → Municipio → Estado`.
+
+**Estado final FASE 2:**
+- 25 estados + 336 municipios + 1122 parroquias.
+- 1121/1122 parroquias con municipio asignado (99.9%).
+- 1 parroquia sin geometría pendiente de resolver manualmente.
+- `ZonaAfectada` con jerarquía territorial completa.
+- `UbicacionParroquiaMixin` con override manual y auto-asignación selectiva.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
