@@ -440,31 +440,63 @@ class ParroquiaForm(forms.ModelForm):
     """Formulario explícito para Parroquias.
 
     La geometría se edita exclusivamente desde el Django admin (GISModelAdmin).
+    Incluye FK al municipio con filtro por estado para evitar asignaciones
+    inconsistentes.
     """
     class Meta:
         model = Parroquia
         fields = [
-            'nombre', 'estado', 'codigo_ine',
+            'nombre', 'estado', 'municipio', 'codigo_ine',
             'poblacion', 'densidad_poblacional', 'indice_vulnerabilidad',
         ]
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 100}),
             'estado': forms.Select(attrs={'class': 'form-select'}),
+            'municipio': forms.Select(attrs={'class': 'form-select'}),
             'codigo_ine': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 10}),
             'poblacion': forms.NumberInput(attrs={
                 'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric',
             }),
             'densidad_poblacional': forms.NumberInput(attrs={
-                'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal',
+                'class': 'form-control', 'min': 0, 'step': 0.01, 'inputmode': 'decimal',
             }),
             'indice_vulnerabilidad': forms.NumberInput(attrs={
-                'class': 'form-control', 'min': 0, 'max': 1, 'step': '0.01', 'inputmode': 'decimal',
+                'class': 'form-control', 'min': 0, 'max': 1, 'step': 0.01, 'inputmode': 'decimal',
             }),
         }
         help_texts = {
-            'indice_vulnerabilidad': 'Valor entre 0 (baja) y 1 (alta).',
-            'densidad_poblacional': 'Habitantes por km².',
+            'municipio': 'Municipio al que pertenece la parroquia (debe ser del mismo estado).',
+            'indice_vulnerabilidad': 'Valor entre 0 (baja) y 1 (alta). Por defecto 0.5.',
+            'densidad_poblacional': 'Habitantes por km². Por defecto 0.',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Campos con default en el modelo: no obligatorios en el form.
+        self.fields['poblacion'].required = False
+        self.fields['densidad_poblacional'].required = False
+        self.fields['indice_vulnerabilidad'].required = False
+        self.fields['codigo_ine'].required = False
+        # municipio queda opcional hasta que se complete la migración total.
+        self.fields['municipio'].required = False
+
+        # Filtro dinámico: si hay estado seleccionado, limitar municipios.
+        estado_id = None
+        if self.is_bound:
+            estado_id = self.data.get('estado')
+        elif self.instance and self.instance.pk:
+            estado_id = self.instance.estado_id
+
+        if estado_id:
+            self.fields['municipio'].queryset = Municipio.objects.filter(
+                estado_id=estado_id
+            ).order_by('nombre')
+        else:
+            # Sin estado: mostrar todos los municipios ordenados.
+            self.fields['municipio'].queryset = Municipio.objects.order_by(
+                'estado__nombre', 'nombre'
+            )
 
     def clean_nombre(self):
         return validar_nombre_operativo(self.cleaned_data.get('nombre'))
@@ -474,6 +506,20 @@ class ParroquiaForm(forms.ModelForm):
         if codigo and not codigo.isdigit():
             raise forms.ValidationError('El código INE debe contener solo dígitos.')
         return codigo
+
+    def clean(self):
+        cleaned = super().clean()
+        estado = cleaned.get('estado')
+        municipio = cleaned.get('municipio')
+
+        # Coherencia territorial: municipio debe pertenecer al estado.
+        if estado and municipio and municipio.estado_id != estado.id:
+            self.add_error(
+                'municipio',
+                f'El municipio «{municipio.nombre}» no pertenece al estado '
+                f'«{estado.nombre}». Selecciona un municipio del estado correcto.'
+            )
+        return cleaned
 
 
 class ParametrosModeloForm(forms.ModelForm):
