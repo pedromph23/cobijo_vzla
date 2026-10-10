@@ -225,16 +225,22 @@ if os.name == 'nt':
 # ==========================================
 # CACHÉ
 # ==========================================
+# DatabaseCache: usa la misma conexión a Supabase que el resto de la app.
+# Ventajas sobre FileBasedCache:
+# - Compartido entre los 2 workers de gunicorn (un solo estado).
+# - Los throttles funcionan correctamente (rate real, no rate × workers).
+# - Invalidaciones de caché consistentes.
+# - Sin servicios externos adicionales (Redis, Memcached).
+#
+# Requiere: `python manage.py createcachetable` (una sola vez).
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': BASE_DIR / '.cache',
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cobijo_cache',
         'TIMEOUT': 1800,
         'OPTIONS': {
-            'MAX_ENTRIES': 1000,
+            'MAX_ENTRIES': 5000,
             'CULL_FREQUENCY': 3,
         },
     }
 }
-
-os.makedirs(BASE_DIR / '.cache', exist_ok=True)

@@ -46,6 +46,13 @@ class Pesos:
     DAMNIFICADOS = 1.0
     REPORTES = 1.0
 
+    # Cuantización para mitigar cache-busting:
+    # los pesos recibidos por query params se redondean a múltiplos de STEP
+    # y se topan en MAX. Reduce el espacio de claves de caché de "infinito"
+    # a 21 valores posibles por cada clave.
+    STEP = 0.5
+    MAX = 10.0
+
     @classmethod
     def to_dict(cls) -> Dict[str, float]:
         return {
@@ -60,14 +67,24 @@ class Pesos:
 
     @classmethod
     def from_request(cls, query_params) -> Dict[str, float]:
-        """Extrae pesos desde query params, con fallback a defaults."""
+        """Extrae pesos desde query params, con fallback a defaults.
+
+        Los valores se cuantizan a múltiplos de `STEP` y se topan en `MAX`
+        para limitar el espacio de claves de caché (mitigación de cache-busting).
+        """
         pesos = cls.to_dict()
         for clave in pesos:
             if clave in query_params:
                 try:
                     valor = float(query_params[clave])
-                    if valor >= 0:
-                        pesos[clave] = valor
+                    if valor < 0:
+                        continue
+                    # Topar en MAX
+                    if valor > cls.MAX:
+                        valor = cls.MAX
+                    # Cuantizar a múltiplos de STEP
+                    valor = round(valor / cls.STEP) * cls.STEP
+                    pesos[clave] = valor
                 except (ValueError, TypeError):
                     logger.warning(f"Peso inválido '{clave}': {query_params[clave]}")
         return pesos
