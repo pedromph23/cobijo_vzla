@@ -99,5 +99,23 @@ Avanza CRÍTICOS C1-C3 del Plan Maestro v2.
 
 **Verificado:** `core_estado` y `core_parroquia` quedan en `['ver']` para `iujo`.
 
+### FASE 1 — Bloque 2: seguridad de endpoints admin
+
+**Commit:** `4fc72cf`
+
+**Endpoints con validación `es_gestor` añadida:**
+- `api_estadisticas`
+- `api_ejecutar_optimizacion`
+- `api_mapa_calor`
+- `api_exportar_csv`
+- `api_exportar_geojson`
+
+**Fixes:**
+- `api_mapa_calor` ahora captura `ValueError` en `float()` de query params. Antes `?densidad=abc` devolvía 500.
+- `api_ejecutar_comando` reemplaza `sys.stdout` redirection por `call_command(stdout=salida)`. El redirection global no era thread-safe en gunicorn.
+- `api_buscar_lugar` (público) mueve `query` fuera del try para evitar `NameError` si `request.GET` falla.
+
+**Resuelve:** CRÍTICOS C8, C9, C10 y ALTOS A5, A6, A15 del Plan Maestro v2.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
