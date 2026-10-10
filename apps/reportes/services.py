@@ -24,20 +24,47 @@ logger = logging.getLogger(__name__)
 
 
 def _historicos(modelo, as_of):
-    """Última versión de cada objeto conocida a la fecha indicada."""
-    from apps.core.models import RegistroVersion
-    ids = (
-        RegistroVersion.objects
-        .filter(modelo=modelo, fecha_version__lte=as_of)
-        .values_list('objeto_id', flat=True)
-        .distinct()
-    )
-    resultado = []
-    for objeto_id in ids:
-        version = estado_a_fecha(modelo, objeto_id, as_of)
-        if version and version.operacion != 'eliminado':
-            resultado.append(version.datos)
-    return resultado
+    """Última versión de cada objeto conocida a la fecha indicada.
+
+    Usa DISTINCT ON de PostgreSQL para traer la última versión de cada
+    objeto_id en una sola query, evitando el N+1 anterior (1 + N queries).
+    """
+    from django.db import connection
+
+    try:
+        with connection.cursor() as c:
+            c.execute("""
+                SELECT DISTINCT ON (objeto_id)
+                       objeto_id, datos, operacion
+                FROM core_registroversion
+                WHERE modelo = %s AND fecha_version <= %s
+                ORDER BY objeto_id, fecha_version DESC
+            """, [modelo, as_of])
+            resultado = []
+            for _objeto_id, datos, operacion in c.fetchall():
+                if operacion != 'eliminado':
+                    # psycopg2 ya decodifica jsonb, pero por si acaso.
+                    if isinstance(datos, str):
+                        import json
+                        datos = json.loads(datos)
+                    resultado.append(datos)
+            return resultado
+    except Exception as e:
+        logger.warning(f'_historicos fallback ({modelo}): {e}')
+        # Fallback: comportamiento anterior (N+1).
+        from apps.core.models import RegistroVersion
+        ids = (
+            RegistroVersion.objects
+            .filter(modelo=modelo, fecha_version__lte=as_of)
+            .values_list('objeto_id', flat=True)
+            .distinct()
+        )
+        resultado = []
+        for objeto_id in ids:
+            version = estado_a_fecha(modelo, objeto_id, as_of)
+            if version and version.operacion != 'eliminado':
+                resultado.append(version.datos)
+        return resultado
 
 
 def _df_historico_zonas(as_of):
