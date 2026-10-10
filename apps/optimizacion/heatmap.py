@@ -19,6 +19,7 @@ from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional
 
 from django.core.cache import cache
+from django.db import connection
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import timedelta
@@ -198,10 +199,70 @@ def _distancia_promedio(lat: float, lng: float, coords: List[tuple]) -> float:
 # ÍNDICE DE NECESIDAD
 # ============================================================
 
+def _precalcular_datos_parroquias(desde) -> Dict[int, Dict[str, int]]:
+    """Precalcula agregados por parroquia en 2 queries SQL.
+
+    Sustituye el N+1 de `calcular_indice_necesidad` (que hacía ~2 queries
+    por parroquia). Devuelve un diccionario:
+        {parroquia_id: {'heridos': X, 'fallecidos': Y,
+                        'damnificados': Z, 'reportes': N}}
+
+    Args:
+        desde: datetime mínimo para contar reportes recientes.
+    """
+    from collections import defaultdict
+
+    datos: Dict[int, Dict[str, int]] = defaultdict(
+        lambda: {'heridos': 0, 'fallecidos': 0, 'damnificados': 0, 'reportes': 0}
+    )
+
+    with connection.cursor() as c:
+        # Query 1: zonas afectadas por parroquia (ST_Within por geometría).
+        c.execute("""
+            SELECT p.id,
+                   COALESCE(SUM(z.heridos), 0),
+                   COALESCE(SUM(z.fallecidos), 0),
+                   COALESCE(SUM(z.damnificados), 0)
+            FROM core_parroquia p
+            JOIN core_zonaafectada z ON ST_Within(z.geom, p.geom)
+            WHERE p.geom IS NOT NULL AND z.geom IS NOT NULL
+            GROUP BY p.id
+        """)
+        for pid, h, f, d in c.fetchall():
+            datos[pid]['heridos'] = int(h or 0)
+            datos[pid]['fallecidos'] = int(f or 0)
+            datos[pid]['damnificados'] = int(d or 0)
+
+        # Query 2: reportes recientes por parroquia (UNION de dos fuentes).
+        # Un reporte puede asociarse a un punto_demanda Y a una zona_afectada.
+        # Usamos DISTINCT para no contar dos veces el mismo reporte.
+        c.execute("""
+            SELECT pid, COUNT(DISTINCT rid)
+            FROM (
+                SELECT pd.parroquia_id AS pid, r.id AS rid
+                FROM emergencias_reporte r
+                JOIN core_puntodemanda pd ON pd.id = r.punto_demanda_id
+                WHERE r.fecha >= %s AND pd.parroquia_id IS NOT NULL
+                UNION
+                SELECT p.id AS pid, r.id AS rid
+                FROM core_parroquia p
+                JOIN core_zonaafectada z ON ST_Within(z.geom, p.geom)
+                JOIN emergencias_reporte r ON r.zona_afectada_id = z.id
+                WHERE r.fecha >= %s AND p.geom IS NOT NULL
+            ) sub
+            GROUP BY pid
+        """, [desde, desde])
+        for pid, n in c.fetchall():
+            datos[pid]['reportes'] = int(n or 0)
+
+    return dict(datos)
+
+
 def calcular_indice_necesidad(
     parroquia,
     pesos: Optional[Dict] = None,
     refugios_coords: Optional[List[tuple]] = None,
+    datos_parroquia: Optional[Dict[str, int]] = None,
 ) -> float:
     """
     Calcula el índice de necesidad (0-1) para una parroquia.
@@ -213,6 +274,9 @@ def calcular_indice_necesidad(
         parroquia: Instancia de Parroquia.
         pesos: Pesos por variable. Si None, usa defaults.
         refugios_coords: Lista precalculada de coords de refugios.
+        datos_parroquia: Dict precalculado {heridos, fallecidos,
+            damnificados, reportes} para esta parroquia. Si None, hace
+            la consulta individual (fallback).
 
     Returns:
         Índice redondeado a 4 decimales, entre 0.0 y 1.0.
@@ -243,16 +307,22 @@ def calcular_indice_necesidad(
             indice += pesos['distancia'] * v
             total_peso += pesos['distancia']
 
-        # 4. Zonas afectadas (spatial query por parroquia — usa índice GIST)
+        # 4. Zonas afectadas
         if parroquia.geom and any(pesos.get(k, 0) > 0 for k in ('heridos', 'fallecidos', 'damnificados')):
-            try:
-                zonas = ZonaAfectada.objects.filter(geom__within=parroquia.geom)
-                heridos = sum(z.heridos or 0 for z in zonas)
-                fallecidos = sum(z.fallecidos or 0 for z in zonas)
-                damnificados = sum(z.damnificados or 0 for z in zonas)
-            except Exception as e:
-                logger.warning(f"Error zonas parroquia {parroquia.id}: {e}")
-                heridos = fallecidos = damnificados = 0
+            if datos_parroquia is not None:
+                d = datos_parroquia.get(parroquia.id, {})
+                heridos = d.get('heridos', 0)
+                fallecidos = d.get('fallecidos', 0)
+                damnificados = d.get('damnificados', 0)
+            else:
+                try:
+                    zonas = ZonaAfectada.objects.filter(geom__within=parroquia.geom)
+                    heridos = sum(z.heridos or 0 for z in zonas)
+                    fallecidos = sum(z.fallecidos or 0 for z in zonas)
+                    damnificados = sum(z.damnificados or 0 for z in zonas)
+                except Exception as e:
+                    logger.warning(f"Error zonas parroquia {parroquia.id}: {e}")
+                    heridos = fallecidos = damnificados = 0
 
             if pesos.get('heridos', 0) > 0:
                 v = normalizar(heridos, Limites.HERIDOS)
@@ -271,16 +341,19 @@ def calcular_indice_necesidad(
 
         # 5. Reportes recientes (últimos 7 días)
         if pesos.get('reportes', 0) > 0 and parroquia.geom:
-            try:
-                desde = timezone.now() - timedelta(days=7)
-                n = Reporte.objects.filter(
-                    Q(punto_demanda__parroquia=parroquia)
-                    | Q(zona_afectada__geom__within=parroquia.geom),
-                    fecha__gte=desde,
-                ).count()
-            except Exception as e:
-                logger.warning(f"Error reportes parroquia {parroquia.id}: {e}")
-                n = 0
+            if datos_parroquia is not None:
+                n = datos_parroquia.get(parroquia.id, {}).get('reportes', 0)
+            else:
+                try:
+                    desde = timezone.now() - timedelta(days=7)
+                    n = Reporte.objects.filter(
+                        Q(punto_demanda__parroquia=parroquia)
+                        | Q(zona_afectada__geom__within=parroquia.geom),
+                        fecha__gte=desde,
+                    ).count()
+                except Exception as e:
+                    logger.warning(f"Error reportes parroquia {parroquia.id}: {e}")
+                    n = 0
 
             v = normalizar(n, Limites.REPORTES)
             indice += pesos['reportes'] * v
@@ -332,12 +405,22 @@ def generar_mapa_calor(
             qs = qs.filter(id__in=parroquias_ids)
 
         refugios = _refugios_coords()
+
+        # Precalcular agregados por parroquia en 2 queries SQL (evita N+1).
+        pesos_efectivos = pesos or Pesos.to_dict()
+        datos_parroquia = None
+        if any(pesos_efectivos.get(k, 0) > 0 for k in ('heridos', 'fallecidos', 'damnificados', 'reportes')):
+            desde = timezone.now() - timedelta(days=7)
+            datos_parroquia = _precalcular_datos_parroquias(desde)
+            logger.info(f"Precalculados datos para {len(datos_parroquia)} parroquias")
+
         puntos: List[Dict] = []
 
         for parroquia in qs.iterator(chunk_size=500):
             try:
                 indice = calcular_indice_necesidad(
                     parroquia, pesos=pesos, refugios_coords=refugios,
+                    datos_parroquia=datos_parroquia,
                 )
                 c = parroquia.geom.centroid
                 puntos.append(PuntoCalor(
