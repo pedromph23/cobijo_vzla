@@ -144,9 +144,29 @@ class Parroquia(models.Model):
 
 
 class UbicacionParroquiaMixin:
-    """Resuelve la parroquia una sola vez al guardar una ubicación."""
+    """Resuelve la parroquia al guardar según la ubicación.
+
+    Comportamiento:
+    - En creación (sin pk): asigna la parroquia automáticamente.
+    - En actualización: si el modelo ya tiene parroquia asignada, la respeta;
+      si no, la asigna.
+    - Subclases pueden declarar `_auto_asignar_parroquia = False` para
+      desactivar por completo la auto-asignación.
+    - Para sobrescribir manualmente la parroquia en una instancia específica,
+      basta con asignar `obj.parroquia = X` antes de `obj.save()`; el mixin
+      no la cambiará si ya está definida.
+    """
+
+    # Flag que las subclases pueden sobrescribir.
+    _auto_asignar_parroquia = True
 
     def asignar_parroquia(self):
+        """Resuelve la parroquia que contiene la ubicación del modelo.
+
+        Si hay solape entre parroquias, se elige la de menor ID como criterio
+        determinístico. Nota: parroquias sin geometría se ignoran
+        automáticamente por el filtro `geom__covers`.
+        """
         ubicacion = getattr(self, 'ubicacion', None)
         if not ubicacion or not hasattr(self, 'parroquia'):
             return None
@@ -159,8 +179,16 @@ class UbicacionParroquiaMixin:
         )
 
     def save(self, *args, **kwargs):
-        if hasattr(self, 'parroquia') and getattr(self, 'ubicacion', None):
-            self.parroquia = self.asignar_parroquia()
+        if (
+            self._auto_asignar_parroquia
+            and hasattr(self, 'parroquia')
+            and getattr(self, 'ubicacion', None)
+        ):
+            # Solo auto-asignar si no hay parroquia previa.
+            # Si ya tiene parroquia_id (asignada manualmente o previa),
+            # no la sobrescribimos.
+            if not self.parroquia_id:
+                self.parroquia = self.asignar_parroquia()
         super().save(*args, **kwargs)
 
 
