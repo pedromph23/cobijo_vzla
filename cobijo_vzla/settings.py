@@ -253,6 +253,94 @@ if os.name == 'nt':
 
 
 # ==========================================
+# LOGGING
+# ==========================================
+# Configuración de logging para producción y desarrollo.
+#
+# - En producción (Render): todo va a stdout, capturado por Render Logs.
+# - En desarrollo: además va a consola con formato más legible.
+#
+# Niveles:
+#   - INFO en apps propias (core, mapa, optimizacion, publico, reportes).
+#   - WARNING en Django y dependencias para reducir ruido.
+#   - ERROR se registra siempre con traceback.
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name} {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        # Apps propias: INFO para diagn'ostico
+        'apps.core': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.mapa': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.optimizacion': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.publico': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.reportes': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.emergencias': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+
+# ==========================================
 # CACHÉ
 # ==========================================
 # DatabaseCache: usa la misma conexión a Supabase que el resto de la app.
