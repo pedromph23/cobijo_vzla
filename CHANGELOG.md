@@ -360,5 +360,63 @@ por parroquia, ~1122 queries por generación). Se mitiga en FASE 5.
   simplificación. Actualmente hay gaps que producen falsos negativos con
   ST_Contains/ST_Intersects entre niveles territoriales.
 
+### FASE 6 — Limpieza y consistencia (5 bloques)
+
+**Commits:** `ae6e1f7`, `fe58cfa`, `1d2261e`, `a0620cb`, `71435e7`
+
+**Bloque 1 — Geometrías de estados corregidas:**
+- Descubrimiento crítico: las geometrías de Estado sumaban 17,020 km²
+  cuando Venezuela tiene ~916,445 km². Ejemplo: Bolívar medía 59 km²
+  en BD vs 250,723 km² reales.
+- Consecuencia: `ST_Contains`/`ST_Intersects` daban falsos negativos entre
+  estados y sus municipios/parroquias.
+- Antes: 74/336 municipios y 146/1121 parroquias intersectaban con su estado.
+- Fix: exportar los 25 estados del `.gdb` con `-simplify 0.001` (~100 m).
+- Después: 336/336 y 1121/1121 intersectan. Área total: 913,832 km².
+
+**Bloque 2 — Parroquia huérfana eliminada:**
+- La BD tenía 1122 parroquias vs 1121 en el `.gdb`.
+- La extra era "Inmaculada Concepción" (Distrito Capital), sin geometría,
+  sin historial, sin referencias, y no en el `.gdb`.
+- Fix: migración 0026 elimina el registro con snapshot en RegistroVersion.
+- Resultado: Parroquia.objects.count() = 1121.
+
+**Bloque 3 — Migraciones fantasma y tabla huérfana:**
+- `django_migrations` tenía 2 entradas sin archivo:
+  - core/0004_parametrosmodelo_parametros_p_gte_1_and_more
+  - core/0005_auditlog
+- Colisionaban con 0004_registroauditoria y 0005_registroversion.
+- Tabla `core_auditlog` con 2 filas de pruebas manuales.
+- Fix: migración 0027 (DELETE + DROP TABLE) con reversión.
+- Resultado: `django_migrations` limpio, tabla eliminada.
+
+**Bloque 4 — Constraints redundantes:**
+- 3 CheckConstraint explícitos en ZonaAfectada duplicaban los CHECK
+  auto-generados por `PositiveIntegerField`.
+- Fix: migración 0028 quita los 3 redundantes.
+- Resultado: 7 constraints → 4. Protección intacta.
+
+**Bloque 5 — Documentación:**
+- Nuevo `docs/README.md` como índice de documentación técnica.
+- Nota al inicio de `README.md` principal apuntando a `docs/`.
+- Los documentos técnicos detallados (arquitectura, desarrollo, deployment,
+  operaciones, API, permisos) se redactarán en sesiones futuras.
+
+**Hallazgos CRÍTICOS resueltos en FASE 6:**
+
+| # | Descripción | Estado |
+|---|---|---|
+| C16 (raíz) | Geometrías de estados mal cargadas | ✅ |
+| — | 13 parroquias "faltantes" del .gdb | ✅ Aclarado (14 features duplicadas, no faltantes) |
+| — | Migraciones fantasma | ✅ |
+| — | Tabla core_auditlog huérfana | ✅ |
+| — | Constraints redundantes | ✅ |
+
+**Estado territorial final tras FASE 6:**
+- Estados: 25 (área 913,832 km², error <0.3%)
+- Municipios: 336 (100% intersectan con su estado)
+- Parroquias: 1121 (100% intersectan con su estado)
+- Coincidencia exacta con el dataset oficial del `.gdb`.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
