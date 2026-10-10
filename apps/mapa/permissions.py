@@ -92,10 +92,19 @@ def obtener_permisos_usuario(user) -> Dict[str, List[str]]:
     if not user or not user.is_authenticated:
         return {}
     if user.is_superuser or user.is_staff:
-        return {k: ['ver'] if cfg.get('territorial_master') else ['ver', 'crear', 'editar', 'borrar'] for k, cfg in MODELOS_CRUD.items()}
-    permisos = {}
+        return {
+            k: ['ver'] if cfg.get('territorial_master') else ['ver', 'crear', 'editar', 'borrar']
+            for k, cfg in MODELOS_CRUD.items()
+        }
+    permisos: Dict[str, List[str]] = {}
     for nombre in user.groups.values_list('name', flat=True):
         for mk, acciones in PERMISOS_POR_GRUPO.get(nombre, {}).items():
+            cfg = MODELOS_CRUD.get(mk, {})
+            # Los modelos territoriales maestros (Estado, Parroquia) solo son
+            # editables desde el Django admin. En el panel operativo solo lectura,
+            # incluso para usuarios del grupo Administradores.
+            if cfg.get('territorial_master'):
+                acciones = ['ver']
             s = set(permisos.get(mk, [])) | set(acciones)
             permisos[mk] = sorted(s)
     return permisos
