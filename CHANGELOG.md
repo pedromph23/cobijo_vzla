@@ -68,5 +68,23 @@ Los 3 fallos existían antes de FASE 1 y no están relacionados con los formular
 
 Avanza CRÍTICOS C1-C3 del Plan Maestro v2.
 
+### FASE 1 — Nomenclatura y migraciones
+
+**Commits:** `e968b85`, más el commit del validador centralizado
+
+- `ParametrosModelo.verbose_name` → `'Simulación'` / `'Simulaciones'`.
+- Renombrado visible en panel admin y Django admin.
+- `apps/core/migrations/0015_alter_parametrosmodelo_options.py` aplicada.
+- `apps/core/migrations/0016_restaurar_constraints_zonaafectada.py` restaura 3 CheckConstraints y 2 índices en `ZonaAfectada` que la 0015 había removido.
+- Validador centralizado `validar_nombre_operativo` en `apps/core/validators.py` con reglas estrictas (vocal, consonante, máx 40% dígitos).
+- 8 `clean_nombre` en `apps/mapa/forms.py` reemplazados por llamada al validador.
+
+**Casos reales resueltos:**
+- `343qdxg`, `412312rewdq112`, `q3|1|1`, `asde1qw134`, `1223124`.
+
+**Registrado para FASE 7:**
+- Rename real del modelo `ParametrosModelo` → `Simulacion` (tabla + FK).
+- Limpiar constraints duplicados en `core_zonaafectada`.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
