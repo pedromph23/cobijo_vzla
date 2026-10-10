@@ -8,6 +8,7 @@ from apps.core.auth_views import PasswordChangeViewAudited, PasswordResetRequest
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health/', include('apps.mapa.urls_health')),
     path('', include('apps.publico.urls')),
     path('panel/', include('apps.mapa.urls')),
     path('api/', include('apps.mapa.urls_api')),

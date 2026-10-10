@@ -1,0 +1,7 @@
+"""Ruta pública de health check para Render."""
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.health_check, name='health_check'),
+]

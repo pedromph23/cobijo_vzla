@@ -19,6 +19,12 @@ COPY . .
 # Corregir CRLF por si acaso + dar permisos
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
+# Crear usuario no-root y ajustar permisos
+RUN useradd -m -u 1000 cobijo && \
+    chown -R cobijo:cobijo /app
+
+USER cobijo
+
 EXPOSE 8000
 
 CMD ["./start.sh"]
