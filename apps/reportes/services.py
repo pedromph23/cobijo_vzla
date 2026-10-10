@@ -190,32 +190,44 @@ def df_por_estado(desde=None, hasta=None, as_of=None) -> pd.DataFrame:
             )
         )
 
-        # Mapa de estado_id → {zonas: [...], heridos, fallecidos, damnificados}
+        # Agregado de zonas por estado usando la jerarquía FK
+        # (ZonaAfectada → Parroquia → Estado). Se usa la FK en lugar de
+        # operaciones espaciales porque las geometrías de las parroquias
+        # originales y del .gdb de estados tienen gaps por simplificación
+        # distinta, lo que produce falsos negativos con ST_Contains/ST_Intersects.
+        from django.db import connection
+
         zonas_por_estado: Dict[int, Dict[str, int]] = {}
-        zonas_qs = ZonaAfectada.objects
+        filtros = []
+        params = []
         if desde is not None:
-            zonas_qs = zonas_qs.filter(fecha_inicio__gte=desde)
+            filtros.append('z.fecha_inicio >= %s')
+            params.append(desde)
         if hasta is not None:
-            zonas_qs = zonas_qs.filter(fecha_inicio__lte=hasta)
-        for z in zonas_qs.only(
-            'id', 'heridos', 'fallecidos', 'damnificados', 'geom'
-        ).iterator(chunk_size=500):
-            if not z.geom:
-                continue
-            try:
-                estado = Estado.objects.filter(geom__contains=z.geom).first()
-                if not estado:
-                    continue
-                agg = zonas_por_estado.setdefault(
-                    estado.id,
-                    {'zonas': 0, 'heridos': 0, 'fallecidos': 0, 'damnificados': 0},
-                )
-                agg['zonas'] += 1
-                agg['heridos'] += z.heridos or 0
-                agg['fallecidos'] += z.fallecidos or 0
-                agg['damnificados'] += z.damnificados or 0
-            except Exception:
-                continue
+            filtros.append('z.fecha_inicio <= %s')
+            params.append(hasta)
+        where_extra = ('AND ' + ' AND '.join(filtros)) if filtros else ''
+
+        with connection.cursor() as c:
+            c.execute(f"""
+                SELECT p.estado_id,
+                       COUNT(z.id) AS n_zonas,
+                       COALESCE(SUM(z.heridos), 0),
+                       COALESCE(SUM(z.fallecidos), 0),
+                       COALESCE(SUM(z.damnificados), 0)
+                FROM core_zonaafectada z
+                JOIN core_parroquia p ON p.id = z.parroquia_id
+                WHERE z.parroquia_id IS NOT NULL
+                  {where_extra}
+                GROUP BY p.estado_id
+            """, params)
+            for eid, nz, h, f, d in c.fetchall():
+                zonas_por_estado[eid] = {
+                    'zonas': int(nz or 0),
+                    'heridos': int(h or 0),
+                    'fallecidos': int(f or 0),
+                    'damnificados': int(d or 0),
+                }
 
         data = []
         for e in estados_agg:
