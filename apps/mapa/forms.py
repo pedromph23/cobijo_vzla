@@ -61,6 +61,8 @@ def _parsear_punto(valor) -> Point:
         raise forms.ValidationError("La ubicación seleccionada no es válida.")
     if not (-180 <= lng <= 180) or not (-90 <= lat <= 90):
         raise forms.ValidationError("La ubicación está fuera del rango permitido.")
+    if not (0.60 <= lat <= 12.25) or not (-73.50 <= lng <= -58.05):
+        raise forms.ValidationError("La ubicación debe estar dentro del territorio de Venezuela.")
     return Point(lng, lat, srid=4326)
 
 
@@ -101,6 +103,34 @@ class PuntoDemandaForm(forms.ModelForm):
 
     def clean_ubicacion(self):
         return _parsear_punto(self.cleaned_data.get('ubicacion'))
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if len(nombre) < 3:
+            raise forms.ValidationError('El nombre debe tener al menos 3 caracteres.')
+        if nombre.isdigit():
+            raise forms.ValidationError('El nombre no puede ser solo números.')
+        return nombre
+
+    def clean_poblacion(self):
+        valor = self.cleaned_data.get('poblacion')
+        if valor is None or valor < 0:
+            raise forms.ValidationError('La población no puede ser negativa.')
+        if valor > 100000000:
+            raise forms.ValidationError('La población no debe superar 100.000.000.')
+        return valor
+
+    def clean_vulnerabilidad(self):
+        valor = self.cleaned_data.get('vulnerabilidad')
+        if valor is None or valor < 0 or valor > 1:
+            raise forms.ValidationError('La vulnerabilidad debe estar entre 0 y 1.')
+        return valor
+
+    def clean_descripcion(self):
+        texto = (self.cleaned_data.get('descripcion') or '').strip()
+        if len(texto) > 2000:
+            raise forms.ValidationError('La descripción no puede superar los 2000 caracteres.')
+        return texto
 
 
 class SitioCandidatoForm(forms.ModelForm):
@@ -165,6 +195,34 @@ class SitioCandidatoForm(forms.ModelForm):
     def clean_ubicacion(self):
         return _parsear_punto(self.cleaned_data.get('ubicacion'))
 
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if len(nombre) < 3:
+            raise forms.ValidationError('El nombre debe tener al menos 3 caracteres.')
+        if nombre.isdigit():
+            raise forms.ValidationError('El nombre no puede ser solo números.')
+        return nombre
+
+    def clean_capacidad_maxima(self):
+        valor = self.cleaned_data.get('capacidad_maxima')
+        if valor is None or valor < 1:
+            raise forms.ValidationError('La capacidad máxima debe ser al menos 1.')
+        if valor > 1000000:
+            raise forms.ValidationError('La capacidad máxima no debe superar 1.000.000.')
+        return valor
+
+    def clean_costo_apertura(self):
+        valor = self.cleaned_data.get('costo_apertura')
+        if valor is not None and valor < 0:
+            raise forms.ValidationError('El costo de apertura no puede ser negativo.')
+        return valor
+
+    def clean_costo_operacion(self):
+        valor = self.cleaned_data.get('costo_operacion')
+        if valor is not None and valor < 0:
+            raise forms.ValidationError('El costo de operación no puede ser negativo.')
+        return valor
+
 
 class RefugioExistenteForm(forms.ModelForm):
     ubicacion = UbicacionInputField()
@@ -216,6 +274,40 @@ class RefugioExistenteForm(forms.ModelForm):
     def clean_ubicacion(self):
         return _parsear_punto(self.cleaned_data.get('ubicacion'))
 
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if len(nombre) < 3:
+            raise forms.ValidationError('El nombre del refugio debe tener al menos 3 caracteres.')
+        if nombre.isdigit():
+            raise forms.ValidationError('El nombre del refugio no puede ser solo números.')
+        return nombre
+
+    def clean_direccion(self):
+        direccion = (self.cleaned_data.get('direccion') or '').strip()
+        if len(direccion) < 5:
+            raise forms.ValidationError('La dirección debe tener al menos 5 caracteres.')
+        return direccion
+
+    def clean_capacidad_total(self):
+        valor = self.cleaned_data.get('capacidad_total')
+        if valor is None or valor < 0:
+            raise forms.ValidationError('La capacidad total no puede ser negativa.')
+        if valor > 1000000:
+            raise forms.ValidationError('La capacidad total no debe superar 1.000.000.')
+        return valor
+
+    def clean_capacidad_disponible(self):
+        valor = self.cleaned_data.get('capacidad_disponible')
+        if valor is None or valor < 0:
+            raise forms.ValidationError('La capacidad disponible no puede ser negativa.')
+        return valor
+
+    def clean_horario(self):
+        horario = (self.cleaned_data.get('horario') or '').strip()
+        if len(horario) > 100:
+            raise forms.ValidationError('El horario no puede superar los 100 caracteres.')
+        return horario
+
     def clean_servicios(self):
         return list(self.cleaned_data.get('servicios') or [])
 
@@ -258,6 +350,32 @@ class ZonaAfectadaForm(forms.ModelForm):
             'fallecidos': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
             'damnificados': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric'}),
         }
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if len(nombre) < 3:
+            raise forms.ValidationError('El nombre de la zona debe tener al menos 3 caracteres.')
+        if nombre.isdigit():
+            raise forms.ValidationError('El nombre de la zona no puede ser solo números.')
+        return nombre
+
+    def clean_heridos(self):
+        valor = self.cleaned_data.get('heridos')
+        if valor is None or valor < 0:
+            raise forms.ValidationError('El número de heridos no puede ser negativo.')
+        return valor
+
+    def clean_fallecidos(self):
+        valor = self.cleaned_data.get('fallecidos')
+        if valor is None or valor < 0:
+            raise forms.ValidationError('El número de fallecidos no puede ser negativo.')
+        return valor
+
+    def clean_damnificados(self):
+        valor = self.cleaned_data.get('damnificados')
+        if valor is None or valor < 0:
+            raise forms.ValidationError('El número de damnificados no puede ser negativo.')
+        return valor
 
     def clean_geom(self):
         valor = self.cleaned_data.get('geom')
@@ -410,9 +528,17 @@ class ParametrosModeloForm(forms.ModelForm):
         help_texts = {'radio_cobertura': 'Metros.'}
 
     def clean_nombre_escenario(self):
+        import re as _re
         nombre = (self.cleaned_data.get('nombre_escenario') or '').strip()
         if len(nombre) < 3:
             raise forms.ValidationError('El nombre del escenario debe tener al menos 3 caracteres.')
+        if len(nombre) > 200:
+            raise forms.ValidationError('El nombre del escenario no debe superar 200 caracteres.')
+        if not _re.fullmatch(r"[A-Za-zÀ-ÿ0-9 ._\-]+", nombre):
+            raise forms.ValidationError(
+                'El nombre del escenario solo puede contener letras, números, '
+                'espacios, puntos, guiones y guiones bajos.'
+            )
         return nombre
 
     def clean_p(self):
