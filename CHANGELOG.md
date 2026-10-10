@@ -117,5 +117,38 @@ Avanza CRÍTICOS C1-C3 del Plan Maestro v2.
 
 **Resuelve:** CRÍTICOS C8, C9, C10 y ALTOS A5, A6, A15 del Plan Maestro v2.
 
+### FASE 1 — Bloque 4: robustez del deploy
+
+**Commit:** `e91a914`
+**Tag de rollback:** `pre-bloque4-deploy-20261010`
+
+**Problema resuelto:**
+El deploy de `e968b85` tardó 17m25s porque `start.sh` ejecutaba `migrate` en
+cada arranque del contenedor. Con 2 workers de gunicorn, ambos intentaban
+migrar a la vez, causando race conditions y serialización en Postgres.
+
+**Cambios:**
+- `start.sh`: quitado `migrate --noinput`. Las migraciones se aplican
+  manualmente desde local antes de pushear.
+- `start.sh`: agregado `--preload --max-requests 1000 --max-requests-jitter 100`
+  a gunicorn.
+- `Dockerfile`: usuario no-root `cobijo`.
+- `render.yaml`: `healthCheckPath` de `/admin/` a `/health/`.
+- `cobijo_vzla/urls.py` + `apps/mapa/urls_health.py`: ruta pública `/health/`.
+
+**Resultado medido:**
+- Antes: 17m25s por deploy.
+- Después: 1m08s por deploy.
+- Mejora: 15x.
+
+**Nota importante para el equipo:**
+`preDeployCommand` de Render no está disponible en plan free. **Toda migración
+futura debe aplicarse desde local con `python manage.py migrate` antes de
+pushear.** De lo contrario, el código se despliega sin los cambios de BD
+esperados y la app fallará.
+
+**Resuelve:** CRÍTICO C18 (migrate en cada arranque), ALTOS A3, A4, A14 del
+Plan Maestro v2.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
