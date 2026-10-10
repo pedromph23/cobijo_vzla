@@ -372,7 +372,7 @@ class ParametrosModeloAdmin(admin.ModelAdmin):
         ('Identificación', {
             'fields': ('nombre_escenario', 'tipo_modelo')
         }),
-        ('Parámetros del modelo', {
+        ('Simulaciones', {
             'fields': ('p', 'radio_cobertura', 'presupuesto')
         }),
         ('Ponderadores', {

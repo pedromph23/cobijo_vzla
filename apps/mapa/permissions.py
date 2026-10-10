@@ -54,7 +54,7 @@ MODELOS_CRUD: Dict[str, Dict] = {
     },
     'core_parametrosmodelo': {
         'app_label': 'core', 'model_name': 'ParametrosModelo',
-        'verbose_name': 'Parametro', 'verbose_name_plural': 'Parametros',
+        'verbose_name': 'Simulación', 'verbose_name_plural': 'Simulaciones',
         'icon': 'fa-cog', 'list_display': ['nombre_escenario', 'tipo_modelo', 'p'],
         'search_fields': ['nombre_escenario'], 'ordering': ['-fecha_creacion'],
     },

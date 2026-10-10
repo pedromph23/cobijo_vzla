@@ -260,6 +260,24 @@ class ZonaAfectada(models.Model):
         verbose_name = "Zona afectada"
         verbose_name_plural = "Zonas afectadas"
         ordering = ['-fecha_inicio']
+        indexes = [
+            models.Index(fields=['nivel_alerta']),
+            models.Index(fields=['fecha_inicio']),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(heridos__gte=0),
+                name='zona_heridos_gte_0',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(fallecidos__gte=0),
+                name='zona_fallecidos_gte_0',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(damnificados__gte=0),
+                name='zona_damnificados_gte_0',
+            ),
+        ]
 
     def __str__(self):
         return self.nombre
@@ -310,8 +328,8 @@ class ParametrosModelo(models.Model):
     filtro_estado = models.ForeignKey(Estado, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
-        verbose_name = "Parámetros de modelo"
-        verbose_name_plural = "Parámetros de modelo"
+        verbose_name = "Simulación"
+        verbose_name_plural = "Simulaciones"
         ordering = ['-fecha_creacion']
 
     def __str__(self):
