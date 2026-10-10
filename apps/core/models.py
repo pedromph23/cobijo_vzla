@@ -42,10 +42,67 @@ class Estado(models.Model):
         return (c.y, c.x)
 
 
+class Municipio(models.Model):
+    """Municipio perteneciente a un estado."""
+    nombre = models.CharField(max_length=100)
+    estado = models.ForeignKey(
+        Estado, on_delete=models.CASCADE, related_name='municipios'
+    )
+    codigo_ine = models.CharField(
+        max_length=10, blank=True, null=True, verbose_name="Código INE"
+    )
+    geom = models.MultiPolygonField(
+        srid=4326, null=True, blank=True, verbose_name="Geometría"
+    )
+    poblacion = models.IntegerField(
+        default=0, validators=[MinValueValidator(0)]
+    )
+    densidad_poblacional = models.FloatField(
+        default=0.0, validators=[MinValueValidator(0)],
+        help_text="Habitantes por km\u00b2"
+    )
+    indice_vulnerabilidad = models.FloatField(
+        default=0.5,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="\u00cdndice de 0 (baja) a 1 (alta)"
+    )
+
+    class Meta:
+        verbose_name = "Municipio"
+        verbose_name_plural = "Municipios"
+        ordering = ['estado__nombre', 'nombre']
+        unique_together = ('nombre', 'estado')
+        indexes = [models.Index(fields=['estado', 'nombre'])]
+
+    def __str__(self):
+        return f"{self.nombre}, {self.estado.nombre}"
+
+    @property
+    def centroide(self):
+        if not self.geom:
+            return None
+        c = self.geom.centroid
+        return (c.y, c.x)
+
+    @property
+    def lat(self):
+        c = self.centroide
+        return c[0] if c else None
+
+    @property
+    def lng(self):
+        c = self.centroide
+        return c[1] if c else None
+
+
 class Parroquia(models.Model):
-    """Parroquia perteneciente a un estado."""
+    """Parroquia perteneciente a un municipio."""
     nombre = models.CharField(max_length=100)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE, related_name='parroquias')
+    municipio = models.ForeignKey(
+        Municipio, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='parroquias'
+    )
     codigo_ine = models.CharField(max_length=10, blank=True, null=True, verbose_name="Código INE")
     geom = models.MultiPolygonField(srid=4326, null=True, blank=True, verbose_name="Geometría")
     poblacion = models.IntegerField(default=0, validators=[MinValueValidator(0)])
@@ -246,6 +303,10 @@ class RefugioExistente(UbicacionParroquiaMixin, models.Model):
 class ZonaAfectada(models.Model):
     """Zona geográfica afectada por un evento."""
     evento = models.ForeignKey('emergencias.Evento', on_delete=models.CASCADE, related_name='zonas_afectadas')
+    parroquia = models.ForeignKey(
+        Parroquia, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='zonas_afectadas'
+    )
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
     geom = models.PolygonField(srid=4326)
