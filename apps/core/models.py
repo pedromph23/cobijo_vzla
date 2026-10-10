@@ -113,8 +113,14 @@ class Parroquia(models.Model):
         verbose_name = "Parroquia"
         verbose_name_plural = "Parroquias"
         ordering = ['estado__nombre', 'nombre']
-        unique_together = ('nombre', 'estado')
-        indexes = [models.Index(fields=['estado', 'nombre'])]
+        # Nota: unique_together por (nombre, municipio) previene duplicados
+        # dentro del mismo municipio. Las parroquias sin municipio asignado
+        # quedan exentas de la restricción (NULL no colisiona con NULL).
+        unique_together = ('nombre', 'municipio')
+        indexes = [
+            models.Index(fields=['estado', 'nombre']),
+            models.Index(fields=['municipio', 'nombre']),
+        ]
 
     def __str__(self):
         return f"{self.nombre}, {self.estado.nombre}"
