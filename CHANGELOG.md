@@ -41,5 +41,32 @@ Detectados al correr `python manage.py test apps.mapa`:
 
 Los 3 fallos existían antes de FASE 1 y no están relacionados con los formularios agregados.
 
+### FASE 1 — Bloque 1.5: validaciones en formularios operativos
+
+**Commits:** `fe7bed9`, `94006df`
+
+- Bbox Venezuela en `_parsear_punto` (lat 0.60-12.25, lng -73.50 a -58.05).
+- `PuntoDemandaForm`: `clean_nombre`, `clean_poblacion`, `clean_vulnerabilidad`, `clean_descripcion`.
+- `SitioCandidatoForm`: `clean_nombre`, `clean_capacidad_maxima`, `clean_costo_apertura`, `clean_costo_operacion`.
+- `RefugioExistenteForm`: `clean_nombre`, `clean_direccion`, `clean_capacidad_total`, `clean_capacidad_disponible`, `clean_horario`.
+- `ZonaAfectadaForm`: `clean_nombre`, `clean_heridos`, `clean_fallecidos`, `clean_damnificados`, `clean_fecha_inicio`.
+- `EventoForm`: `clean_fecha` (rechaza futuro > 5 min, año < 1900).
+- `ParametrosModeloForm.clean_nombre_escenario`: rechaza símbolos raros (`|`, `@`).
+
+**Casos reales detectados en producción y resueltos:**
+- `PuntoDemanda` con nombre `1223124` → borrado, validación agregada.
+- `ParametrosModelo` con nombre `q3|1|1` → borrado, validación agregada.
+- `Evento` con fecha futura 2026-10-11 → borrado, validación agregada.
+
+**Registrado para FASE 7:**
+- Renombrar `ParametrosModelo` → `Simulacion` (o `Escenario`). Decisión pendiente del usuario.
+
+**Pendiente para FASE 3:**
+- Detección de duplicados (advertencia, no bloqueo).
+- Regla heurística "60% dígitos" para nombres sospechosos (opcional).
+- Validación MIME real de imágenes.
+
+Avanza CRÍTICOS C1-C3 del Plan Maestro v2.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
