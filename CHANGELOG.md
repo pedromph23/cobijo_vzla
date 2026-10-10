@@ -418,5 +418,44 @@ por parroquia, ~1122 queries por generación). Se mitiga en FASE 5.
 - Parroquias: 1121 (100% intersectan con su estado)
 - Coincidencia exacta con el dataset oficial del `.gdb`.
 
+### FASE 4 — Seguridad avanzada (4 bloques)
+
+**Commits:** `13f2d98`, `9d02301`, `296a2be`, `af37e10`
+
+**Bloque 1 — Cabeceras de seguridad y cookies:**
+- `SECURE_PROXY_SSL_HEADER`: detecta HTTPS detrás del proxy de Render.
+- `SECURE_SSL_REDIRECT`: activo en producción.
+- `SECURE_HSTS_SECONDS`: 1 año (31536000 s).
+- `SECURE_HSTS_INCLUDE_SUBDOMAINS` y PRELOAD.
+- `SESSION_COOKIE_SECURE` y `CSRF_COOKIE_SECURE`: solo HTTPS en producción.
+
+Todos se activan automáticamente cuando `DEBUG=False`. Verificado con
+`python manage.py check --deploy` en ambos modos (0 issues).
+
+**Bloque 2 — LOGGING estructurado:**
+- Handler a stdout (Render Logs).
+- root: WARNING, django: WARNING, apps propias: INFO.
+- Errores y warnings visibles en el dashboard de Render.
+
+**Bloque 3 — IP real del cliente:**
+- `ip_cliente` ahora lee `X-Forwarded-For` y toma la primera IP
+  (cliente original) con fallback a `REMOTE_ADDR`.
+- Los registros de auditoría reflejan la IP real del cliente.
+
+**Bloque 4 — Session hardening:**
+- `SESSION_COOKIE_AGE`: 8 horas.
+- `SESSION_COOKIE_HTTPONLY`: True.
+- `SESSION_COOKIE_SAMESITE`: 'Lax'.
+- `CSRF_COOKIE_SAMESITE`: 'Lax'.
+- `CSRF_COOKIE_AGE`: 8 horas.
+
+**Verificación end-to-end en producción:**
+- Health check OK tras cada deploy.
+- Redirección HTTP → HTTPS funcionando.
+- Login y sesión funcionan correctamente.
+- No hubo loop de redirects.
+
+**Hallazgos resueltos:** A1, A2, S9, S10, S13 del Plan Maestro v2.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
