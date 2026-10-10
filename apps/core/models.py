@@ -359,20 +359,10 @@ class ZonaAfectada(models.Model):
             models.Index(fields=['nivel_alerta']),
             models.Index(fields=['fecha_inicio']),
         ]
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(heridos__gte=0),
-                name='zona_heridos_gte_0',
-            ),
-            models.CheckConstraint(
-                condition=models.Q(fallecidos__gte=0),
-                name='zona_fallecidos_gte_0',
-            ),
-            models.CheckConstraint(
-                condition=models.Q(damnificados__gte=0),
-                name='zona_damnificados_gte_0',
-            ),
-        ]
+        # Nota: los CHECK (heridos >= 0), (fallecidos >= 0), (damnificados >= 0)
+        # los genera Django automáticamente por usar PositiveIntegerField.
+        # Los CheckConstraint explícitos eran redundantes y se eliminaron
+        # en la migración 0028.
 
     def __str__(self):
         return self.nombre
