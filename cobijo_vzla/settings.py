@@ -164,7 +164,18 @@ LEAFLET_CONFIG = {
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ]
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        # Global para anónimos: 60 requests/minuto (1 req/seg promedio).
+        'anon': '60/min',
+        # Endpoints sensibles con rates específicos (ver apps/core/throttles.py).
+        'reporte_ciudadano': '5/hour',
+        'mapa_calor_publico': '30/min',
+        'buscar_lugar': '30/min',
+    },
 }
 
 

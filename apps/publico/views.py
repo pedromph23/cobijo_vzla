@@ -12,6 +12,13 @@ from django.db.models import Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.decorators import throttle_classes
+
+from apps.core.throttles import (
+    ReporteCiudadanoThrottle,
+    MapaCalorPublicoThrottle,
+    BuscarLugarThrottle,
+)
 from rest_framework import status
 
 from apps.optimizacion.heatmap import generar_mapa_calor, Pesos
@@ -104,6 +111,7 @@ def api_diagnostico_zonas_publicas(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@throttle_classes([MapaCalorPublicoThrottle])
 def api_mapa_calor_publico(request):
     """Mapa de calor con pesos personalizables (query params)."""
     try:
@@ -120,6 +128,7 @@ def api_mapa_calor_publico(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@throttle_classes([BuscarLugarThrottle])
 def api_buscar_lugar(request):
     """Búsqueda de estados, parroquias y refugios por nombre."""
     query = request.GET.get('q', '')
@@ -135,6 +144,7 @@ def api_buscar_lugar(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([ReporteCiudadanoThrottle])
 def api_reporte_ciudadano(request):
     """Recibe y valida reportes ciudadanos."""
     try:
