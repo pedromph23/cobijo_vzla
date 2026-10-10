@@ -19,6 +19,7 @@ from apps.core.models import (
 )
 from apps.emergencias.models import Evento, Reporte
 from apps.core.validators import (
+    validar_nombre_operativo,
     validar_telefono,
     validar_texto_sin_numeros_ni_especiales,
     validar_texto_operativo,
@@ -105,12 +106,7 @@ class PuntoDemandaForm(forms.ModelForm):
         return _parsear_punto(self.cleaned_data.get('ubicacion'))
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        if len(nombre) < 3:
-            raise forms.ValidationError('El nombre debe tener al menos 3 caracteres.')
-        if nombre.isdigit():
-            raise forms.ValidationError('El nombre no puede ser solo números.')
-        return nombre
+        return validar_nombre_operativo(self.cleaned_data.get('nombre'))
 
     def clean_poblacion(self):
         valor = self.cleaned_data.get('poblacion')
@@ -196,12 +192,7 @@ class SitioCandidatoForm(forms.ModelForm):
         return _parsear_punto(self.cleaned_data.get('ubicacion'))
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        if len(nombre) < 3:
-            raise forms.ValidationError('El nombre debe tener al menos 3 caracteres.')
-        if nombre.isdigit():
-            raise forms.ValidationError('El nombre no puede ser solo números.')
-        return nombre
+        return validar_nombre_operativo(self.cleaned_data.get('nombre'))
 
     def clean_capacidad_maxima(self):
         valor = self.cleaned_data.get('capacidad_maxima')
@@ -275,12 +266,7 @@ class RefugioExistenteForm(forms.ModelForm):
         return _parsear_punto(self.cleaned_data.get('ubicacion'))
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        if len(nombre) < 3:
-            raise forms.ValidationError('El nombre del refugio debe tener al menos 3 caracteres.')
-        if nombre.isdigit():
-            raise forms.ValidationError('El nombre del refugio no puede ser solo números.')
-        return nombre
+        return validar_nombre_operativo(self.cleaned_data.get('nombre'))
 
     def clean_direccion(self):
         direccion = (self.cleaned_data.get('direccion') or '').strip()
@@ -352,12 +338,7 @@ class ZonaAfectadaForm(forms.ModelForm):
         }
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        if len(nombre) < 3:
-            raise forms.ValidationError('El nombre de la zona debe tener al menos 3 caracteres.')
-        if nombre.isdigit():
-            raise forms.ValidationError('El nombre de la zona no puede ser solo números.')
-        return nombre
+        return validar_nombre_operativo(self.cleaned_data.get('nombre'))
 
     def clean_fecha_inicio(self):
         from django.utils import timezone
@@ -445,11 +426,7 @@ class EstadoForm(forms.ModelForm):
         }
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        validar_texto_sin_numeros_ni_especiales(nombre)
-        if len(nombre) < 3:
-            raise forms.ValidationError('El nombre del estado debe tener al menos 3 caracteres.')
-        return nombre
+        return validar_nombre_operativo(self.cleaned_data.get('nombre'))
 
     def clean_codigo_ine(self):
         codigo = (self.cleaned_data.get('codigo_ine') or '').strip()
@@ -489,11 +466,7 @@ class ParroquiaForm(forms.ModelForm):
         }
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        validar_texto_operativo(nombre)
-        if len(nombre) < 2:
-            raise forms.ValidationError('El nombre de la parroquia debe tener al menos 2 caracteres.')
-        return nombre
+        return validar_nombre_operativo(self.cleaned_data.get('nombre'))
 
     def clean_codigo_ine(self):
         codigo = (self.cleaned_data.get('codigo_ine') or '').strip()
@@ -541,18 +514,10 @@ class ParametrosModeloForm(forms.ModelForm):
         help_texts = {'radio_cobertura': 'Metros.'}
 
     def clean_nombre_escenario(self):
-        import re as _re
-        nombre = (self.cleaned_data.get('nombre_escenario') or '').strip()
-        if len(nombre) < 3:
-            raise forms.ValidationError('El nombre del escenario debe tener al menos 3 caracteres.')
-        if len(nombre) > 200:
-            raise forms.ValidationError('El nombre del escenario no debe superar 200 caracteres.')
-        if not _re.fullmatch(r"[A-Za-zÀ-ÿ0-9 ._\-]+", nombre):
-            raise forms.ValidationError(
-                'El nombre del escenario solo puede contener letras, números, '
-                'espacios, puntos, guiones y guiones bajos.'
-            )
-        return nombre
+        return validar_nombre_operativo(
+            self.cleaned_data.get('nombre_escenario'),
+            etiqueta='El nombre del escenario',
+        )
 
     def clean_p(self):
         p = self.cleaned_data.get('p')
@@ -607,10 +572,7 @@ class EventoForm(forms.ModelForm):
         }
 
     def clean_nombre(self):
-        nombre = (self.cleaned_data.get('nombre') or '').strip()
-        if len(nombre) < 3:
-            raise forms.ValidationError('El nombre del evento debe tener al menos 3 caracteres.')
-        return nombre
+        return validar_nombre_operativo(self.cleaned_data.get('nombre'))
 
     def clean_magnitud(self):
         valor = self.cleaned_data.get('magnitud')
