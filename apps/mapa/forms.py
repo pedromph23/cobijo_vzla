@@ -359,6 +359,19 @@ class ZonaAfectadaForm(forms.ModelForm):
             raise forms.ValidationError('El nombre de la zona no puede ser solo números.')
         return nombre
 
+    def clean_fecha_inicio(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        fecha = self.cleaned_data.get('fecha_inicio')
+        if fecha is None:
+            return fecha
+        ahora = timezone.now()
+        if fecha > ahora + timedelta(minutes=5):
+            raise forms.ValidationError('La fecha de inicio no puede estar en el futuro.')
+        if fecha.year < 1900:
+            raise forms.ValidationError('La fecha de inicio no puede ser anterior a 1900.')
+        return fecha
+
     def clean_heridos(self):
         valor = self.cleaned_data.get('heridos')
         if valor is None or valor < 0:
@@ -604,6 +617,19 @@ class EventoForm(forms.ModelForm):
         if valor is not None and valor < 0:
             raise forms.ValidationError('La magnitud no puede ser negativa.')
         return valor
+
+    def clean_fecha(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        fecha = self.cleaned_data.get('fecha')
+        if fecha is None:
+            return fecha
+        ahora = timezone.now()
+        if fecha > ahora + timedelta(minutes=5):
+            raise forms.ValidationError('La fecha del evento no puede estar en el futuro. Los eventos son hechos ya ocurridos.')
+        if fecha.year < 1900:
+            raise forms.ValidationError('La fecha del evento no puede ser anterior a 1900.')
+        return fecha
 
 
 class ReporteForm(forms.ModelForm):
