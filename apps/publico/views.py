@@ -122,8 +122,8 @@ def api_mapa_calor_publico(request):
 @permission_classes([AllowAny])
 def api_buscar_lugar(request):
     """Búsqueda de estados, parroquias y refugios por nombre."""
+    query = request.GET.get('q', '')
     try:
-        query = request.GET.get('q', '')
         return JsonResponse(services.buscar_lugares(query), safe=False)
     except Exception as e:
         logger.error(f"Error en búsqueda '{query}': {e}", exc_info=True)

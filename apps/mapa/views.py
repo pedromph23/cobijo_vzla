@@ -16,7 +16,6 @@ Estructura:
 import csv
 import json
 import logging
-import sys
 from io import StringIO
 
 from django.contrib.auth.decorators import login_required
@@ -141,6 +140,8 @@ def api_datos_mapa(request):
 @permission_classes([IsAuthenticated])
 def api_estadisticas(request):
     """Estadísticas generales del sistema."""
+    if not es_gestor(request.user):
+        return JsonResponse({'error': 'Se requieren permisos de gestor'}, status=403)
     try:
         return JsonResponse(services.obtener_estadisticas())
     except Exception as e:
@@ -156,6 +157,8 @@ def api_estadisticas(request):
 @permission_classes([IsAuthenticated])
 def api_ejecutar_optimizacion(request):
     """Ejecuta un modelo de optimización con los parámetros dados."""
+    if not es_gestor(request.user):
+        return JsonResponse({'error': 'Se requieren permisos de gestor'}, status=403)
     param_id = request.data.get('parametros_id')
     if not param_id:
         return JsonResponse({'error': 'Se requiere parametros_id'}, status=400)
@@ -251,6 +254,8 @@ def api_detalle_resultado(request, resultado_id):
 @permission_classes([IsAuthenticated])
 def api_mapa_calor(request):
     """Genera el mapa de calor con pesos personalizables."""
+    if not es_gestor(request.user):
+        return JsonResponse({'error': 'Se requieren permisos de gestor'}, status=403)
     try:
         pesos = {
             clave: float(request.query_params.get(clave, 1.0))
@@ -259,6 +264,12 @@ def api_mapa_calor(request):
                 'heridos', 'fallecidos', 'damnificados', 'reportes',
             )
         }
+    except (ValueError, TypeError) as e:
+        return JsonResponse(
+            {'error': f'Los pesos deben ser números válidos. Detalle: {e}'},
+            status=400,
+        )
+    try:
         return JsonResponse(generar_mapa_calor(pesos), safe=False)
     except Exception as e:
         logger.error(f"Error en api_mapa_calor: {e}", exc_info=True)
@@ -301,10 +312,8 @@ def api_ejecutar_comando(request):
         )
 
     salida = StringIO()
-    stdout_original = sys.stdout
     try:
-        sys.stdout = salida
-        call_command(comando)
+        call_command(comando, stdout=salida)
         return JsonResponse({
             'success': True,
             'mensaje': f'Comando {comando} ejecutado correctamente',
@@ -313,8 +322,6 @@ def api_ejecutar_comando(request):
     except Exception as e:
         logger.error(f"Error ejecutando comando {comando}: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
-    finally:
-        sys.stdout = stdout_original
 
 
 # ============================================================
@@ -325,6 +332,8 @@ def api_ejecutar_comando(request):
 @permission_classes([IsAuthenticated])
 def api_exportar_csv(request):
     """Exporta los resultados de optimización a CSV."""
+    if not es_gestor(request.user):
+        return JsonResponse({'error': 'Se requieren permisos de gestor'}, status=403)
     try:
         resultados = (
             ResultadoOptimizacion.objects
@@ -362,6 +371,8 @@ def api_exportar_csv(request):
 @permission_classes([IsAuthenticated])
 def api_exportar_geojson(request):
     """Exporta los centros del último resultado a GeoJSON."""
+    if not es_gestor(request.user):
+        return JsonResponse({'error': 'Se requieren permisos de gestor'}, status=403)
     try:
         resultado = ResultadoOptimizacion.objects.order_by('-fecha_ejecucion').first()
         if not resultado:
