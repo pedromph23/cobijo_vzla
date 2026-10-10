@@ -217,6 +217,29 @@ LOGOUT_REDIRECT_URL = '/'
 
 
 # ==========================================
+# SESIONES Y COOKIES
+# ==========================================
+# Cookies de sesión endurecidas:
+# - HTTPOnly: JS no puede leer la cookie (previene XSS).
+# - SameSite=Lax: previene CSRF cross-site pero permite navegación normal.
+# - Timeout de 8 horas (jornada laboral típica).
+# - La sesión expira al cerrar el navegador solo si SESSION_EXPIRE_AT_BROWSER_CLOSE=True.
+#
+# CSRF_COOKIE_HTTPONLY se deja False porque Django necesita leer el token
+# desde el DOM para el JavaScript que envía formularios AJAX.
+
+SESSION_COOKIE_AGE = 8 * 60 * 60  # 8 horas
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = False
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_AGE = 8 * 60 * 60
+
+
+# ==========================================
 # EMAIL
 # ==========================================
 # Desarrollo: consola por defecto.
