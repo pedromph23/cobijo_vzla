@@ -86,5 +86,18 @@ Avanza CRÍTICOS C1-C3 del Plan Maestro v2.
 - Rename real del modelo `ParametrosModelo` → `Simulacion` (tabla + FK).
 - Limpiar constraints duplicados en `core_zonaafectada`.
 
+### FASE 1 — Bloque 3: protección de modelos territoriales maestros
+
+**Commit:** `40c7e96`
+
+- `obtener_permisos_usuario` ahora respeta `territorial_master=True` también para usuarios no-staff en el camino por grupos.
+- Si un modelo tiene `territorial_master=True` (Estado, Parroquia), el permiso se fuerza a `['ver']` independientemente de lo que el grupo otorgue.
+- Antes: usuarios no-staff del grupo "Administradores" podían crear/editar/borrar Estados y Parroquias desde el panel operativo.
+- Después: solo lectura en el panel. Edición reservada al Django admin para staff.
+
+**Caso real detectado:** usuario `iujo` (grupos Administradores + Gestores, no staff) veía botones de CRUD en Estados y Parroquias.
+
+**Verificado:** `core_estado` y `core_parroquia` quedan en `['ver']` para `iujo`.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
