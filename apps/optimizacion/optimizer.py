@@ -92,21 +92,76 @@ def _matriz_distancias(demandas, candidatos) -> Dict[Tuple[int, int], float]:
     return matriz
 
 
-def _ponderacion_demanda(demanda, parametros) -> float:
-    """Ponderación por vulnerabilidad y afectación."""
+def _precalcular_zonas_por_demanda(demandas) -> dict:
+    """Precalcula agregados de zonas afectadas por demanda en 1 query SQL.
+
+    Evita el N+1 de `_ponderacion_demanda` que hacía una query espacial por
+    cada punto de demanda.
+
+    Returns:
+        {demanda_id: {'heridos': X, 'fallecidos': Y, 'damnificados': Z}}
+    """
+    from collections import defaultdict
+    from django.db import connection
+
+    datos = defaultdict(
+        lambda: {'heridos': 0, 'fallecidos': 0, 'damnificados': 0}
+    )
+
+    ids = [d.id for d in demandas if d.ubicacion]
+    if not ids:
+        return dict(datos)
+
+    with connection.cursor() as c:
+        c.execute("""
+            SELECT pd.id,
+                   COALESCE(SUM(z.heridos), 0),
+                   COALESCE(SUM(z.fallecidos), 0),
+                   COALESCE(SUM(z.damnificados), 0)
+            FROM core_puntodemanda pd
+            JOIN core_zonaafectada z ON ST_Contains(z.geom, pd.ubicacion)
+            WHERE pd.id = ANY(%s)
+            GROUP BY pd.id
+        """, [ids])
+        for pid, h, f, d in c.fetchall():
+            datos[pid]['heridos'] = int(h or 0)
+            datos[pid]['fallecidos'] = int(f or 0)
+            datos[pid]['damnificados'] = int(d or 0)
+
+    return dict(datos)
+
+
+def _ponderacion_demanda(demanda, parametros, datos_zonas=None) -> float:
+    """Ponderación por vulnerabilidad y afectación.
+
+    Args:
+        demanda: Instancia de PuntoDemanda.
+        parametros: Instancia de ParametrosModelo.
+        datos_zonas: Dict opcional {heridos, fallecidos, damnificados} para
+            esta demanda. Si None, hace la query individual (fallback).
+    """
     peso = 1.0
     try:
         if demanda.vulnerabilidad:
             peso += parametros.ponderador_vulnerabilidad * demanda.vulnerabilidad
 
-        zonas = ZonaAfectada.objects.filter(geom__contains=demanda.ubicacion)
-        for z in zonas:
-            if z.heridos:
-                peso += parametros.ponderador_heridos * z.heridos / 100
-            if z.fallecidos:
-                peso += parametros.ponderador_fallecidos * z.fallecidos / 10
-            if z.damnificados:
-                peso += parametros.ponderador_damnificados * z.damnificados / 1000
+        if datos_zonas is not None:
+            heridos = datos_zonas.get('heridos', 0)
+            fallecidos = datos_zonas.get('fallecidos', 0)
+            damnificados = datos_zonas.get('damnificados', 0)
+        else:
+            # Fallback: query individual (N+1).
+            zonas = ZonaAfectada.objects.filter(geom__contains=demanda.ubicacion)
+            heridos = sum(z.heridos or 0 for z in zonas)
+            fallecidos = sum(z.fallecidos or 0 for z in zonas)
+            damnificados = sum(z.damnificados or 0 for z in zonas)
+
+        if heridos:
+            peso += parametros.ponderador_heridos * heridos / 100
+        if fallecidos:
+            peso += parametros.ponderador_fallecidos * fallecidos / 10
+        if damnificados:
+            peso += parametros.ponderador_damnificados * damnificados / 1000
     except Exception as e:
         logger.warning(f"Ponderación demanda {demanda.id}: {e}")
     return peso
@@ -390,7 +445,13 @@ def ejecutar_optimizacion(parametros_id: int) -> Dict[str, Any]:
 
         # 3. Preparar
         matriz = _matriz_distancias(demandas, candidatos)
-        ponderaciones = {d.id: _ponderacion_demanda(d, parametros) for d in demandas}
+        # Precalcular zonas por demanda en 1 query (evita N+1).
+        datos_zonas = _precalcular_zonas_por_demanda(demandas)
+        logger.info(f"Precalculadas zonas para {len(datos_zonas)} demandas")
+        ponderaciones = {
+            d.id: _ponderacion_demanda(d, parametros, datos_zonas.get(d.id, {}))
+            for d in demandas
+        }
 
         # 4. Ejecutar
         tipo = parametros.tipo_modelo
