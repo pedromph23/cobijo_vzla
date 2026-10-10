@@ -9,7 +9,27 @@ logger = logging.getLogger(__name__)
 
 
 def ip_cliente(request):
-    """Obtiene la IP del socket; no confía en X-Forwarded-For sin proxy confiable."""
+    """Obtiene la IP del cliente real, considerando proxies.
+
+    En Render, el servidor está detrás de un proxy SSL. La IP real del
+    cliente viene en X-Forwarded-For. Tomamos la primera IP de la lista
+    (el cliente original) porque Render reenvía la cadena completa.
+
+    En local, REMOTE_ADDR es la IP real.
+    """
+    if not request:
+        return None
+
+    # Django solo expone X-Forwarded-For si USE_X_FORWARDED_HOST está
+    # activo o si el proxy lo pasa. Consultamos META directamente.
+    xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if xff:
+        # XFF puede ser "cliente, proxy1, proxy2". Tomamos el primero.
+        primera = xff.split(',')[0].strip()
+        if primera:
+            return primera
+
+    # Fallback: IP del socket (localhost, desarrollo).
     return request.META.get('REMOTE_ADDR')
 
 
