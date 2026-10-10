@@ -19,6 +19,15 @@ MODELOS_CRUD: Dict[str, Dict] = {
         'ordering': ['nombre'],
         'territorial_master': True,
     },
+    'core_municipio': {
+        'app_label': 'core', 'model_name': 'Municipio',
+        'verbose_name': 'Municipio', 'verbose_name_plural': 'Municipios',
+        'icon': 'fa-city',
+        'list_display': ['nombre', 'estado', 'codigo_ine'],
+        'search_fields': ['nombre', 'codigo_ine'],
+        'ordering': ['estado__nombre', 'nombre'],
+        'territorial_master': True,
+    },
     'core_parroquia': {
         'app_label': 'core', 'model_name': 'Parroquia',
         'verbose_name': 'Parroquia', 'verbose_name_plural': 'Parroquias',
@@ -82,6 +91,7 @@ PERMISOS_POR_GRUPO: Dict[str, Dict[str, List[str]]] = {
         'core_zonaafectada': ['ver', 'editar'],
         'core_sitiocandidato': ['ver'],
         'core_parametrosmodelo': ['ver'],
+        'core_municipio': ['ver'],
         'emergencias_evento': ['ver', 'editar'],
         'emergencias_reporte': ['ver', 'editar'],
     },

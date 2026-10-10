@@ -10,6 +10,7 @@ from django.contrib.gis.geos import Point, GEOSGeometry
 
 from apps.core.models import (
     Estado,
+    Municipio,
     Parroquia,
     PuntoDemanda,
     SitioCandidato,
@@ -623,3 +624,51 @@ class ReporteForm(forms.ModelForm):
         if autor:
             validar_texto_sin_numeros_ni_especiales(autor)
         return autor[:100]
+
+
+class MunicipioForm(forms.ModelForm):
+    """Formulario explícito para Municipios.
+
+    La geometría se edita exclusivamente desde el Django admin (GISModelAdmin).
+    Este formulario valida el nombre, código INE y pertenencia al estado.
+    """
+    class Meta:
+        model = Municipio
+        fields = [
+            'nombre', 'estado', 'codigo_ine',
+            'poblacion', 'densidad_poblacional', 'indice_vulnerabilidad',
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': 100,
+                'placeholder': 'Ej.: Baruta',
+            }),
+            'estado': forms.Select(attrs={'class': 'form-select'}),
+            'codigo_ine': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': 10,
+                'placeholder': 'Ej.: VE1503',
+            }),
+            'poblacion': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric',
+            }),
+            'densidad_poblacional': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal',
+            }),
+            'indice_vulnerabilidad': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'max': 1, 'step': '0.01', 'inputmode': 'decimal',
+            }),
+        }
+        help_texts = {
+            'indice_vulnerabilidad': 'Valor entre 0 (baja) y 1 (alta).',
+            'densidad_poblacional': 'Habitantes por km².',
+            'codigo_ine': 'Código INE del municipio (formato VE + 4 dígitos).',
+        }
+
+    def clean_nombre(self):
+        return validar_nombre_operativo(self.cleaned_data.get('nombre'))
+
+    def clean_codigo_ine(self):
+        codigo = (self.cleaned_data.get('codigo_ine') or '').strip()
+        if codigo and not codigo.replace('-', '').isalnum():
+            raise forms.ValidationError('El código INE debe ser alfanumérico.')
+        return codigo
