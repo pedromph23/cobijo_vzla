@@ -2,6 +2,8 @@
 
 > Plataforma web geoespacial para la gestión de refugios, zonas afectadas, necesidades humanitarias, eventos y apoyo a la navegación durante situaciones de emergencia en Venezuela.
 
+> **Documentación técnica detallada:** [docs/](docs/).
+
 Cobijo VZLA combina Django, PostgreSQL/PostGIS, GeoDjango, APIs REST, mapas Leaflet, rutas con OSRM/Leaflet Routing Machine, optimización matemática, reportes y un panel operativo con permisos por grupo.
 
 ---
