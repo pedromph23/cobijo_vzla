@@ -264,5 +264,43 @@ Comportamiento validado con 3 tests:
 - `ZonaAfectada` con jerarquía territorial completa.
 - `UbicacionParroquiaMixin` con override manual y auto-asignación selectiva.
 
+### FASE 3 — Bloques 1-3 y 5: validación universal
+
+**Commits:** `e648433`, `4b78162`, `298fd9c`, `a6aceeb`, `5d76485`
+
+**Bloque 1 — MunicipioForm:**
+- Nuevo formulario explícito para el modelo `Municipio` creado en FASE 2.
+- Validaciones: `clean_nombre` (validar_nombre_operativo),
+  `clean_codigo_ine` (alfanumérico).
+- Registrado en `MODELOS_CRUD`, `FORMULARIOS_PERSONALIZADOS` y
+  `PERMISOS_POR_GRUPO`. Gestores solo lectura, Administradores CRUD completo.
+- Reemplaza el fallback `modelform_factory(fields='__all__')`.
+
+**Bloque 2 — ParroquiaForm con municipio:**
+- Campo `municipio` agregado al formulario.
+- Filtro dinámico del queryset de municipios según el estado seleccionado.
+- Validación `clean()`: municipio debe pertenecer al mismo estado.
+- Campos con default en el modelo ahora `required=False`.
+
+**Bloque 3 — Validación MIME real con Pillow:**
+- Nuevo validador `validar_imagen_real` en `apps/core/validators.py`.
+- Verifica: tamaño, contenido real con `Image.verify()`, dimensiones
+  mínimas (100x100) y máximas (10000x10000).
+- Aplicado en `ReporteCiudadanoForm` (público) y `ReporteForm` (admin).
+- Resuelve: un `.exe` renombrado a `.jpg` ya no pasa.
+
+**Bloque 5 — Rate limiting en endpoints públicos:**
+- `apps/core/throttles.py`: 3 clases AnonRateThrottle.
+- Rates configurados en `settings.py`:
+  - `anon`: 60/min (global).
+  - `reporte_ciudadano`: 5/hour (anti-spam).
+  - `mapa_calor_publico`: 30/min (anti-DoS).
+  - `buscar_lugar`: 30/min (anti-scraping).
+- Test verificado: 6º POST a reporte-ciudadano → 429.
+
+**Confirmado en traceback del test:**
+El heatmap tiene el N+1 de C11 (`calcular_indice_necesidad` ejecuta 1 query
+por parroquia, ~1122 queries por generación). Se mitiga en FASE 5.
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
