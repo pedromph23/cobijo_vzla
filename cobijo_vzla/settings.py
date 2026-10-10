@@ -29,6 +29,36 @@ CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS if host != '
 
 
 # ==========================================
+# SEGURIDAD ADICIONAL (producción)
+# ==========================================
+# Las protecciones se activan cuando DEBUG=False. En desarrollo se
+# desactivan para no romper el flujo local (HTTP sin SSL).
+#
+# Notas:
+# - Render actúa como proxy SSL. Sin SECURE_PROXY_SSL_HEADER, Django no
+#   sabe que la petición original fue HTTPS y rompe CSRF/redirects.
+# - HSTS por defecto: 1 año en producción, 0 en desarrollo.
+# - Las cookies solo se envían por HTTPS en producción.
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+SECURE_SSL_REDIRECT = os.getenv(
+    'DJANGO_SECURE_SSL_REDIRECT',
+    'False' if DEBUG else 'True'
+).lower() == 'true'
+
+SECURE_HSTS_SECONDS = int(os.getenv(
+    'DJANGO_SECURE_HSTS_SECONDS',
+    '0' if DEBUG else '31536000'
+))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+
+# ==========================================
 # APLICACIONES
 # ==========================================
 INSTALLED_APPS = [
