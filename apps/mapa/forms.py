@@ -8,9 +8,21 @@ centralizada en el formulario Django.
 from django import forms
 from django.contrib.gis.geos import Point, GEOSGeometry
 
-from apps.core.models import PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada
-from apps.emergencias.models import Evento
-from apps.core.validators import validar_telefono
+from apps.core.models import (
+    Estado,
+    Parroquia,
+    PuntoDemanda,
+    SitioCandidato,
+    RefugioExistente,
+    ZonaAfectada,
+    ParametrosModelo,
+)
+from apps.emergencias.models import Evento, Reporte
+from apps.core.validators import (
+    validar_telefono,
+    validar_texto_sin_numeros_ni_especiales,
+    validar_texto_operativo,
+)
 
 
 SERVICIOS_REFUGIO = (
@@ -272,3 +284,228 @@ class ZonaAfectadaForm(forms.ModelForm):
         if inicio and fin and fin < inicio:
             self.add_error('fecha_fin', 'La fecha de finalización no puede ser anterior al inicio.')
         return cleaned
+
+
+# ============================================================
+# FORMULARIOS EXPLÍCITOS PARA MODELOS DEL PANEL
+# ============================================================
+# Reemplazan el fallback modelform_factory(fields='__all__') del CRUD.
+# Ver FASE 1 del Plan Maestro v2 (hallazgo C7).
+# Los imports se agregan al inicio del módulo.
+
+class EstadoForm(forms.ModelForm):
+    """Formulario explícito para Estados.
+
+    La geometría se edita exclusivamente desde el Django admin (GISModelAdmin).
+    Este formulario valida nombre y código INE para el CRUD operativo.
+    """
+    class Meta:
+        model = Estado
+        fields = ['nombre', 'codigo_ine']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': 100,
+                'placeholder': 'Ej.: Miranda',
+            }),
+            'codigo_ine': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': 10,
+                'placeholder': 'Ej.: 15',
+            }),
+        }
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        validar_texto_sin_numeros_ni_especiales(nombre)
+        if len(nombre) < 3:
+            raise forms.ValidationError('El nombre del estado debe tener al menos 3 caracteres.')
+        return nombre
+
+    def clean_codigo_ine(self):
+        codigo = (self.cleaned_data.get('codigo_ine') or '').strip()
+        if codigo and not codigo.isdigit():
+            raise forms.ValidationError('El código INE debe contener solo dígitos.')
+        return codigo
+
+
+class ParroquiaForm(forms.ModelForm):
+    """Formulario explícito para Parroquias.
+
+    La geometría se edita exclusivamente desde el Django admin (GISModelAdmin).
+    """
+    class Meta:
+        model = Parroquia
+        fields = [
+            'nombre', 'estado', 'codigo_ine',
+            'poblacion', 'densidad_poblacional', 'indice_vulnerabilidad',
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 100}),
+            'estado': forms.Select(attrs={'class': 'form-select'}),
+            'codigo_ine': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 10}),
+            'poblacion': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': 1, 'inputmode': 'numeric',
+            }),
+            'densidad_poblacional': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal',
+            }),
+            'indice_vulnerabilidad': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'max': 1, 'step': '0.01', 'inputmode': 'decimal',
+            }),
+        }
+        help_texts = {
+            'indice_vulnerabilidad': 'Valor entre 0 (baja) y 1 (alta).',
+            'densidad_poblacional': 'Habitantes por km².',
+        }
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        validar_texto_operativo(nombre)
+        if len(nombre) < 2:
+            raise forms.ValidationError('El nombre de la parroquia debe tener al menos 2 caracteres.')
+        return nombre
+
+    def clean_codigo_ine(self):
+        codigo = (self.cleaned_data.get('codigo_ine') or '').strip()
+        if codigo and not codigo.isdigit():
+            raise forms.ValidationError('El código INE debe contener solo dígitos.')
+        return codigo
+
+
+class ParametrosModeloForm(forms.ModelForm):
+    """Formulario explícito para los parámetros de modelos de optimización."""
+    class Meta:
+        model = ParametrosModelo
+        fields = [
+            'nombre_escenario', 'tipo_modelo', 'p', 'presupuesto', 'radio_cobertura',
+            'ponderador_vulnerabilidad', 'ponderador_heridos',
+            'ponderador_fallecidos', 'ponderador_damnificados',
+            'filtro_estado',
+        ]
+        widgets = {
+            'nombre_escenario': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
+            'tipo_modelo': forms.Select(attrs={'class': 'form-select'}),
+            'p': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 1, 'step': 1, 'inputmode': 'numeric',
+            }),
+            'presupuesto': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal',
+            }),
+            'radio_cobertura': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': 100, 'inputmode': 'numeric',
+            }),
+            'ponderador_vulnerabilidad': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': '0.1', 'inputmode': 'decimal',
+            }),
+            'ponderador_heridos': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': '0.1', 'inputmode': 'decimal',
+            }),
+            'ponderador_fallecidos': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': '0.1', 'inputmode': 'decimal',
+            }),
+            'ponderador_damnificados': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': '0.1', 'inputmode': 'decimal',
+            }),
+            'filtro_estado': forms.Select(attrs={'class': 'form-select'}),
+        }
+        help_texts = {'radio_cobertura': 'Metros.'}
+
+    def clean_nombre_escenario(self):
+        nombre = (self.cleaned_data.get('nombre_escenario') or '').strip()
+        if len(nombre) < 3:
+            raise forms.ValidationError('El nombre del escenario debe tener al menos 3 caracteres.')
+        return nombre
+
+    def clean_p(self):
+        p = self.cleaned_data.get('p')
+        if p is None or p < 1:
+            raise forms.ValidationError('El número de centros debe ser al menos 1.')
+        if p > 1000:
+            raise forms.ValidationError('El número de centros no debe superar 1000.')
+        return p
+
+    def clean_presupuesto(self):
+        valor = self.cleaned_data.get('presupuesto')
+        if valor is not None and valor < 0:
+            raise forms.ValidationError('El presupuesto no puede ser negativo.')
+        return valor
+
+    def clean_radio_cobertura(self):
+        valor = self.cleaned_data.get('radio_cobertura')
+        if valor is None or valor < 0:
+            raise forms.ValidationError('El radio de cobertura no puede ser negativo.')
+        if valor > 500000:
+            raise forms.ValidationError('El radio de cobertura no debe superar los 500 km (500000 m).')
+        return valor
+
+    def clean(self):
+        cleaned = super().clean()
+        for campo, etiqueta in (
+            ('ponderador_vulnerabilidad', 'vulnerabilidad'),
+            ('ponderador_heridos', 'heridos'),
+            ('ponderador_fallecidos', 'fallecidos'),
+            ('ponderador_damnificados', 'damnificados'),
+        ):
+            valor = cleaned.get(campo)
+            if valor is not None and valor < 0:
+                self.add_error(campo, f'El ponderador de {etiqueta} no puede ser negativo.')
+        return cleaned
+
+
+class EventoForm(forms.ModelForm):
+    """Formulario explícito para eventos de emergencia."""
+    class Meta:
+        model = Evento
+        fields = ['nombre', 'tipo', 'fecha', 'magnitud', 'descripcion', 'activo']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 200}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'fecha': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'magnitud': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 0, 'step': '0.01', 'inputmode': 'decimal',
+            }),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'maxlength': 2000}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get('nombre') or '').strip()
+        if len(nombre) < 3:
+            raise forms.ValidationError('El nombre del evento debe tener al menos 3 caracteres.')
+        return nombre
+
+    def clean_magnitud(self):
+        valor = self.cleaned_data.get('magnitud')
+        if valor is not None and valor < 0:
+            raise forms.ValidationError('La magnitud no puede ser negativa.')
+        return valor
+
+
+class ReporteForm(forms.ModelForm):
+    """Formulario explícito para reportes ciudadanos desde el panel administrativo."""
+    class Meta:
+        model = Reporte
+        fields = ['autor', 'texto', 'zona_afectada', 'punto_demanda', 'imagen', 'verificado']
+        widgets = {
+            'autor': forms.TextInput(attrs={
+                'class': 'form-control', 'maxlength': 100, 'placeholder': 'Ej.: María Pérez',
+            }),
+            'texto': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'maxlength': 2000}),
+            'zona_afectada': forms.Select(attrs={'class': 'form-select'}),
+            'punto_demanda': forms.Select(attrs={'class': 'form-select'}),
+            'imagen': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'verificado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_texto(self):
+        texto = (self.cleaned_data.get('texto') or '').strip()
+        if len(texto) < 10:
+            raise forms.ValidationError('La descripción debe tener al menos 10 caracteres.')
+        if len(texto) > 2000:
+            raise forms.ValidationError('La descripción no puede superar los 2000 caracteres.')
+        return texto
+
+    def clean_autor(self):
+        autor = (self.cleaned_data.get('autor') or '').strip()
+        if autor:
+            validar_texto_sin_numeros_ni_especiales(autor)
+        return autor[:100]

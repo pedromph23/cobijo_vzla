@@ -13,7 +13,10 @@ from .permissions import (
     get_config, get_modelo_class, modelos_disponibles,
     obtener_permisos_usuario, tiene_permiso,
 )
-from .forms import PuntoDemandaForm, SitioCandidatoForm, RefugioExistenteForm, ZonaAfectadaForm
+from .forms import (
+    PuntoDemandaForm, SitioCandidatoForm, RefugioExistenteForm, ZonaAfectadaForm,
+    EstadoForm, ParroquiaForm, ParametrosModeloForm, EventoForm, ReporteForm,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,11 @@ FORMULARIOS_PERSONALIZADOS = {
     'core_sitiocandidato': SitioCandidatoForm,
     'core_refugioexistente': RefugioExistenteForm,
     'core_zonaafectada': ZonaAfectadaForm,
+    'core_estado': EstadoForm,
+    'core_parroquia': ParroquiaForm,
+    'core_parametrosmodelo': ParametrosModeloForm,
+    'emergencias_evento': EventoForm,
+    'emergencias_reporte': ReporteForm,
 }
 
 CAPAS_CACHEABLES = {'core_refugioexistente', 'core_zonaafectada'}
