@@ -35,6 +35,49 @@ def _es_admin(user) -> bool:
     return user.groups.filter(name='Administradores').exists()
 
 
+def _puede_gestionar(request_user, target_user) -> tuple[bool, str]:
+    """Determina si request_user puede desactivar/reactivar a target_user.
+
+    Reglas:
+    - Nadie puede desactivarse a sí mismo.
+    - Solo un superusuario puede modificar cuentas de superusuario.
+    - Solo un superusuario puede modificar cuentas de staff.
+
+    Returns:
+        (puede, motivo) — motivo tiene el texto a mostrar si puede=False.
+    """
+    if not request_user or not request_user.is_authenticated:
+        return False, 'Debes iniciar sesión.'
+
+    if target_user == request_user:
+        return False, 'No puedes desactivar ni borrar tu propia cuenta.'
+
+    if target_user.is_superuser and not request_user.is_superuser:
+        return False, 'Solo un superusuario puede modificar cuentas de superusuario.'
+
+    if target_user.is_staff and not request_user.is_superuser:
+        return False, 'Solo un superusuario puede modificar cuentas de staff.'
+
+    return True, ''
+
+
+def _puede_editar(request_user, target_user) -> tuple[bool, str]:
+    """Similar a _puede_gestionar, pero permite auto-edición del perfil."""
+    if not request_user or not request_user.is_authenticated:
+        return False, 'Debes iniciar sesión.'
+
+    if target_user == request_user:
+        return True, ''
+
+    if target_user.is_superuser and not request_user.is_superuser:
+        return False, 'Solo un superusuario puede modificar cuentas de superusuario.'
+
+    if target_user.is_staff and not request_user.is_superuser:
+        return False, 'Solo un superusuario puede modificar cuentas de staff.'
+
+    return True, ''
+
+
 # ============================================================
 # LISTADO
 # ============================================================
@@ -62,6 +105,14 @@ class UserListView(View):
             qs = qs.filter(groups__name=grupo_filtro)
 
         page = Paginator(qs, 25).get_page(request.GET.get('page', 1))
+
+        # Precalcular por usuario si el solicitante puede gestionarlo.
+        for u in page:
+            puede_edit, _ = _puede_editar(request.user, u)
+            puede_gest, motivo = _puede_gestionar(request.user, u)
+            u.puede_editar = puede_edit
+            u.puede_gestionar = puede_gest
+            u.motivo_bloqueo = motivo
 
         return render(request, 'admin/users/user_list.html', {
             'page_obj': page,
@@ -123,9 +174,10 @@ class UserUpdateView(View):
 
         user_obj = get_object_or_404(User, pk=pk)
 
-        # Prevenir auto-desactivación
-        if user_obj == request.user and not user_obj.is_active:
-            messages.warning(request, 'No puedes desactivar tu propia cuenta.')
+        puede, motivo = _puede_editar(request.user, user_obj)
+        if not puede:
+            messages.error(request, motivo)
+            return redirect('user_list')
 
         form = UserUpdateForm(instance=user_obj)
         return render(request, 'admin/users/user_form.html', {
@@ -139,10 +191,16 @@ class UserUpdateView(View):
             raise PermissionDenied('Solo administradores pueden gestionar usuarios.')
 
         user_obj = get_object_or_404(User, pk=pk)
+
+        puede, motivo = _puede_editar(request.user, user_obj)
+        if not puede:
+            messages.error(request, motivo)
+            return redirect('user_list')
+
         form = UserUpdateForm(request.POST, instance=user_obj)
 
         if form.is_valid():
-            # Prevenir auto-desactivación
+            # Prevenir auto-desactivación vía el formulario
             if user_obj == request.user and not form.cleaned_data.get('is_active'):
                 messages.error(request, 'No puedes desactivar tu propia cuenta.')
                 return render(request, 'admin/users/user_form.html', {
@@ -177,6 +235,12 @@ class UserDeleteView(View):
             raise PermissionDenied('Solo administradores pueden gestionar usuarios.')
 
         user_obj = get_object_or_404(User, pk=pk)
+
+        puede, motivo = _puede_gestionar(request.user, user_obj)
+        if not puede:
+            messages.error(request, motivo)
+            return redirect('user_list')
+
         return render(request, 'admin/users/user_confirm_delete.html', {
             'objeto': user_obj,
         })
@@ -187,14 +251,9 @@ class UserDeleteView(View):
 
         user_obj = get_object_or_404(User, pk=pk)
 
-        # Prevenir auto-desactivación
-        if user_obj == request.user:
-            messages.error(request, 'No puedes desactivar tu propia cuenta.')
-            return redirect('user_list')
-
-        # Prevenir desactivar al último superuser
-        if user_obj.is_superuser and User.objects.filter(is_superuser=True).count() <= 1:
-            messages.error(request, 'No puedes desactivar al último superusuario.')
+        puede, motivo = _puede_gestionar(request.user, user_obj)
+        if not puede:
+            messages.error(request, motivo)
             return redirect('user_list')
 
         user_obj.is_active = False
@@ -216,6 +275,12 @@ class UserReactivateView(View):
             raise PermissionDenied('Solo administradores pueden gestionar usuarios.')
 
         user_obj = get_object_or_404(User, pk=pk)
+
+        puede, motivo = _puede_gestionar(request.user, user_obj)
+        if not puede:
+            messages.error(request, motivo)
+            return redirect('user_list')
+
         user_obj.is_active = True
         user_obj.save(update_fields=['is_active'])
         logger.info(f'Usuario reactivado: {user_obj.username} por {request.user.username}')

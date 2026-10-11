@@ -85,20 +85,33 @@
                                     {% endif %}
                                 </td>
                                 <td class="crud-actions">
-                                    <a href="{% url 'user_update' u.pk %}" class="btn-crud btn-sm btn-edit" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    {% if u.is_active %}
-                                        <a href="{% url 'user_delete' u.pk %}" class="btn-crud btn-sm btn-delete" title="Desactivar">
-                                            <i class="fas fa-user-slash"></i>
+                                    {% if u.puede_editar %}
+                                        <a href="{% url 'user_update' u.pk %}" class="btn-crud btn-sm btn-edit" title="Editar">
+                                            <i class="fas fa-edit"></i>
                                         </a>
                                     {% else %}
-                                        <form method="post" action="{% url 'user_reactivate' u.pk %}" style="display:inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn-crud btn-sm btn-primary" title="Reactivar">
-                                                <i class="fas fa-user-check"></i>
-                                            </button>
-                                        </form>
+                                        <span class="btn-disabled" title="{{ u.motivo_bloqueo }}">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                    {% endif %}
+
+                                    {% if u.puede_gestionar %}
+                                        {% if u.is_active %}
+                                            <a href="{% url 'user_delete' u.pk %}" class="btn-crud btn-sm btn-delete" title="Desactivar">
+                                                <i class="fas fa-user-slash"></i>
+                                            </a>
+                                        {% else %}
+                                            <form method="post" action="{% url 'user_reactivate' u.pk %}" style="display:inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn-crud btn-sm btn-primary" title="Reactivar">
+                                                    <i class="fas fa-user-check"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="btn-disabled" title="{{ u.motivo_bloqueo }}">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -150,5 +163,16 @@
     .badge-success { background: #d1f4e0; color: #0d6832; }
     .badge-danger { background: #f8d7da; color: #842029; }
     .text-muted { color: #888; font-style: italic; }
+    .btn-disabled {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: .4rem;
+        background: rgba(0,0,0,.04);
+        color: #aaa;
+        cursor: not-allowed;
+    }
 </style>
 {% endblock %}
