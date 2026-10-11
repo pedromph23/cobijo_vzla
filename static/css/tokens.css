@@ -1,0 +1,89 @@
+/* ============================================================
+   COBIJOVZLA · DESIGN TOKENS
+   Única fuente de verdad para espaciado, tipografía, radios,
+   sombras y transiciones. Sin selectores. Sin reglas.
+   Cargado PRIMERO. No rompe nada existente.
+   ============================================================ */
+
+:root {
+  /* ----------------------------------------------------------
+     ESPACIADO · escala base 4px
+     Reemplaza paddings/margins sueltos en refactor futuro.
+     ---------------------------------------------------------- */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  48px;
+  --space-10: 64px;
+
+  /* ----------------------------------------------------------
+     TIPOGRAFÍA · escala modular
+     ---------------------------------------------------------- */
+  --font-xs:   0.75rem;   /* 12px */
+  --font-sm:   0.82rem;   /* 13px */
+  --font-base: 0.92rem;   /* 15px */
+  --font-md:   1rem;      /* 16px */
+  --font-lg:   1.15rem;   /* 18px */
+  --font-xl:   1.35rem;   /* 22px */
+  --font-2xl:  1.6rem;    /* 26px */
+  --font-3xl:  2rem;      /* 32px */
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --line-tight:   1.15;
+  --line-snug:    1.35;
+  --line-normal:  1.55;
+  --line-relaxed: 1.7;
+
+  /* ----------------------------------------------------------
+     ALTURAS DE HEADER · un solo valor por breakpoint
+     Sustituye a los actuales 78/68/58/48 dispersos.
+     ---------------------------------------------------------- */
+  --header-h:     72px;   /* Desktop  ≥1024 */
+  --header-h-md:  64px;   /* Tablet   768–1023 */
+  --header-h-sm:  56px;   /* Móvil    480–767 */
+  --header-h-xs:  52px;   /* Móvil    <480 */
+
+  /* ----------------------------------------------------------
+     ANCHOS DE SIDEBAR
+     ---------------------------------------------------------- */
+  --sidebar-w:     320px;  /* Desktop */
+  --sidebar-w-md:  280px;  /* Tablet */
+  --sidebar-w-sm:  260px;  /* Móvil */
+
+  /* ----------------------------------------------------------
+     BREAKPOINTS · documentación viva
+     (CSS no permite variables en @media, esto es referencia)
+     ---------------------------------------------------------- */
+  /* --bp-xl:  1440px  → desktop grande  */
+  /* --bp-lg:  1024px  → laptop          */
+  /* --bp-md:   900px  → tablet apaisada */
+  /* --bp-sm:   768px  → tablet vertical */
+  /* --bp-xs:   600px  → móvil grande    */
+  /* --bp-2xs:  480px  → móvil pequeño   */
+  /* --bp-3xs:  380px  → móvil estrecho  */
+
+  /* ----------------------------------------------------------
+     ZONAS TÁCTILES · mínimo WCAG AA 44px
+     ---------------------------------------------------------- */
+  --tap-min: 44px;
+
+  /* ----------------------------------------------------------
+     TRANSICIONES · ya existían en main.css, se conservan aquí
+     ---------------------------------------------------------- */
+  --transition-fast:   0.18s ease;
+  --transition-normal: 0.28s ease;
+  --transition-slow:   0.45s ease;
+}
+
+/* Modo oscuro: mismos tokens, sin cambios aquí (los colores
+   viven en main.css y ui-palette.css, que sí se redefinen). */
