@@ -5,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from apps.core.auth_views import PasswordChangeViewAudited, PasswordResetRequestView, PasswordResetCompleteView
+from apps.core import user_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -16,6 +17,13 @@ urlpatterns = [
     path('api/core/', include('apps.core.urls')),
     path('api/publico/', include('apps.publico.urls_api')),
     path('api/reportes/', include('apps.reportes.urls_api')),
+    # === Usuarios (solo admin) ===
+    path('panel/usuarios/', user_views.UserListView.as_view(), name='user_list'),
+    path('panel/usuarios/nuevo/', user_views.UserCreateView.as_view(), name='user_create'),
+    path('panel/usuarios/<int:pk>/editar/', user_views.UserUpdateView.as_view(), name='user_update'),
+    path('panel/usuarios/<int:pk>/desactivar/', user_views.UserDeleteView.as_view(), name='user_delete'),
+    path('panel/usuarios/<int:pk>/reactivar/', user_views.UserReactivateView.as_view(), name='user_reactivate'),
+
     path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path(

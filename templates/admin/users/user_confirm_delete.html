@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Desactivar Usuario - CobijoVzla{% endblock %}
+
+{% block content %}
+<div class="crud-container">
+    <aside class="crud-sidebar">
+        <h3><i class="fas fa-database"></i> Modelos</h3>
+        <nav class="crud-menu">
+            <a href="{% url 'user_list' %}" class="crud-menu-item">
+                <i class="fas fa-arrow-left"></i><span>Volver a Usuarios</span>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="crud-main">
+        <div class="crud-header">
+            <div>
+                <h1><i class="fas fa-user-slash"></i> Desactivar Usuario</h1>
+            </div>
+        </div>
+
+        <div class="crud-alert crud-alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            Vas a desactivar la cuenta de <strong>{{ objeto.username }}</strong>.
+            El usuario no podrá iniciar sesión, pero su historial de acciones
+            quedará preservado en la auditoría del sistema.
+        </div>
+
+        <div class="crud-detail">
+            <dl>
+                <dt>Usuario</dt><dd>{{ objeto.username }}</dd>
+                <dt>Nombre completo</dt><dd>{{ objeto.get_full_name|default:"—" }}</dd>
+                <dt>Correo</dt><dd>{{ objeto.email|default:"—" }}</dd>
+                <dt>Grupo</dt>
+                <dd>{% for g in objeto.groups.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% empty %}<em>Sin grupo</em>{% endfor %}</dd>
+            </dl>
+        </div>
+
+        <form method="post" class="crud-form">
+            {% csrf_token %}
+            <div class="crud-form-actions">
+                <a href="{% url 'user_list' %}" class="btn-crud btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-crud btn-danger">
+                    <i class="fas fa-user-slash"></i> Desactivar usuario
+                </button>
+            </div>
+        </form>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/internal-overrides.css' %}?v=2">
+<style>
+    .crud-detail {
+        background: var(--comfort-surface, #f8f9fa);
+        border-radius: .5rem;
+        padding: 1rem 1.25rem;
+        margin: 1rem 0;
+    }
+    .crud-detail dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: .5rem 1rem;
+        margin: 0;
+    }
+    .crud-detail dt {
+        font-weight: 600;
+        color: var(--comfort-text-muted, #555);
+    }
+    .crud-detail dd { margin: 0; }
+    .crud-alert-warning {
+        background: #fff3cd;
+        color: #856404;
+        border-left: 4px solid #ffc107;
+        padding: 1rem;
+        border-radius: .4rem;
+    }
+</style>
+{% endblock %}
