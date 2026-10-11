@@ -3,7 +3,9 @@ Tests unitarios del módulo Core.
 
 Verifica propiedades calculadas y comportamientos clave de los modelos.
 """
+from datetime import datetime
 from django.test import TestCase
+from django.utils import timezone
 from django.contrib.gis.geos import Point, Polygon, MultiPolygon
 
 from .models import (
@@ -69,14 +71,14 @@ class ZonaAfectadaTest(TestCase):
         self.evento = Evento.objects.create(
             nombre='Sismo Test',
             tipo='sismo',
-            fecha='2026-01-01T00:00:00Z',
+            fecha=timezone.make_aware(datetime(2026, 1, 1, 0, 0, 0)),
         )
         self.zona = ZonaAfectada.objects.create(
             evento=self.evento,
             nombre='Zona A',
             geom=Polygon([(0, 0), (0, 1), (1, 1), (1, 0), (0, 0)]),
             nivel_alerta='alto',
-            fecha_inicio='2026-01-01T00:00:00Z',
+            fecha_inicio=timezone.make_aware(datetime(2026, 1, 1, 0, 0, 0)),
             heridos=10,
             fallecidos=2,
             damnificados=100,
