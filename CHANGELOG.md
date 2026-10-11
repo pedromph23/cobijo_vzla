@@ -457,5 +457,43 @@ Todos se activan automáticamente cuando `DEBUG=False`. Verificado con
 
 **Hallazgos resueltos:** A1, A2, S9, S10, S13 del Plan Maestro v2.
 
+### FASE 3 — Bloque 4: detección de duplicados
+
+**Commit:** `e639adf`
+
+Cierra FASE 3 al 100%.
+
+**Nuevo helper `apps/core/dedup.py`:**
+- `similitud_nombres(a, b)`: usa `SequenceMatcher` con normalización
+  (sin acentos, minúsculas, espacios colapsados) + detección de contención.
+  - "Hospital Central" vs "Hospital Central de Caracas" → 0.94 (no 0.74).
+  - "Hospital Central" vs "Hospital Universitario" → 0.63.
+- `distancia_metros(lat1, lng1, lat2, lng2)`: geodésica vía geopy.
+- `buscar_similar(...)`: combina nombre similar (umbral 0.85) + cercanía
+  geográfica (umbral 100 m). Devuelve el candidato más similar o None.
+
+**Formularios con detección:**
+- `PuntoDemandaForm`: nombre + ubicación.
+- `RefugioExistenteForm`: nombre + ubicación.
+- `ZonaAfectadaForm`: nombre + evento.
+
+**UI:**
+- Nuevo campo `confirmar_duplicado` (checkbox) al final de cada formulario.
+- Si hay duplicado y no está marcado, se rechaza con mensaje humano.
+- Si está marcado, se permite crear (confirmación explícita).
+- En modo edición se excluye la propia instancia de la comparación.
+
+**Tests verificados:**
+- Duplicado sin confirmar → valid=False con mensaje claro.
+- Duplicado con confirmación → valid=True.
+- Registro nuevo sin coincidencias → valid=True.
+
+**Estado final FASE 3 (100%):**
+- Bloque 1 — MunicipioForm ✅
+- Bloque 2 — ParroquiaForm con municipio ✅
+- Bloque 3 — Validación MIME real ✅
+- Bloque 4 — Detección de duplicados ✅
+- Bloque 5 — Rate limiting ✅
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
