@@ -393,7 +393,7 @@ class ZonaAfectada(models.Model):
 # PARÁMETROS DE MODELO
 # ============================================================
 
-class ParametrosModelo(models.Model):
+class Simulacion(models.Model):
     TIPO_MODELO_CHOICES = [
         ('pmediana', 'P-Mediana'),
         ('pcentro', 'P-Centro'),
@@ -427,7 +427,7 @@ class ParametrosModelo(models.Model):
 
 class ResultadoOptimizacion(models.Model):
     fecha_ejecucion = models.DateTimeField(auto_now_add=True)
-    parametros = models.ForeignKey(ParametrosModelo, on_delete=models.CASCADE, related_name='resultados')
+    escenario = models.ForeignKey(Simulacion, on_delete=models.CASCADE, related_name='resultados')
     datos_json = models.JSONField()
 
     class Meta:
@@ -436,7 +436,7 @@ class ResultadoOptimizacion(models.Model):
         ordering = ['-fecha_ejecucion']
 
     def __str__(self):
-        return f"Resultado #{self.pk} — {self.parametros}"
+        return f"Resultado #{self.pk} — {self.escenario}"
 
 
 # ============================================================

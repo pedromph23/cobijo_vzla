@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.gis.geos import Point
 from apps.core.models import (Estado, Parroquia, PuntoDemanda,
                               SitioCandidato, RefugioExistente,
-                              ZonaAfectada, ParametrosModelo)
+                              ZonaAfectada, Simulacion)
 from apps.emergencias.models import Evento, Reporte
 
 class Command(BaseCommand):
@@ -138,7 +138,7 @@ class Command(BaseCommand):
 
         # 6) Crear algunos parámetros de modelo por defecto
         self.stdout.write('Creando parámetros de modelo...')
-        ParametrosModelo.objects.create(
+        Simulacion.objects.create(
             nombre_escenario='Escenario Masivo p=20',
             tipo_modelo='pmediana',
             p=20,

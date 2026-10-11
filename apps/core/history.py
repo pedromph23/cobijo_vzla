@@ -16,7 +16,7 @@ MODELOS_HISTORICOS = {
     "apps.core.models.SitioCandidato",
     "apps.core.models.RefugioExistente",
     "apps.core.models.ZonaAfectada",
-    "apps.core.models.ParametrosModelo",
+    "apps.core.models.Simulacion",
     "apps.emergencias.models.Evento",
 }
 

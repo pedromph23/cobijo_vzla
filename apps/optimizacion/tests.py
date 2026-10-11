@@ -10,7 +10,7 @@ from django.contrib.gis.geos import Point, Polygon, MultiPolygon
 
 from apps.core.models import (
     Estado, Parroquia, PuntoDemanda, SitioCandidato,
-    ParametrosModelo, ZonaAfectada,
+    Simulacion, ZonaAfectada,
 )
 from apps.emergencias.models import Evento
 
@@ -141,7 +141,7 @@ class DistanciaTest(TestCase):
 
 class ValidacionTest(TestCase):
     def setUp(self):
-        self.parametros = ParametrosModelo.objects.create(
+        self.parametros = Simulacion.objects.create(
             nombre_escenario='Test',
             tipo_modelo='pmediana',
             p=2,
@@ -189,7 +189,7 @@ class OptimizacionTest(TestCase):
         )
 
     def _run(self, tipo):
-        p = ParametrosModelo.objects.create(
+        p = Simulacion.objects.create(
             nombre_escenario=f'Test {tipo}',
             tipo_modelo=tipo,
             p=1,

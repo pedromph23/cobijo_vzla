@@ -26,7 +26,7 @@ from django.core.management import call_command
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
-from apps.core.models import ParametrosModelo, ResultadoOptimizacion
+from apps.core.models import Simulacion, ResultadoOptimizacion
 from apps.optimizacion.optimizer import ejecutar_optimizacion
 from apps.optimizacion.heatmap import generar_mapa_calor
 
@@ -68,9 +68,9 @@ def panel_admin(request):
     """
     from .permissions import modelos_disponibles
 
-    parametros = ParametrosModelo.objects.order_by('-fecha_creacion')
+    parametros = Simulacion.objects.order_by('-fecha_creacion')
     return render(request, 'admin/panel_admin.html', {
-        'parametros': parametros,
+        'escenarios': parametros,
         'estadisticas': services.obtener_estadisticas(),
         'menu_modelos': modelos_disponibles(request.user),
         'es_admin': True,
@@ -107,7 +107,7 @@ def resultados_view(request):
     """Vista para la página de resultados de optimización."""
     resultados = (
         ResultadoOptimizacion.objects
-        .select_related('parametros')
+        .select_related('escenario')
         .order_by('-fecha_ejecucion')[:10]
     )
     return render(request, 'admin/resultados.html', {
@@ -164,7 +164,7 @@ def api_ejecutar_optimizacion(request):
         return JsonResponse({'error': 'Se requiere parametros_id'}, status=400)
 
     try:
-        parametros = get_object_or_404(ParametrosModelo, pk=param_id)
+        parametros = get_object_or_404(Simulacion, pk=param_id)
         resultado = ejecutar_optimizacion(param_id)
 
         if not resultado:
@@ -197,15 +197,15 @@ def api_listar_resultados(request):
     try:
         resultados = (
             ResultadoOptimizacion.objects
-            .select_related('parametros')
+            .select_related('escenario')
             .order_by('-fecha_ejecucion')[:20]
         )
         data = [
             {
                 'id': r.id,
                 'fecha': r.fecha_ejecucion.strftime('%Y-%m-%d %H:%M'),
-                'escenario': r.parametros.nombre_escenario if r.parametros else 'Sin escenario',
-                'tipo_modelo': r.parametros.tipo_modelo if r.parametros else '',
+                'escenario': r.escenario.nombre_escenario if r.escenario else 'Sin escenario',
+                'tipo_modelo': r.escenario.tipo_modelo if r.escenario else '',
                 'resumen': {
                     'distancia_total': r.datos_json.get('distancia_total_km'),
                     'poblacion_atendida': r.datos_json.get('poblacion_atendida'),
@@ -228,15 +228,15 @@ def api_detalle_resultado(request, resultado_id):
     """Devuelve el detalle de un resultado específico."""
     try:
         resultado = get_object_or_404(
-            ResultadoOptimizacion.objects.select_related('parametros'),
+            ResultadoOptimizacion.objects.select_related('escenario'),
             pk=resultado_id,
         )
         data = {
             'id': resultado.id,
             'fecha': resultado.fecha_ejecucion.strftime('%Y-%m-%d %H:%M'),
             'escenario': (
-                resultado.parametros.nombre_escenario
-                if resultado.parametros else 'Sin escenario'
+                resultado.escenario.nombre_escenario
+                if resultado.escenario else 'Sin escenario'
             ),
         }
         data.update(resultado.datos_json)
@@ -337,7 +337,7 @@ def api_exportar_csv(request):
     try:
         resultados = (
             ResultadoOptimizacion.objects
-            .select_related('parametros')
+            .select_related('escenario')
             .order_by('-fecha_ejecucion')
         )
 
@@ -355,7 +355,7 @@ def api_exportar_csv(request):
             writer.writerow([
                 r.id,
                 r.fecha_ejecucion.strftime('%Y-%m-%d %H:%M'),
-                r.parametros.nombre_escenario if r.parametros else 'Sin escenario',
+                r.escenario.nombre_escenario if r.escenario else 'Sin escenario',
                 r.datos_json.get('distancia_total_km', 0),
                 r.datos_json.get('poblacion_atendida', 0),
                 r.datos_json.get('porcentaje_cubierto', 0),

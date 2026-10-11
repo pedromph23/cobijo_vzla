@@ -15,7 +15,7 @@ from .permissions import (
 )
 from .forms import (
     PuntoDemandaForm, SitioCandidatoForm, RefugioExistenteForm, ZonaAfectadaForm,
-    EstadoForm, MunicipioForm, ParroquiaForm, ParametrosModeloForm, EventoForm, ReporteForm,
+    EstadoForm, MunicipioForm, ParroquiaForm, SimulacionForm, EventoForm, ReporteForm,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ FORMULARIOS_PERSONALIZADOS = {
     'core_estado': EstadoForm,
     'core_municipio': MunicipioForm,
     'core_parroquia': ParroquiaForm,
-    'core_parametrosmodelo': ParametrosModeloForm,
+    'core_simulacion': SimulacionForm,
     'emergencias_evento': EventoForm,
     'emergencias_reporte': ReporteForm,
 }

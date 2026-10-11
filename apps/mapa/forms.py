@@ -16,7 +16,7 @@ from apps.core.models import (
     SitioCandidato,
     RefugioExistente,
     ZonaAfectada,
-    ParametrosModelo,
+    Simulacion,
 )
 from apps.emergencias.models import Evento, Reporte
 from apps.core.dedup import buscar_similar
@@ -623,10 +623,10 @@ class ParroquiaForm(forms.ModelForm):
         return cleaned
 
 
-class ParametrosModeloForm(forms.ModelForm):
+class SimulacionForm(forms.ModelForm):
     """Formulario explícito para los parámetros de modelos de optimización."""
     class Meta:
-        model = ParametrosModelo
+        model = Simulacion
         fields = [
             'nombre_escenario', 'tipo_modelo', 'p', 'presupuesto', 'radio_cobertura',
             'ponderador_vulnerabilidad', 'ponderador_heridos',

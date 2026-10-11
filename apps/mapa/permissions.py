@@ -61,8 +61,8 @@ MODELOS_CRUD: Dict[str, Dict] = {
         'icon': 'fa-exclamation-triangle', 'list_display': ['nombre', 'nivel_alerta', 'heridos', 'damnificados'],
         'search_fields': ['nombre', 'descripcion'], 'ordering': ['-fecha_inicio'],
     },
-    'core_parametrosmodelo': {
-        'app_label': 'core', 'model_name': 'ParametrosModelo',
+    'core_simulacion': {
+        'app_label': 'core', 'model_name': 'Simulacion',
         'verbose_name': 'Simulación', 'verbose_name_plural': 'Simulaciones',
         'icon': 'fa-cog', 'list_display': ['nombre_escenario', 'tipo_modelo', 'p'],
         'search_fields': ['nombre_escenario'], 'ordering': ['-fecha_creacion'],
@@ -90,7 +90,7 @@ PERMISOS_POR_GRUPO: Dict[str, Dict[str, List[str]]] = {
         'core_refugioexistente': ['ver', 'editar'],
         'core_zonaafectada': ['ver', 'editar'],
         'core_sitiocandidato': ['ver'],
-        'core_parametrosmodelo': ['ver'],
+        'core_simulacion': ['ver'],
         'core_municipio': ['ver'],
         'emergencias_evento': ['ver', 'editar'],
         'emergencias_reporte': ['ver', 'editar'],

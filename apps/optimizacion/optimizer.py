@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import pulp
 from geopy.distance import geodesic
 
-from apps.core.models import PuntoDemanda, SitioCandidato, ZonaAfectada, ParametrosModelo
+from apps.core.models import PuntoDemanda, SitioCandidato, ZonaAfectada, Simulacion
 
 
 logger = logging.getLogger(__name__)
@@ -136,7 +136,7 @@ def _ponderacion_demanda(demanda, parametros, datos_zonas=None) -> float:
 
     Args:
         demanda: Instancia de PuntoDemanda.
-        parametros: Instancia de ParametrosModelo.
+        parametros: Instancia de Simulacion.
         datos_zonas: Dict opcional {heridos, fallecidos, damnificados} para
             esta demanda. Si None, hace la query individual (fallback).
     """
@@ -409,7 +409,7 @@ def ejecutar_optimizacion(parametros_id: int) -> Dict[str, Any]:
     Ejecuta un modelo de optimización.
 
     Args:
-        parametros_id: ID del escenario (ParametrosModelo).
+        parametros_id: ID del escenario (Simulacion).
 
     Returns:
         Dict con resultado o {'error': 'mensaje claro'}.
@@ -420,8 +420,8 @@ def ejecutar_optimizacion(parametros_id: int) -> Dict[str, Any]:
     try:
         # 1. Parámetros
         try:
-            parametros = ParametrosModelo.objects.get(pk=parametros_id)
-        except ParametrosModelo.DoesNotExist:
+            parametros = Simulacion.objects.get(pk=parametros_id)
+        except Simulacion.DoesNotExist:
             raise OptimizacionError(
                 f"El escenario #{parametros_id} no existe. "
                 "Verifique el ID o cree un nuevo escenario."

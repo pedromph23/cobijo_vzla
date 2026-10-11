@@ -12,7 +12,7 @@ from .models import (
     RefugioExistente,
     ZonaAfectada,
     PuntoDemanda,
-    ParametrosModelo,
+    Simulacion,
     RegistroAuditoria,
 )
 from apps.emergencias.models import Evento
@@ -95,9 +95,9 @@ class ZonaAfectadaTest(TestCase):
         self.assertFalse(self.zona.esta_activa)
 
 
-class ParametrosModeloTest(TestCase):
+class SimulacionTest(TestCase):
     def test_radio_cobertura_km(self):
-        p = ParametrosModelo.objects.create(
+        p = Simulacion.objects.create(
             nombre_escenario='Test',
             tipo_modelo='pmediana',
             radio_cobertura=5000,

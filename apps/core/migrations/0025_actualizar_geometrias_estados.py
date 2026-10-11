@@ -84,6 +84,8 @@ def actualizar_geometrias(apps, schema_editor):
             FROM core_estado WHERE geom IS NOT NULL
         ''')
         total_km2 = c.fetchone()[0]
+        if total_km2 is None:
+            total_km2 = 0
         print(f'[0025] Área total de estados: {total_km2:,} km² (real: ~916,445)')
 
 

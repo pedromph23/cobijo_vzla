@@ -17,7 +17,7 @@ from .models import (
     SitioCandidato,
     RefugioExistente,
     ZonaAfectada,
-    ParametrosModelo,
+    Simulacion,
     ResultadoOptimizacion,
     RegistroAuditoria,
     RegistroVersion,
@@ -356,8 +356,8 @@ class ZonaAfectadaAdmin(GISModelAdmin):
 # PARÁMETROS DE MODELO
 # ============================================================
 
-@admin.register(ParametrosModelo)
-class ParametrosModeloAdmin(admin.ModelAdmin):
+@admin.register(Simulacion)
+class SimulacionAdmin(admin.ModelAdmin):
     list_display = (
         'nombre_escenario', 'tipo_modelo', 'p',
         'radio_cobertura_fmt', 'filtro_estado', 'fecha_creacion'
@@ -404,19 +404,19 @@ class ParametrosModeloAdmin(admin.ModelAdmin):
 @admin.register(ResultadoOptimizacion)
 class ResultadoOptimizacionAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'parametros', 'fecha_ejecucion',
+        'id', 'escenario', 'fecha_ejecucion',
         'resumen_centros', 'resumen_cobertura'
     )
-    list_filter = ('fecha_ejecucion', 'parametros__tipo_modelo')
-    search_fields = ('parametros__nombre_escenario',)
-    list_select_related = ('parametros',)
-    readonly_fields = ('parametros', 'fecha_ejecucion', 'datos_json_preview')
+    list_filter = ('fecha_ejecucion', 'escenario__tipo_modelo')
+    search_fields = ('escenario__nombre_escenario',)
+    list_select_related = ('escenario',)
+    readonly_fields = ('escenario', 'fecha_ejecucion', 'datos_json_preview')
     list_per_page = 30
     date_hierarchy = 'fecha_ejecucion'
 
     fieldsets = (
         ('Metadata', {
-            'fields': ('parametros', 'fecha_ejecucion')
+            'fields': ('escenario', 'fecha_ejecucion')
         }),
         ('Resultado', {
             'fields': ('datos_json_preview',)

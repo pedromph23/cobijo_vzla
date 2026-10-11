@@ -7,10 +7,10 @@ from apps.emergencias.models import Evento
 
 from .models import (
     Estado, Parroquia, PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada,
-    ParametrosModelo, RegistroVersion,
+    Simulacion, RegistroVersion,
 )
 
-MODELOS = (Estado, Parroquia, PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada, ParametrosModelo, Evento)
+MODELOS = (Estado, Parroquia, PuntoDemanda, SitioCandidato, RefugioExistente, ZonaAfectada, Simulacion, Evento)
 
 def _request(instance):
     return getattr(instance, "_audit_request", None)
