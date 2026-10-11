@@ -52,7 +52,7 @@
     --transition-fast: .18s ease;
     --transition-normal: .28s ease;
     --transition-slow: .45s ease;
-    --header-height: 78px;
+    --header-height: var(--header-h, 78px);
 }
 
 [data-theme="dark"] {

@@ -87,3 +87,13 @@
 
 /* Modo oscuro: mismos tokens, sin cambios aquí (los colores
    viven en main.css y ui-palette.css, que sí se redefinen). */
+
+/* ----------------------------------------------------------
+   APLICACIÓN POR BREAKPOINT
+   --header-h se resuelve sola según el ancho. Cualquier lugar
+   que use var(--header-h) obtiene el valor correcto sin
+   redefinirlo una y otra vez en cada archivo.
+   ---------------------------------------------------------- */
+@media (max-width: 1023px) { :root { --header-h: var(--header-h-md); } }
+@media (max-width:  767px) { :root { --header-h: var(--header-h-sm); } }
+@media (max-width:  479px) { :root { --header-h: var(--header-h-xs); } }

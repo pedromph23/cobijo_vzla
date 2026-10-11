@@ -258,8 +258,6 @@ body {
 }
 
 @media (max-width: 768px) {
-  :root { --header-height: 58px; }
-
   .app-header {
     height: var(--header-height) !important;
     padding: 0 .4rem !important;
