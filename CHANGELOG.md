@@ -495,5 +495,47 @@ Cierra FASE 3 al 100%.
 - Bloque 4 — Detección de duplicados ✅
 - Bloque 5 — Rate limiting ✅
 
+### FASE 7 — Nomenclatura (2 bloques + bonus)
+
+**Commits:** `c0b3efa`, `ab5b605`, `37aab66`
+
+**Bloque 1 — Rename ParametrosModelo → Simulacion:**
+- Modelo: `ParametrosModelo` → `Simulacion`.
+- Tabla: `core_parametrosmodelo` → `core_simulacion`.
+- FK en `ResultadoOptimizacion`: `parametros` → `escenario`.
+- Columna: `parametros_id` → `escenario_id`.
+- Clases: `ParametrosModeloForm` → `SimulacionForm`,
+  `ParametrosModeloAdmin` → `SimulacionAdmin`.
+- Claves: `core_parametrosmodelo` → `core_simulacion` en permissions
+  y crud_views.
+- Migración 0029: RenameModel + RenameField.
+- Migración 0030: data fix en `RegistroVersion.modelo`.
+
+Motivación: el nombre anterior confundía con "configuración de sistema".
+`Simulacion` refleja su función real: plantilla de simulación de
+optimización.
+
+**Bloque 2 — Typo `San Bernandino` → `San Bernardino`:**
+- Parroquia id=15 (Municipio Libertador, Distrito Capital).
+- Migración 0031: rename verificando nombre antiguo antes de cambiar.
+- Resultado: 0 instancias con typo.
+
+**Bonus — Fix de tests preexistentes:**
+- `apps/core/tests.py` tenía `test_esta_activa` y `test_cerrar_zona`
+  fallando por pasar fechas como string en lugar de datetime.
+- Ahora `apps.core: 18/18 tests OK`.
+
+**Estado: 100% del Plan Maestro v2 completado.**
+
+Todas las fases del plan original están cerradas:
+- FASE 0 ✅ Sincronización
+- FASE 1 ✅ Cimientos y validaciones
+- FASE 2 ✅ Integridad territorial
+- FASE 3 ✅ Validación universal
+- FASE 4 ✅ Seguridad avanzada
+- FASE 5 ✅ Rendimiento
+- FASE 6 ✅ Limpieza
+- FASE 7 ✅ Nomenclatura
+
 ### Pendiente (FASE 1+)
 - Ver Plan Maestro v2.
