@@ -1,0 +1,46 @@
+/* ============================================================
+   COBIJOVZLA · LOGO DEL HEADER
+   Quita el "aspecto de botón" (fondo blanco + borde + sombra)
+   que envolvía al logo. El logo queda flotando limpio sobre
+   el header en modo claro, y en modo oscuro conserva un
+   fondo claro suave SOLO detrás del logo para asegurar que
+   las letras y el corazón se sigan viendo bien.
+   Cargado al final del <head> para ganar a las capas previas.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   MODO CLARO · logo flotando, sin marco
+   ------------------------------------------------------------ */
+.app-logo-optimized .logo-mark {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+
+.app-logo-optimized .logo-img {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* ------------------------------------------------------------
+   MODO OSCURO · fondo claro suave solo detrás del logo
+   Garantiza el contraste del logo (letras oscuras + corazón)
+   sobre el header oscuro, sin que se vea como un botón grande.
+   ------------------------------------------------------------ */
+[data-theme="dark"] .app-logo-optimized .logo-mark {
+  background: #f7f5f0 !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  padding: 3px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24) !important;
+}
+
+[data-theme="dark"] .app-logo-optimized .logo-img {
+  border-radius: 8px !important;
+  padding: 0 !important;
+}
