@@ -1,0 +1,180 @@
+/* ============================================================
+   COBIJOVZLA · COMPACT LAYER
+   Capa final de densidad visual. Cargada al final del head para
+   ganar por orden sin tocar los archivos existentes.
+   Solo reajusta densidad (padding, min-height, font-size).
+   NO cambia colores, NO cambia selectores, NO toca HTML/JS.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   INPUTS Y CONTROLES · 40px de altura, padding 8×12
+   ------------------------------------------------------------ */
+.form-control,
+.selector-control,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="month"],
+input[type="week"],
+select {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: var(--font-base, 0.92rem);
+  line-height: 1.35;
+}
+
+/* Textarea mantiene altura flexible, solo compacta el padding */
+textarea.form-control,
+textarea {
+  min-height: 88px;
+  padding: 10px 12px;
+}
+
+/* EXCEPCIONES: controles que NO deben estirarse */
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+input[type="color"] {
+  min-height: 0;
+  padding: 0;
+}
+
+input[type="file"] {
+  min-height: 0;
+  padding: 6px 10px;
+  font-size: var(--font-sm, 0.82rem);
+}
+
+/* Labels del form un poco más cerca del input */
+.form-group label,
+.form-label,
+label {
+  margin-bottom: 4px;
+  font-size: var(--font-sm, 0.82rem);
+}
+
+/* Separación consistente entre campos */
+.form-group,
+.form-row,
+.mb-3 {
+  margin-bottom: var(--space-4, 16px);
+}
+
+/* ------------------------------------------------------------
+   BOTONES · 40px mínimo en desktop, 44px en móvil (WCAG AA)
+   ------------------------------------------------------------ */
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-login,
+.btn-ejecutar,
+.btn-volver,
+.crud-search button {
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: var(--font-base, 0.92rem);
+  line-height: 1.2;
+}
+
+/* Botones pequeños del CRUD (editar / borrar / reactivar) */
+.btn-crud {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: var(--font-sm, 0.82rem);
+}
+
+/* Botones de icono en tabla: cuadrado, compacto */
+.btn-crud.btn-sm {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------
+   TABLAS CRUD · filas más densas, header legible
+   ------------------------------------------------------------ */
+.crud-table th,
+.crud-table td {
+  padding: 8px 12px;
+  font-size: var(--font-base, 0.92rem);
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+.crud-table th {
+  font-size: var(--font-sm, 0.82rem);
+  font-weight: var(--font-weight-semibold, 600);
+  letter-spacing: 0.02em;
+}
+
+/* ------------------------------------------------------------
+   CARDS DEL PANEL · padding moderado
+   ------------------------------------------------------------ */
+.crud-card,
+.accion-item,
+.reporte-card {
+  padding: var(--space-4, 16px);
+}
+
+/* ------------------------------------------------------------
+   MÓVIL · subir tap targets a 44px (WCAG AA)
+   ------------------------------------------------------------ */
+@media (max-width: 767px) {
+  .form-control,
+  .selector-control,
+  select,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"] {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-login,
+  .btn-ejecutar,
+  .btn-volver,
+  .crud-search button {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  .btn-crud,
+  .btn-crud.btn-sm {
+    min-height: 38px;
+    width: 38px;
+    padding: 0;
+  }
+}
+
+/* ------------------------------------------------------------
+   RESPETO A PREFERENCIAS DEL USUARIO
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .form-control,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-crud {
+    transition: none;
+  }
+}
