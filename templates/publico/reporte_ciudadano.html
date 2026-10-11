@@ -230,51 +230,5 @@
 {% endblock %}
 
 {% block extra_css %}
-<style>
-    .report-container { display: flex; align-items: center; justify-content: center; padding: 1rem; min-height: calc(100vh - 60px); }
-    .report-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: var(--shadow-lg); width: 100%; max-width: 600px; overflow: hidden; color: var(--text-primary); }
-    .report-header { background: linear-gradient(135deg, #ff6600, #cc5200); color: white; text-align: center; padding: 2rem 1.5rem; }
-    .report-icon { width: 60px; height: 60px; margin: 0 auto 1rem; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
-    .report-body { padding: 1.5rem; }
-
-    .form-group { margin-bottom: 1.2rem; }
-    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary); }
-    .opcional { font-weight: 400; opacity: 0.7; font-size: 0.75rem; }
-    .requerido { color: #dc3545; font-weight: 700; }
-    .input-group { position: relative; display: flex; align-items: center; }
-    .input-icon { position: absolute; left: 12px; color: var(--text-secondary); pointer-events: none; }
-    .textarea-icon { top: 12px; }
-
-    .form-control { width: 100%; padding: 0.75rem 0.75rem 0.75rem 2.5rem; border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: inherit; font-size: 0.9rem; font-family: inherit; }
-    .textarea { resize: vertical; min-height: 100px; }
-    .char-counter { display: block; text-align: right; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; }
-
-    .btn-submit { background: linear-gradient(135deg, #ff6600, #cc5200); color: white; font-size: 1rem; width: 100%; padding: 0.75rem; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
-    .btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
-
-    .file-upload { position: relative; }
-    .file-input { display: none; }
-    .file-label { display: flex; flex-direction: column; align-items: center; padding: 1.5rem; border: 2px dashed var(--border-color); border-radius: 8px; cursor: pointer; text-align: center; transition: border-color 0.2s; }
-    .file-label:hover { border-color: #ff6600; }
-    .file-label i { font-size: 2rem; color: #ff6600; margin-bottom: 0.5rem; }
-    .file-label small { color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.25rem; }
-    .file-preview { margin-top: 0.5rem; position: relative; }
-    .file-preview img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; }
-    .btn-remove-file { position: absolute; top: 10px; right: 10px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; }
-
-    .report-footer { padding: 1rem; text-align: center; background: var(--bg-hover); border-top: 1px solid var(--border-color); }
-    .btn-volver { color: #ff6600; text-decoration: none; font-weight: 700; }
-
-    .mensaje-resultado { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 700; }
-    .alert-success { background: #d4edda; color: #155724; }
-    .alert-error { background: #f8d7da; color: #721c24; }
-    [data-theme="dark"] .alert-success { background: #1a3a2a; color: #8fdf8f; }
-    [data-theme="dark"] .alert-error { background: #3a1a1a; color: #df8f8f; }
-
-    @media (max-width: 480px) {
-        .report-header { padding: 1.5rem 1rem; }
-        .report-body { padding: 1rem; }
-        .report-icon { width: 50px; height: 50px; font-size: 1.4rem; }
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/reporte_ciudadano.css' %}?v=3">
 {% endblock %}

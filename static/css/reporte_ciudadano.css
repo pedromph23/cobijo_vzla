@@ -1,0 +1,508 @@
+/* ============================================================
+   COBIJOVZLA · FORMULARIO DE REPORTE CIUDADANO
+   Alineado a la paleta Comfort del sistema (verde/coral).
+   Cargado solo en templates/publico/reporte_ciudadano.html
+   vía extra_css (después de todo lo demás).
+   Sin !important — hereda naturalmente de las capas previas.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   CONTENEDOR
+   ------------------------------------------------------------ */
+.report-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4, 16px);
+  min-height: calc(100vh - var(--header-h, 72px));
+}
+
+.report-card {
+  background: var(--comfort-surface);
+  border: 1px solid var(--comfort-border);
+  border-radius: var(--radius-xl, 18px);
+  box-shadow: var(--comfort-shadow);
+  width: 100%;
+  max-width: 600px;
+  overflow: hidden;
+  color: var(--comfort-text);
+}
+
+/* ------------------------------------------------------------
+   CABECERA · coral en vez de naranja duro
+   ------------------------------------------------------------ */
+.report-header {
+  background: linear-gradient(135deg, var(--comfort-coral), #a95647);
+  color: #fff;
+  text-align: center;
+  padding: var(--space-7, 32px) var(--space-6, 24px);
+}
+
+.report-header h2 {
+  margin: 0 0 var(--space-2, 8px);
+  font-size: var(--font-xl, 1.35rem);
+  font-weight: var(--font-weight-bold, 700);
+  letter-spacing: 0.01em;
+}
+
+.report-header p {
+  margin: 0;
+  font-size: var(--font-sm, 0.82rem);
+  opacity: 0.94;
+  line-height: var(--line-snug, 1.35);
+}
+
+.report-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto var(--space-4, 16px);
+  background: rgba(255, 255, 255, 0.20);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* ------------------------------------------------------------
+   CUERPO
+   ------------------------------------------------------------ */
+.report-body {
+  padding: var(--space-6, 24px);
+}
+
+/* ------------------------------------------------------------
+   CAMPOS
+   ------------------------------------------------------------ */
+.form-group {
+  margin-bottom: var(--space-5, 20px);
+}
+
+.form-group label {
+  display: block;
+  font-size: var(--font-sm, 0.82rem);
+  font-weight: var(--font-weight-semibold, 600);
+  margin-bottom: var(--space-2, 8px);
+  color: var(--comfort-text);
+}
+
+.form-group label i {
+  color: var(--comfort-green);
+  margin-right: 6px;
+  font-size: 0.92em;
+}
+
+.opcional {
+  font-weight: var(--font-weight-normal, 400);
+  opacity: 0.7;
+  font-size: var(--font-xs, 0.75rem);
+}
+
+.requerido {
+  color: var(--comfort-coral);
+  font-weight: var(--font-weight-bold, 700);
+}
+
+/* Input con icono superpuesto */
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--comfort-muted);
+  pointer-events: none;
+  font-size: 0.92em;
+  z-index: 1;
+}
+
+.textarea-icon {
+  top: 14px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 11px 14px 11px 40px;
+  border: 1px solid var(--comfort-border);
+  border-radius: var(--radius-md, 9px);
+  background: var(--comfort-surface);
+  color: var(--comfort-text);
+  font-size: var(--font-base, 0.92rem);
+  font-family: inherit;
+  line-height: 1.4;
+  min-height: 44px;
+  transition: border-color var(--transition-fast, 0.18s ease),
+              box-shadow var(--transition-fast, 0.18s ease);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: rgba(82, 123, 107, 0.45);
+  box-shadow: 0 0 0 3px rgba(82, 123, 107, 0.11);
+}
+
+.form-control::placeholder {
+  color: var(--comfort-muted);
+  opacity: 0.85;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 110px;
+  padding-top: 12px;
+}
+
+.char-counter {
+  display: block;
+  text-align: right;
+  font-size: var(--font-xs, 0.75rem);
+  color: var(--comfort-muted);
+  margin-top: var(--space-1, 4px);
+}
+
+/* ------------------------------------------------------------
+   BOTÓN PRINCIPAL
+   ------------------------------------------------------------ */
+.btn-submit {
+  background: linear-gradient(135deg, var(--comfort-coral), #a95647);
+  color: #fff;
+  font-size: var(--font-md, 1rem);
+  font-weight: var(--font-weight-bold, 700);
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: var(--radius-md, 9px);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  box-shadow: 0 8px 20px rgba(199, 109, 92, 0.22);
+  transition: filter var(--transition-fast, 0.18s ease),
+              transform var(--transition-fast, 0.18s ease),
+              box-shadow var(--transition-fast, 0.18s ease);
+  font-family: inherit;
+}
+
+.btn-submit:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(199, 109, 92, 0.28);
+}
+
+.btn-submit:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------
+   ADJUNTO DE IMAGEN
+   ------------------------------------------------------------ */
+.file-upload {
+  position: relative;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-6, 24px) var(--space-4, 16px);
+  border: 2px dashed var(--comfort-border);
+  border-radius: var(--radius-md, 9px);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color var(--transition-fast, 0.18s ease),
+              background var(--transition-fast, 0.18s ease);
+  background: transparent;
+}
+
+.file-label:hover {
+  border-color: var(--comfort-coral);
+  background: rgba(199, 109, 92, 0.04);
+}
+
+.file-label i {
+  font-size: 1.8rem;
+  color: var(--comfort-coral);
+  margin-bottom: var(--space-2, 8px);
+}
+
+.file-label span {
+  color: var(--comfort-text);
+  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--font-base, 0.92rem);
+}
+
+.file-label small {
+  color: var(--comfort-muted);
+  font-size: var(--font-xs, 0.75rem);
+  margin-top: var(--space-1, 4px);
+}
+
+.file-preview {
+  margin-top: var(--space-3, 12px);
+  position: relative;
+  border-radius: var(--radius-md, 9px);
+  overflow: hidden;
+}
+
+.file-preview img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: var(--radius-md, 9px);
+  display: block;
+}
+
+.btn-remove-file {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--comfort-coral);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
+  font-size: 0.9rem;
+}
+
+.btn-remove-file:hover {
+  filter: brightness(1.08);
+}
+
+/* ------------------------------------------------------------
+   PIE DEL FORMULARIO
+   ------------------------------------------------------------ */
+.report-footer {
+  padding: var(--space-4, 16px) var(--space-6, 24px);
+  text-align: center;
+  background: var(--comfort-soft);
+  border-top: 1px solid var(--comfort-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  flex-wrap: wrap;
+}
+
+.report-footer p {
+  margin: 0;
+  color: var(--comfort-muted);
+  font-size: var(--font-xs, 0.75rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.report-footer p i {
+  color: var(--comfort-green);
+}
+
+.btn-volver {
+  color: var(--comfort-coral);
+  text-decoration: none;
+  font-weight: var(--font-weight-bold, 700);
+  font-size: var(--font-sm, 0.82rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity var(--transition-fast, 0.18s ease);
+}
+
+.btn-volver:hover {
+  opacity: 0.78;
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------
+   MENSAJES DE RESULTADO
+   ------------------------------------------------------------ */
+.mensaje-resultado {
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border-radius: var(--radius-md, 9px);
+  margin-bottom: var(--space-4, 16px);
+  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--font-sm, 0.82rem);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  line-height: 1.35;
+}
+
+.alert-success {
+  background: rgba(82, 123, 107, 0.13);
+  color: var(--comfort-green-strong);
+  border: 1px solid rgba(82, 123, 107, 0.20);
+}
+
+.alert-error {
+  background: rgba(199, 109, 92, 0.12);
+  color: #9b4e40;
+  border: 1px solid rgba(199, 109, 92, 0.24);
+}
+
+/* ------------------------------------------------------------
+   MODO OSCURO
+   ------------------------------------------------------------ */
+[data-theme="dark"] .alert-success {
+  background: rgba(145, 181, 162, 0.14);
+  color: #b9d4c4;
+}
+
+[data-theme="dark"] .alert-error {
+  background: rgba(224, 138, 118, 0.14);
+  color: #f0b0a2;
+}
+
+[data-theme="dark"] .report-header {
+  background: linear-gradient(135deg, #a95647, #8f4436);
+}
+
+[data-theme="dark"] .btn-submit {
+  background: linear-gradient(135deg, #a95647, #8f4436);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
+}
+
+[data-theme="dark"] .file-label:hover {
+  background: rgba(224, 138, 118, 0.08);
+}
+
+/* ------------------------------------------------------------
+   RESPONSIVE
+   ------------------------------------------------------------ */
+@media (max-width: 600px) {
+  .report-container {
+    align-items: flex-start;
+    padding: var(--space-3, 12px);
+    min-height: calc(100vh - var(--header-h, 56px));
+  }
+
+  .report-header {
+    padding: var(--space-6, 24px) var(--space-4, 16px);
+  }
+
+  .report-icon {
+    width: 52px;
+    height: 52px;
+    font-size: 1.4rem;
+    margin-bottom: var(--space-3, 12px);
+  }
+
+  .report-header h2 {
+    font-size: var(--font-lg, 1.15rem);
+  }
+
+  .report-body {
+    padding: var(--space-4, 16px);
+  }
+
+  .form-group {
+    margin-bottom: var(--space-4, 16px);
+  }
+
+  .report-footer {
+    padding: var(--space-3, 12px) var(--space-4, 16px);
+    justify-content: center;
+  }
+
+  .report-footer p {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-volver {
+    order: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-submit,
+  .btn-volver,
+  .file-label,
+  .form-control {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------
+   AJUSTE · iconos de los inputs más visibles
+   Fix posterior a la primera verificación en dark mode.
+   ------------------------------------------------------------ */
+.input-icon {
+  left: 14px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  color: var(--comfort-muted);
+}
+
+.input-icon i {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.textarea-icon {
+  top: 13px;
+  align-items: flex-start;
+}
+
+/* En dark mode subimos un poco el contraste del icono */
+[data-theme="dark"] .input-icon {
+  color: #c9cdc6;
+}
+
+/* Fix forzado — garantiza visibilidad del icono en cualquier circunstancia */
+.report-card .input-icon {
+  position: absolute !important;
+  left: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 20px !important;
+  height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 15px !important;
+  color: var(--comfort-muted) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+.report-card .input-icon i {
+  font-size: 15px !important;
+  line-height: 1 !important;
+  display: inline-block !important;
+}
+
+/* Textarea: icono arriba en vez de centrado */
+.report-card .textarea-icon {
+  top: 14px !important;
+  transform: none !important;
+  align-items: flex-start !important;
+}
+
+/* Refuerzo del padding del input para que el texto no choque con el icono */
+.report-card .form-control {
+  padding-left: 42px !important;
+}
