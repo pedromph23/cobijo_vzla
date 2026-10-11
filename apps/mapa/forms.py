@@ -19,6 +19,7 @@ from apps.core.models import (
     ParametrosModelo,
 )
 from apps.emergencias.models import Evento, Reporte
+from apps.core.dedup import buscar_similar
 from apps.core.validators import (
     validar_imagen_real,
     validar_nombre_operativo,
@@ -104,6 +105,15 @@ class PuntoDemandaForm(forms.ModelForm):
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'maxlength': 2000}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['confirmar_duplicado'] = forms.BooleanField(
+            required=False,
+            label='Confirmar creación a pesar de similitud detectada',
+            widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            help_text='Marca esta casilla solo si el sistema detectó similitud con un registro existente y estás seguro de crear uno diferente.',
+        )
+
     def clean_ubicacion(self):
         return _parsear_punto(self.cleaned_data.get('ubicacion'))
 
@@ -129,6 +139,35 @@ class PuntoDemandaForm(forms.ModelForm):
         if len(texto) > 2000:
             raise forms.ValidationError('La descripción no puede superar los 2000 caracteres.')
         return texto
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('confirmar_duplicado'):
+            return cleaned
+
+        nombre = cleaned.get('nombre')
+        ubicacion = cleaned.get('ubicacion')
+        if not nombre or not ubicacion:
+            return cleaned
+
+        qs = PuntoDemanda.objects.all()
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        similar = buscar_similar(
+            nombre_nuevo=nombre,
+            lat=ubicacion.y,
+            lng=ubicacion.x,
+            candidatos=qs,
+        )
+        if similar:
+            self.add_error(
+                'confirmar_duplicado',
+                f'Se detectó un registro similar: «{similar["nombre"]}». '
+                f'{similar["motivo"]} Si estás seguro de que es un registro '
+                'diferente, marca la casilla de confirmación.'
+            )
+        return cleaned
 
 
 class SitioCandidatoForm(forms.ModelForm):
@@ -258,6 +297,12 @@ class RefugioExistenteForm(forms.ModelForm):
             conocidos = {valor for valor, _ in SERVICIOS_REFUGIO}
             self.initial['servicios'] = [str(v) for v in valores if str(v) in conocidos]
             self.initial['otros_servicios'] = ', '.join(str(v) for v in valores if str(v) not in conocidos)
+        self.fields['confirmar_duplicado'] = forms.BooleanField(
+            required=False,
+            label='Confirmar creación a pesar de similitud detectada',
+            widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            help_text='Marca esta casilla solo si el sistema detectó similitud con un registro existente y estás seguro de crear uno diferente.',
+        )
 
     def clean_telefono(self):
         value = self.cleaned_data.get('telefono', '').strip()
@@ -319,10 +364,33 @@ class RefugioExistenteForm(forms.ModelForm):
                 extras.append(item)
                 vistos.add(clave)
         cleaned['servicios'] = list(cleaned.get('servicios') or []) + extras
+
+        # Detección de duplicados
+        if not cleaned.get('confirmar_duplicado'):
+            nombre = cleaned.get('nombre')
+            ubicacion = cleaned.get('ubicacion')
+            if nombre and ubicacion:
+                qs = RefugioExistente.objects.all()
+                if self.instance and self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+                similar = buscar_similar(
+                    nombre_nuevo=nombre,
+                    lat=ubicacion.y,
+                    lng=ubicacion.x,
+                    candidatos=qs,
+                )
+                if similar:
+                    self.add_error(
+                        'confirmar_duplicado',
+                        f'Se detectó un refugio similar: «{similar["nombre"]}». '
+                        f'{similar["motivo"]} Si estás seguro de que es un '
+                        'refugio diferente, marca la casilla de confirmación.'
+                    )
         return cleaned
 
 
 class ZonaAfectadaForm(forms.ModelForm):
+
     class Meta:
         model = ZonaAfectada
         fields = ['evento', 'nombre', 'descripcion', 'geom', 'nivel_alerta', 'fecha_inicio', 'fecha_fin', 'heridos', 'fallecidos', 'damnificados']
@@ -391,12 +459,44 @@ class ZonaAfectadaForm(forms.ModelForm):
             return geometria
         raise forms.ValidationError('Dibuja la zona afectada en el mapa.')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['confirmar_duplicado'] = forms.BooleanField(
+            required=False,
+            label='Confirmar creación a pesar de similitud detectada',
+            widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            help_text='Marca esta casilla solo si el sistema detectó similitud con un registro existente y estás seguro de crear uno diferente.',
+        )
+
     def clean(self):
         cleaned = super().clean()
         inicio = cleaned.get('fecha_inicio')
         fin = cleaned.get('fecha_fin')
         if inicio and fin and fin < inicio:
             self.add_error('fecha_fin', 'La fecha de finalización no puede ser anterior al inicio.')
+
+        # Detección de duplicados: nombre + evento
+        if not cleaned.get('confirmar_duplicado'):
+            nombre = cleaned.get('nombre')
+            evento = cleaned.get('evento')
+            if nombre and evento:
+                qs = ZonaAfectada.objects.filter(evento=evento)
+                if self.instance and self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+                similar = buscar_similar(
+                    nombre_nuevo=nombre,
+                    lat=None,
+                    lng=None,
+                    candidatos=qs,
+                )
+                if similar:
+                    self.add_error(
+                        'confirmar_duplicado',
+                        f'Se detectó una zona similar en el mismo evento: '
+                        f'«{similar["nombre"]}». {similar["motivo"]} Si estás '
+                        'seguro de que es una zona diferente, marca la casilla '
+                        'de confirmación.'
+                    )
         return cleaned
 
 
